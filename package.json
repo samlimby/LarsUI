@@ -2,8 +2,17 @@
   "name": "larsui",
   "version": "0.1.0",
   "description": "Thoughtfully crafted, accessible React UI components built on Base UI.",
+  "author": "Sam Limby",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samlimby/LarsUI.git"
+  },
+  "homepage": "https://www.larsui.xyz",
+  "bugs": {
+    "url": "https://github.com/samlimby/LarsUI/issues"
+  },
   "files": [
     "dist"
   ],
