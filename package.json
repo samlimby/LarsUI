@@ -1,6 +1,6 @@
 {
   "name": "larsui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Thoughtfully crafted, accessible React UI components built on Base UI.",
   "author": "Sam Limby",
   "type": "module",
