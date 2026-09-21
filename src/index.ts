@@ -8,4 +8,5 @@ export {
 export {
   InlineSlider,
   type InlineSliderProps,
+  type InlineSliderSize,
 } from './components/InlineSlider'

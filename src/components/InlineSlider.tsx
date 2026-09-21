@@ -25,12 +25,15 @@ const MIN_TICK_LABEL_WIDTH = 40
 const MORPH_DISTANCE = 4
 const MORPH_GAP = 4
 const THUMB_WIDTH = 4
+const TEXT_TICK_CLEARANCE = 1
 
 const SPRING_GLIDE = { stiffness: 700, damping: 50, mass: 0.5 }
 const SPRING_BOUNCY = { type: 'spring' as const, stiffness: 500, damping: 14, mass: 0.7 }
 
 type Stop = { value: number; x: number }
 type Gesture = { id: number; left: number; offset: number; scale: number; x: number }
+
+export type InlineSliderSize = 'large' | 'default'
 
 export type InlineSliderProps = {
   label: string
@@ -43,6 +46,7 @@ export type InlineSliderProps = {
   linearStops?: boolean
   continuous?: boolean
   disabled?: boolean
+  size?: InlineSliderSize
   className?: string
   format?: (value: number) => string
   onValueChange: (value: number) => void
@@ -98,6 +102,7 @@ export function InlineSlider({
   linearStops = false,
   continuous = false,
   disabled = false,
+  size = 'default',
   className = '',
   format = String,
   onValueChange,
@@ -150,7 +155,10 @@ export function InlineSlider({
     return () => observer.disconnect()
   }, [])
 
-  const readoutBounds = { start: geometry.width - TEXT_INSET - geometry.readoutWidth, end: geometry.width - TEXT_INSET }
+  const labelInset = size === 'default' ? 12 : TEXT_INSET
+  const readoutInset = size === 'default' ? 12 : TEXT_INSET
+  const readoutBounds = { start: geometry.width - readoutInset - geometry.readoutTextWidth, end: geometry.width - readoutInset }
+  const labelBounds = { start: labelInset, end: labelInset + geometry.labelWidth }
   const endX = Math.max(HANDLE_START, geometry.width - HANDLE_END_INSET)
 
   const stops = useMemo<Stop[]>(() => {
@@ -224,14 +232,26 @@ export function InlineSlider({
       (end + MORPH_GAP + MORPH_DISTANCE - x) / MORPH_DISTANCE,
     ))
     return Math.max(
-      overlap(TEXT_INSET, TEXT_INSET + geometry.labelWidth),
-      overlap(geometry.width - TEXT_INSET - geometry.readoutTextWidth, geometry.width - TEXT_INSET),
+      overlap(labelBounds.start, labelBounds.end),
+      overlap(geometry.width - readoutInset - geometry.readoutTextWidth, geometry.width - readoutInset),
     )
   })
   const stemOpacity = useTransform(split, (amount) => 1 - amount)
   const capTop = useTransform(split, (amount) => -amount)
   const capBottom = useTransform(split, (amount) => amount)
-  const ticks = showTicks ? stops.map((stop) => stop.x) : []
+  const tickSize = size === 'default' ? 3 : 4
+  const ticks = showTicks
+    ? stops
+      .map((stop) => stop.x)
+      .filter((left) => {
+        const right = left + tickSize
+        const overlapsLabel = right > labelBounds.start - TEXT_TICK_CLEARANCE
+          && left < labelBounds.end + TEXT_TICK_CLEARANCE
+        const overlapsReadout = right > readoutBounds.start - TEXT_TICK_CLEARANCE
+          && left < readoutBounds.end + TEXT_TICK_CLEARANCE
+        return !overlapsLabel && !overlapsReadout
+      })
+    : []
 
   const queueDragCommit = (next: number) => {
     pendingDragValue.current = next
@@ -284,7 +304,7 @@ export function InlineSlider({
   return (
     <Slider.Root
       ref={trackRef}
-      className={`inline-slider${dragging ? ' is-dragging' : ''}${disabled ? ' is-disabled' : ''}${className ? ` ${className}` : ''}`}
+      className={`inline-slider inline-slider--${size}${dragging ? ' is-dragging' : ''}${disabled ? ' is-disabled' : ''}${className ? ` ${className}` : ''}`}
       disabled={disabled}
       largeStep={continuous ? step * 10 : 1}
       max={semanticMax}

@@ -3,7 +3,7 @@ import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
-import { InlineSlider } from './components/InlineSlider'
+import { InlineSlider, type InlineSliderSize } from './components/InlineSlider'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -661,6 +661,7 @@ function parseSliderCode(code: string) {
 
   const stateValueMatch = code.match(new RegExp(`useState\\(\\s*(${JSX_NUMBER})\\s*\\)`, 'i'))
   const stateValue = stateValueMatch ? Number(stateValueMatch[1]) : null
+  const size = readStringProp(attributes, 'size')
 
   return {
     continuous: readBooleanProp(attributes, 'continuous'),
@@ -668,6 +669,7 @@ function parseSliderCode(code: string) {
     max: readNumberProp(attributes, 'max'),
     min: readNumberProp(attributes, 'min'),
     showTicks: readBooleanProp(attributes, 'showTicks'),
+    size: size === 'large' || size === 'default' ? size as InlineSliderSize : null,
     value: stateValue !== null && Number.isFinite(stateValue) ? stateValue : null,
   }
 }
@@ -819,6 +821,7 @@ function SliderConfigurator() {
   const [max, setMax] = useState(360)
   const [mode, setMode] = useState<'freeform' | 'dotted'>('freeform')
   const [showTicks, setShowTicks] = useState(false)
+  const [size, setSize] = useState<InlineSliderSize>('default')
   const step = 1
 
   const code = `import { useState } from 'react'
@@ -836,6 +839,7 @@ export function Example() {
       max={${max}}
       step={${step}}${mode === 'freeform' ? '\n      continuous' : ''}
       showTicks={${showTicks}}
+      size=${JSON.stringify(size)}
       onValueChange={setValue}
     />
   )
@@ -853,6 +857,7 @@ export function Example() {
               min={min}
               onValueChange={setValue}
               showTicks={showTicks}
+              size={size}
               step={step}
               value={value}
             />
@@ -876,6 +881,16 @@ export function Example() {
                 { label: 'Dotted', value: 'dotted' },
               ]}
               value={mode}
+            />
+
+            <SegmentedControl
+              label="Size"
+              onChange={setSize}
+              options={[
+                { label: 'Large', value: 'large' },
+                { label: 'Default', value: 'default' },
+              ]}
+              value={size}
             />
 
             <label className="lars-property lars-property--stacked">
@@ -937,6 +952,7 @@ export function Example() {
           if (next.label !== null) setLabel(next.label)
           setMode(next.continuous ? 'freeform' : 'dotted')
           setShowTicks(next.showTicks)
+          if (next.size) setSize(next.size)
 
           if (next.min !== null && next.max !== null && next.min < next.max) {
             setMin(next.min)
