@@ -955,7 +955,7 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
       <header className="lars-header">
         <a className="lars-logo" href="#top" aria-label="LarsUI home"><LarsMark /></a>
         <nav className="lars-header__actions" aria-label="Project links">
-          <a className="lars-github" href="https://github.com/samlimby" target="_blank" rel="noreferrer">
+          <a className="lars-github" href="https://github.com/samlimby/LarsUI" target="_blank" rel="noreferrer">
             <GitHubIcon />
             <span>Github</span>
           </a>
