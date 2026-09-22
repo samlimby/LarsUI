@@ -931,6 +931,13 @@ html[data-theme='dark'] .lars-property-select__separator { background: #343434; 
   text-decoration: none;
 }
 
+@media (hover: hover) {
+  .lars-footnotes a:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
 .lars-code-block__header {
   display: flex;
   align-items: center;

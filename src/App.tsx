@@ -30,9 +30,9 @@ const CHIP_ICON_POSITION_OPTIONS: ReadonlyArray<{ label: string; value: ChipIcon
   { label: 'Icon end', value: 'end' },
 ]
 const CHIP_SIZE_OPTIONS: ReadonlyArray<{ label: string; value: ChipSize }> = [
-  { label: 'Small · 12px', value: 'small' },
-  { label: 'Medium · 14px', value: 'medium' },
-  { label: 'Large · 16px', value: 'large' },
+  { label: 'Small (12px)', value: 'small' },
+  { label: 'Medium (14px)', value: 'medium' },
+  { label: 'Large (16px)', value: 'large' },
 ]
 type Theme = 'light' | 'dark'
 type ComponentRoute = 'inline-slider' | 'buttons' | 'chip'
