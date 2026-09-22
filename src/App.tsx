@@ -1,16 +1,41 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useId, useRef, useState } from 'react'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
+import {
+  Chip,
+  type ChipIconPosition,
+  type ChipSize,
+  type ChipTypeface,
+  type ChipVariant,
+} from './components/Chip'
 import { InlineSlider, type InlineSliderSize } from './components/InlineSlider'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
 const DEMO_SIZE_RANGE = { min: 200, max: 440 } as const
 const BUTTON_VARIANTS = ['primary', 'secondary', 'tertiary', 'danger'] as const
+const CHIP_VARIANTS = ['neutral', 'default', 'warning', 'positive', 'error'] as const
+const CHIP_VARIANT_OPTIONS: ReadonlyArray<{ label: string; value: ChipVariant }> = [
+  { label: 'Neutral', value: 'neutral' },
+  { label: 'Default', value: 'default' },
+  { label: 'Warning', value: 'warning' },
+  { label: 'Positive', value: 'positive' },
+  { label: 'Error', value: 'error' },
+]
+const CHIP_ICON_POSITION_OPTIONS: ReadonlyArray<{ label: string; value: ChipIconPosition }> = [
+  { label: 'Text only', value: 'none' },
+  { label: 'Icon start', value: 'start' },
+  { label: 'Icon end', value: 'end' },
+]
+const CHIP_SIZE_OPTIONS: ReadonlyArray<{ label: string; value: ChipSize }> = [
+  { label: 'Small · 12px', value: 'small' },
+  { label: 'Medium · 14px', value: 'medium' },
+  { label: 'Large · 16px', value: 'large' },
+]
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'chip'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -18,6 +43,7 @@ function getRouteFromHash(): Route {
   if (typeof window === 'undefined') return 'home'
   if (window.location.hash === '#/components/inline-slider') return 'inline-slider'
   if (window.location.hash === '#/components/buttons') return 'buttons'
+  if (window.location.hash === '#/components/chip') return 'chip'
   return 'home'
 }
 
@@ -273,6 +299,81 @@ function ButtonStage() {
   )
 }
 
+function ChipPreview({ typeface }: { typeface: ChipTypeface }) {
+  return (
+    <div className="chip-preview" aria-label={`${typeface === 'monospace' ? 'Monospace' : 'Sans serif'} chip variants`}>
+      <div className="chip-preview__row" aria-label="Medium chips with leading icons">
+        {CHIP_VARIANTS.map((variant) => (
+          <Chip
+            iconPosition="start"
+            key={variant}
+            size="medium"
+            typeface={typeface}
+            variant={variant}
+          >
+            12%
+          </Chip>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ChipStage() {
+  const [copied, setCopied] = useState(false)
+  const [typeface, setTypeface] = useState<ChipTypeface>('sans-serif')
+  const [animateSelection, setAnimateSelection] = useState(true)
+
+  async function copyInstallCommand() {
+    try {
+      await navigator.clipboard.writeText('npm install larsui')
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="lars-stage lars-stage--chip">
+      <BaseButton className="lars-copy" type="button" onClick={copyInstallCommand} aria-label="Copy install command">
+        {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
+      </BaseButton>
+      <ChipPreview typeface={typeface} />
+      <div
+        aria-label="Chip typeface"
+        className="lars-modes lars-modes--typeface"
+        data-animate={animateSelection}
+        data-selected={typeface === 'sans-serif' ? 'first' : 'second'}
+      >
+        <span className="lars-modes__indicator" aria-hidden="true" />
+        <BaseButton
+          aria-pressed={typeface === 'sans-serif'}
+          className={typeface === 'sans-serif' ? 'is-active' : ''}
+          onClick={(event) => {
+            setAnimateSelection(event.detail !== 0)
+            setTypeface('sans-serif')
+          }}
+          type="button"
+        >
+          Sans
+        </BaseButton>
+        <BaseButton
+          aria-pressed={typeface === 'monospace'}
+          className={typeface === 'monospace' ? 'is-active' : ''}
+          onClick={(event) => {
+            setAnimateSelection(event.detail !== 0)
+            setTypeface('monospace')
+          }}
+          type="button"
+        >
+          Mono
+        </BaseButton>
+      </div>
+    </div>
+  )
+}
+
 function CodeBlock({
   code,
   fileName,
@@ -356,13 +457,14 @@ function SegmentedControl<T extends string>({
   options: ReadonlyArray<{ label: string; value: T }>
   value: T
 }) {
+  const controlId = useId()
   const prefersReducedMotion = useReducedMotion()
 
   return (
     <div className="lars-property lars-property--segmented">
       <span>{label}</span>
       <div className="lars-segments" role="group" aria-label={label}>
-        <LayoutGroup id={`lars-segment-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+        <LayoutGroup id={controlId}>
           {options.map((option) => {
             const isActive = value === option.value
 
@@ -378,7 +480,7 @@ function SegmentedControl<T extends string>({
                   <motion.span
                     className="lars-segments__indicator"
                     initial={false}
-                    layoutId="active-segment"
+                    layoutId={`${controlId}-active-segment`}
                     style={{ borderRadius: 999 }}
                     transition={prefersReducedMotion
                       ? { duration: 0 }
@@ -674,6 +776,29 @@ function parseSliderCode(code: string) {
   }
 }
 
+function parseChipCode(code: string) {
+  const attributes = readOpeningTag(code, 'Chip')
+  const body = code.match(/<Chip\b[\s\S]*?>([\s\S]*?)<\/Chip>/)?.[1]
+  if (attributes === null || body === undefined) return null
+
+  const variant = readStringProp(attributes, 'variant')
+  const iconPosition = readStringProp(attributes, 'iconPosition')
+  const size = readStringProp(attributes, 'size')
+  const typeface = readStringProp(attributes, 'typeface')
+  const label = body.trim()
+
+  return {
+    burst: readBooleanProp(attributes, 'burst'),
+    iconPosition: CHIP_ICON_POSITION_OPTIONS.some((option) => option.value === iconPosition)
+      ? iconPosition as ChipIconPosition
+      : null,
+    label: label && !/[<>]/.test(label) ? label : null,
+    size: CHIP_SIZE_OPTIONS.some((option) => option.value === size) ? size as ChipSize : null,
+    typeface: typeface === 'monospace' || typeface === 'sans-serif' ? typeface as ChipTypeface : null,
+    variant: CHIP_VARIANTS.includes(variant as ChipVariant) ? variant as ChipVariant : null,
+  }
+}
+
 function ButtonConfigurator() {
   const [label, setLabel] = useState('View')
   const [variant, setVariant] = useState<ButtonVariant>('primary')
@@ -720,7 +845,7 @@ ${iconOnly ? `  aria-label=${JSON.stringify(buttonLabel)}
 
         <aside className="lars-properties" aria-labelledby="button-properties-title">
           <header className="lars-properties__header">
-            <h2 id="button-properties-title">Button</h2>
+            <h2 id="button-properties-title">Properties</h2>
           </header>
 
           <div className="lars-properties__fields">
@@ -866,7 +991,7 @@ export function Example() {
 
         <aside className="lars-properties" aria-labelledby="slider-properties-title">
           <header className="lars-properties__header">
-            <h2 id="slider-properties-title">Inline Slider</h2>
+            <h2 id="slider-properties-title">Properties</h2>
           </header>
 
           <div className="lars-properties__fields lars-properties__fields--slider">
@@ -965,6 +1090,131 @@ export function Example() {
   )
 }
 
+function ChipConfigurator() {
+  const [burst, setBurst] = useState(false)
+  const [label, setLabel] = useState('12%')
+  const [variant, setVariant] = useState<ChipVariant>('default')
+  const [iconPosition, setIconPosition] = useState<ChipIconPosition>('start')
+  const [size, setSize] = useState<ChipSize>('small')
+  const [typeface, setTypeface] = useState<ChipTypeface>('monospace')
+  const chipLabel = label || 'Label'
+
+  const code = `import { Chip } from 'larsui'
+import 'larsui/style.css'
+
+<Chip
+  variant="${variant}"
+  iconPosition="${iconPosition}"
+  size="${size}"
+  typeface="${typeface}"
+  burst={${burst}}
+>
+  ${chipLabel}
+</Chip>`
+
+  return (
+    <>
+      <div className="lars-configurator">
+        <div className="lars-stage lars-component-canvas">
+          <Chip
+            burst={burst}
+            iconPosition={iconPosition}
+            size={size}
+            typeface={typeface}
+            variant={variant}
+          >
+            {chipLabel}
+          </Chip>
+        </div>
+
+        <aside className="lars-properties" aria-labelledby="chip-properties-title">
+          <header className="lars-properties__header">
+            <h2 id="chip-properties-title">Properties</h2>
+          </header>
+
+          <div className="lars-properties__fields">
+            <PropertySelect
+              label="Variant"
+              onChange={setVariant}
+              options={CHIP_VARIANT_OPTIONS}
+              value={variant}
+            />
+
+            <PropertySelect
+              label="Size"
+              onChange={setSize}
+              options={CHIP_SIZE_OPTIONS}
+              value={size}
+            />
+
+            <label className="lars-property lars-property--stacked">
+              <span>Label</span>
+              <input value={label} onChange={(event) => setLabel(event.currentTarget.value)} />
+            </label>
+
+            <PropertySelect
+              label="Content"
+              onChange={setIconPosition}
+              options={CHIP_ICON_POSITION_OPTIONS}
+              value={iconPosition}
+            />
+
+            <SegmentedControl
+              label="Typeface"
+              onChange={setTypeface}
+              options={[
+                { label: 'Mono', value: 'monospace' },
+                { label: 'Sans', value: 'sans-serif' },
+              ]}
+              value={typeface}
+            />
+
+            <SegmentedControl
+              label="Burst"
+              onChange={(value) => setBurst(value === 'true')}
+              options={[
+                { label: 'True', value: 'true' },
+                { label: 'False', value: 'false' },
+              ]}
+              value={burst ? 'true' : 'false'}
+            />
+          </div>
+        </aside>
+      </div>
+
+      <div className="lars-code-with-footnote">
+        <CodeBlock
+          code={code}
+          fileName="Chip.tsx"
+          label="Configured chip usage code"
+          onChange={(nextCode) => {
+            const next = parseChipCode(nextCode)
+            if (!next) return
+            setBurst(next.burst)
+            if (next.variant) setVariant(next.variant)
+            if (next.iconPosition) setIconPosition(next.iconPosition)
+            if (next.size) setSize(next.size)
+            if (next.typeface) setTypeface(next.typeface)
+            if (next.label !== null) setLabel(next.label)
+          }}
+        />
+
+        <aside className="lars-footnotes" aria-label="Notes">
+          <p id="chip-footnote-1" tabIndex={-1}>
+            <sup>1</sup>
+            <span>
+              Inspiration for the Monospace chip variants comes from{' '}
+              <a href="https://x.com/AdityaSur11/status/2101695377267384457" target="_blank" rel="noreferrer">
+                this tweet by Adi (@AdityaSur11)
+              </a>.
+            </span>
+          </p>
+        </aside>
+      </div>
+    </>
+  )
+}
+
 function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   return (
     <div className="lars-shell">
@@ -1011,6 +1261,18 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
         </div>
       </section>
 
+      <section className="lars-showcase lars-showcase--chip" aria-labelledby="chip-title">
+        <ChipStage />
+
+        <div className="lars-showcase__meta">
+          <div className="lars-showcase__copy">
+            <h2 id="chip-title">Chip</h2>
+            <p>A compact label for statuses, categories, and concise metadata.</p>
+          </div>
+          <a className="lars-view" href="#/components/chip">View</a>
+        </div>
+      </section>
+
       <footer className="lars-footer">
         <span>Made by Sam Limby</span>
         <div className="lars-footer__links">
@@ -1032,8 +1294,32 @@ function ComponentPage({
   theme: Theme
   onToggleTheme: () => void
 }) {
-  const isSlider = component === 'inline-slider'
-  const title = isSlider ? 'Inline Slider' : 'Buttons'
+  const details: Record<ComponentRoute, { description: string; title: string }> = {
+    'inline-slider': {
+      description: 'Adjust values directly in context without interrupting the workflow.',
+      title: 'Inline Slider',
+    },
+    buttons: {
+      description: 'A foundational element for interacting with any interface.',
+      title: 'Buttons',
+    },
+    chip: {
+      description: 'A compact label for statuses, categories, and concise metadata.',
+      title: 'Chip',
+    },
+  }
+  const { description, title } = details[component]
+  const reduceMotion = useReducedMotion()
+
+  const scrollToChipFootnote = () => {
+    const footnote = document.getElementById('chip-footnote-1')
+    if (!footnote) return
+    footnote.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+      block: 'start',
+    })
+    footnote.focus({ preventScroll: true })
+  }
 
   return (
     <div className="lars-shell lars-detail-shell">
@@ -1047,8 +1333,30 @@ function ComponentPage({
       </header>
 
       <section className="lars-detail" aria-labelledby="component-detail-title">
-        <h1 className="visually-hidden" id="component-detail-title">{title}</h1>
-        {isSlider ? <SliderConfigurator /> : <ButtonConfigurator />}
+        <header className="lars-detail__intro">
+          <h1 id="component-detail-title">
+            {title}
+            {component === 'chip' && (
+              <sup>
+                <a
+                  aria-label="Read note 1"
+                  href="#chip-footnote-1"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    scrollToChipFootnote()
+                  }}
+                >
+                  1
+                </a>
+              </sup>
+            )}
+          </h1>
+          <p>{description}</p>
+        </header>
+
+        {component === 'inline-slider' && <SliderConfigurator />}
+        {component === 'buttons' && <ButtonConfigurator />}
+        {component === 'chip' && <ChipConfigurator />}
       </section>
     </div>
   )
