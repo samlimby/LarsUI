@@ -1,0 +1,185 @@
+.lars-chip {
+  --chip-background: var(--chip-default-bg, #d5efff);
+  --chip-foreground: var(--chip-default-text, #0588f0);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  border-radius: 4px;
+  color: var(--chip-foreground);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lars-chip[data-burst='true'] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.lars-chip[data-burst='true']::before {
+  position: absolute;
+  inset: -10px -8px;
+  content: '';
+}
+
+.lars-chip[data-burst='true']:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.lars-chip--neutral {
+  --chip-background: var(--chip-neutral-bg, #e8e8e8);
+  --chip-foreground: var(--chip-neutral-text, #838383);
+}
+
+.lars-chip--default {
+  --chip-background: var(--chip-default-bg, #d5efff);
+  --chip-foreground: var(--chip-default-text, #0588f0);
+}
+
+.lars-chip--warning {
+  --chip-background: var(--chip-warning-bg, #ffdfb5);
+  --chip-foreground: var(--chip-warning-text, #ef5f00);
+}
+
+.lars-chip--positive {
+  --chip-background: var(--chip-positive-bg, #d6f1df);
+  --chip-foreground: var(--chip-positive-text, #2b9a66);
+}
+
+.lars-chip--error {
+  --chip-background: var(--chip-error-bg, #ffdbdc);
+  --chip-foreground: var(--chip-error-text, #dc3e42);
+}
+
+.lars-chip--small {
+  height: 24px;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.lars-chip--medium {
+  height: 26px;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.lars-chip--large {
+  height: 36px;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 16px;
+  line-height: 16px;
+}
+
+.lars-chip--monospace {
+  font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
+  font-variation-settings: 'wght' 600;
+  letter-spacing: .05em;
+}
+
+.lars-chip--sans-serif {
+  font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  font-variation-settings: 'wght' 650;
+  font-weight: 650;
+}
+
+.lars-chip__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.lars-chip--small .lars-chip__icon,
+.lars-chip--small .lars-chip__icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.lars-chip--medium .lars-chip__icon,
+.lars-chip--medium .lars-chip__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lars-chip--large .lars-chip__icon,
+.lars-chip--large .lars-chip__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lars-chip__icon svg { display: block; }
+.lars-chip__arrow { transform: rotate(-45deg); }
+
+.lars-chip__surface {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: var(--chip-background);
+  pointer-events: none;
+}
+
+.lars-chip__label,
+.lars-chip__characters {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.lars-chip__character {
+  display: inline-block;
+}
+
+.lars-chip__characters.is-animating .lars-chip__character {
+  animation: lars-chip-character-pop-in 500ms cubic-bezier(.34, 1.45, .64, 1) both;
+  animation-delay: calc(var(--chip-character-index) * 70ms);
+}
+
+@keyframes lars-chip-character-pop-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.lars-chip__burst {
+  position: absolute;
+  z-index: -2;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.lars-chip__particle {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  font-family: system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 20px;
+  pointer-events: none;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lars-chip__characters.is-animating .lars-chip__character { animation: none; }
+}
