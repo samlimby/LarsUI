@@ -1112,6 +1112,10 @@ html[data-theme='dark'] .lars-property-select__separator { background: #343434; 
   .lars-github:hover,
   .lars-theme:hover,
   .lars-footer a:hover { color: var(--lars-text-primary); }
+  .lars-footer__author:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
   .lars-copy:hover { background: var(--lars-copy-hover); }
   .lars-install__copy:hover { background: var(--lars-copy-hover); color: var(--lars-text-primary); }
   .lars-view:hover { background: var(--lars-view-hover); }

@@ -34,6 +34,48 @@ const CHIP_SIZE_OPTIONS: ReadonlyArray<{ label: string; value: ChipSize }> = [
   { label: 'Medium (14px)', value: 'medium' },
   { label: 'Large (16px)', value: 'large' },
 ]
+const INLINE_SLIDER_VIEW_CODE = `import { useState } from 'react'
+import { InlineSlider } from 'larsui'
+import 'larsui/style.css'
+
+export function Example() {
+  const [value, setValue] = useState(300)
+
+  return (
+    <InlineSlider
+      label="Size"
+      value={value}
+      min={160}
+      max={360}
+      step={1}
+      continuous
+      showTicks={false}
+      size="default"
+      onValueChange={setValue}
+    />
+  )
+}`
+const BUTTON_VIEW_CODE = `import { Button } from 'larsui'
+import 'larsui/style.css'
+
+<Button
+  variant="primary"
+  shape="full"
+>
+  View
+</Button>`
+const CHIP_VIEW_CODE = `import { Chip } from 'larsui'
+import 'larsui/style.css'
+
+<Chip
+  variant="default"
+  iconPosition="start"
+  size="small"
+  typeface="monospace"
+  burst={false}
+>
+  12%
+</Chip>`
 type Theme = 'light' | 'dark'
 type ComponentRoute = 'inline-slider' | 'buttons' | 'chip'
 type Route = 'home' | ComponentRoute
@@ -167,9 +209,9 @@ function SliderStage() {
   const [animateSelection, setAnimateSelection] = useState(true)
   const [copied, setCopied] = useState(false)
 
-  async function copyInstallCommand() {
+  async function copyComponentCode() {
     try {
-      await navigator.clipboard.writeText('npm install larsui')
+      await navigator.clipboard.writeText(INLINE_SLIDER_VIEW_CODE)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
@@ -179,7 +221,7 @@ function SliderStage() {
 
   return (
     <div className="lars-stage">
-      <BaseButton className="lars-copy" type="button" onClick={copyInstallCommand} aria-label="Copy install command">
+      <BaseButton className="lars-copy" type="button" onClick={copyComponentCode} aria-label="Copy Inline Slider code">
         {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
       </BaseButton>
       <div className="lars-slider-card">
@@ -247,9 +289,9 @@ function ButtonStage() {
   const [animateSelection, setAnimateSelection] = useState(true)
   const [copied, setCopied] = useState(false)
 
-  async function copyInstallCommand() {
+  async function copyComponentCode() {
     try {
-      await navigator.clipboard.writeText('npm install larsui')
+      await navigator.clipboard.writeText(BUTTON_VIEW_CODE)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
@@ -259,7 +301,7 @@ function ButtonStage() {
 
   return (
     <div className="lars-stage">
-      <BaseButton className="lars-copy" type="button" onClick={copyInstallCommand} aria-label="Copy install command">
+      <BaseButton className="lars-copy" type="button" onClick={copyComponentCode} aria-label="Copy Button code">
         {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
       </BaseButton>
 
@@ -324,9 +366,9 @@ function ChipStage() {
   const [typeface, setTypeface] = useState<ChipTypeface>('sans-serif')
   const [animateSelection, setAnimateSelection] = useState(true)
 
-  async function copyInstallCommand() {
+  async function copyComponentCode() {
     try {
-      await navigator.clipboard.writeText('npm install larsui')
+      await navigator.clipboard.writeText(CHIP_VIEW_CODE)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
@@ -336,7 +378,7 @@ function ChipStage() {
 
   return (
     <div className="lars-stage lars-stage--chip">
-      <BaseButton className="lars-copy" type="button" onClick={copyInstallCommand} aria-label="Copy install command">
+      <BaseButton className="lars-copy" type="button" onClick={copyComponentCode} aria-label="Copy Chip code">
         {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
       </BaseButton>
       <ChipPreview typeface={typeface} />
@@ -1280,7 +1322,17 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
       </section>
 
       <footer className="lars-footer">
-        <span>Made by Sam Limby</span>
+        <span>
+          Made by{' '}
+          <a
+            className="lars-footer__author"
+            href="https://www.samlimby.com"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Sam Limby
+          </a>
+        </span>
         <div className="lars-footer__links">
           <a href="mailto:samlimby2@gmail.com">Feedback</a>
           <span aria-hidden="true">•</span>
