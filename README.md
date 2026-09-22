@@ -20,4 +20,6 @@ import 'larsui/style.css'
 <Chip variant="positive" iconPosition="start" size="small" burst>Approved</Chip>
 ```
 
+When a custom `icon` is provided without an `iconPosition`, the Chip renders it at the start rather than silently dropping it.
+
 The components accept Base UI props and can be themed with the CSS custom properties included in the generated stylesheet.

@@ -587,6 +587,11 @@
 .lars-detail__intro h1,
 .lars-detail__intro p { margin: 0; }
 
+.lars-detail__title {
+  display: flex;
+  align-items: flex-start;
+}
+
 .lars-detail__intro h1 {
   color: var(--lars-text-primary);
   font-size: 24px;
@@ -595,16 +600,16 @@
   line-height: 32px;
 }
 
-.lars-detail__intro h1 sup {
+.lars-detail__title sup {
   position: relative;
-  top: -.2em;
+  top: 1px;
   margin-left: 3px;
   font-size: 10px;
   font-weight: 500;
-  line-height: 0;
+  line-height: 16px;
 }
 
-.lars-detail__intro h1 sup a {
+.lars-detail__title sup a {
   color: var(--lars-low-emphasis);
   text-decoration: none;
 }

@@ -516,15 +516,21 @@ function PropertySelect<T extends string>({
   options: ReadonlyArray<{ label: string; value: T }>
   value: T
 }) {
-  const menuOptions = options.filter((option) => option.value !== value)
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="lars-property lars-property--stacked lars-property-select">
       <Select.Root
         items={[...options]}
+        modal={false}
+        onOpenChange={(nextOpen) => setOpen(nextOpen)}
         onValueChange={(nextValue) => {
-          if (nextValue !== null) onChange(nextValue)
+          if (nextValue !== null) {
+            onChange(nextValue)
+            setOpen(false)
+          }
         }}
+        open={open}
         value={value}
       >
         <Select.Label className="lars-property-select__label">{label}</Select.Label>
@@ -544,7 +550,7 @@ function PropertySelect<T extends string>({
           >
             <Select.Popup className="lars-property-select__popup">
               <Select.List className="lars-property-select__list">
-                {menuOptions.map((option, index) => (
+                {options.map((option, index) => (
                   <Fragment key={option.value}>
                     {index > 0 && <Select.Separator className="lars-property-select__separator" />}
                     <Select.Item className="lars-property-select__item" value={option.value}>
@@ -1334,8 +1340,8 @@ function ComponentPage({
 
       <section className="lars-detail" aria-labelledby="component-detail-title">
         <header className="lars-detail__intro">
-          <h1 id="component-detail-title">
-            {title}
+          <div className="lars-detail__title">
+            <h1 id="component-detail-title">{title}</h1>
             {component === 'chip' && (
               <sup>
                 <a
@@ -1350,7 +1356,7 @@ function ComponentPage({
                 </a>
               </sup>
             )}
-          </h1>
+          </div>
           <p>{description}</p>
         </header>
 

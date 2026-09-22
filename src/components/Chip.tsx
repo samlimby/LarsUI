@@ -16,6 +16,7 @@ export type ChipTypeface = 'monospace' | 'sans-serif'
 
 export type ChipProps = ComponentProps<'span'> & {
   burst?: boolean
+  /** Custom icons render at the start when no icon position is specified. */
   icon?: ReactNode
   iconPosition?: ChipIconPosition
   size?: ChipSize
@@ -245,14 +246,16 @@ export function Chip({
   const reduceMotion = Boolean(useReducedMotion())
   const burstId = useRef(0)
   const [bursts, setBursts] = useState<BurstInstance[]>([])
-  const defaultIcon = iconPosition === 'end' ? <ArrowIcon /> : <SemanticIcon variant={variant} />
+  const hasCustomIcon = icon !== undefined && icon !== null
+  const resolvedIconPosition = hasCustomIcon && iconPosition === 'none' ? 'start' : iconPosition
+  const defaultIcon = resolvedIconPosition === 'end' ? <ArrowIcon /> : <SemanticIcon variant={variant} />
   const renderedIcon = icon ?? defaultIcon
   const classes = [
     'lars-chip',
     `lars-chip--${variant}`,
     `lars-chip--${size}`,
     `lars-chip--${typeface}`,
-    `lars-chip--icon-${iconPosition}`,
+    `lars-chip--icon-${resolvedIconPosition}`,
     className,
   ].filter(Boolean).join(' ')
 
@@ -276,7 +279,7 @@ export function Chip({
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLSpanElement>) => {
     if (burst && (event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault()
-      triggerBurst(event.currentTarget)
+      event.currentTarget.click()
     }
     onKeyDown?.(event)
   }
@@ -300,9 +303,9 @@ export function Chip({
         style={{ borderRadius: 4 }}
         transition={{ type: 'spring', duration: .32, bounce: 0 }}
       />
-      {iconPosition === 'start' && <ChipIcon>{renderedIcon}</ChipIcon>}
+      {resolvedIconPosition === 'start' && <ChipIcon>{renderedIcon}</ChipIcon>}
       <ChipLabel typeface={typeface}>{children}</ChipLabel>
-      {iconPosition === 'end' && <ChipIcon>{renderedIcon}</ChipIcon>}
+      {resolvedIconPosition === 'end' && <ChipIcon>{renderedIcon}</ChipIcon>}
       {bursts.map((item) => (
         <EmojiBurst
           burst={item}
