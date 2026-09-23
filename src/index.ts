@@ -19,3 +19,12 @@ export {
   type InlineSliderProps,
   type InlineSliderSize,
 } from './components/InlineSlider'
+
+export {
+  SegmentedControl,
+  type SegmentedControlContent,
+  type SegmentedControlOption,
+  type SegmentedControlProps,
+  type SegmentedControlSize,
+  type SegmentedControlType,
+} from './components/SegmentedControl'

@@ -336,6 +336,16 @@
 
 .lars-stage--chip { padding-bottom: 58px; }
 
+.lars-segmented-canvas {
+  justify-content: safe center;
+  overflow-x: auto;
+}
+
+.lars-segmented-canvas .lars-segmented-control {
+  flex-shrink: 0;
+  max-width: none;
+}
+
 .chip-preview {
   display: flex;
   flex-direction: column;
