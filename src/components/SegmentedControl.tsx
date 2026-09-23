@@ -16,7 +16,9 @@ export type SegmentedControlOption = {
 export type SegmentedControlProps = {
   /** Accessible name for the group of choices. */
   label: string
+  /** Between 2 and 5 choices. Invalid counts render nothing. */
   options: readonly SegmentedControlOption[]
+  /** Falls back visually to the first option when it is not in options. */
   value?: string
   defaultValue?: string
   onValueChange?: (value: string) => void
@@ -41,14 +43,21 @@ export function SegmentedControl({
   disabled = false,
   className = '',
 }: SegmentedControlProps) {
-  if (options.length < 2 || options.length > 5) {
-    throw new RangeError('SegmentedControl requires between 2 and 5 options.')
-  }
-
   const id = useId()
   const prefersReducedMotion = useReducedMotion()
-  const [internalValue, setInternalValue] = useState(defaultValue ?? options[0].value)
-  const selectedValue = value ?? internalValue
+  const [internalValue, setInternalValue] = useState(defaultValue ?? options[0]?.value ?? '')
+
+  if (options.length < 2 || options.length > 5) {
+    if (import.meta.env.DEV) {
+      console.warn('SegmentedControl requires between 2 and 5 options; nothing was rendered.')
+    }
+    return null
+  }
+
+  const requestedValue = value ?? internalValue
+  const selectedValue = options.some((option) => option.value === requestedValue)
+    ? requestedValue
+    : options[0].value
 
   return (
     <fieldset

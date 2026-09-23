@@ -134,8 +134,11 @@
 .lars-segmented-control__segment:has(input:focus-visible) { outline: 2px solid var(--segment-selected-text); outline-offset: 2px; }
 
 .lars-page[data-theme='dark'] .lars-segmented-control {
-  --segment-border: #626262;
-  --segment-divider: #575757;
+  --segment-bg: #313131; /* Radix Gray Dark 5 */
+  --segment-selected-bg: #222222; /* Radix Gray Dark 3 */
+  --segment-text: #7b7b7b; /* Radix Gray Dark 10 */
+  --segment-border: #484848; /* Radix Gray Dark 7 */
+  --segment-divider: #3a3a3a; /* Radix Gray Dark 6 */
 }
 
 @media (hover: hover) and (pointer: fine) {

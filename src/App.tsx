@@ -1348,6 +1348,7 @@ function SegmentedControlConfigurator() {
   const [content, setContent] = useState<SegmentedControlContent>('text-only')
   const [quantity, setQuantity] = useState(3)
   const [value, setValue] = useState('details')
+  const [disabled, setDisabled] = useState(false)
   const options = SEGMENT_OPTIONS.slice(0, quantity)
   const codeOptions = options.map(({ label, value: optionValue }) =>
     `    { label: '${label}', value: '${optionValue}'${content === 'text-icon' ? ', icon: <DiamondIcon />' : ''} },`
@@ -1368,7 +1369,7 @@ export function Example() {
       label="View"
       type="${type}"
       size="${size}"
-      content="${content}"
+      content="${content}"${disabled ? '\n      disabled' : ''}
       options={[
 ${codeOptions}
       ]}
@@ -1390,6 +1391,7 @@ ${codeOptions}
             size={size}
             type={type}
             value={value}
+            disabled={disabled}
           />
         </div>
 
@@ -1427,6 +1429,12 @@ ${codeOptions}
               }}
               options={[2, 3, 4, 5].map((count) => ({ label: String(count), value: String(count) }))}
               value={String(quantity)}
+            />
+            <SegmentedControl
+              label="Disabled"
+              onChange={(next) => setDisabled(next === 'true')}
+              options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+              value={disabled ? 'true' : 'false'}
             />
           </div>
         </aside>
