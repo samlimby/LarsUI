@@ -11,6 +11,13 @@ import {
   type ChipVariant,
 } from './components/Chip'
 import { InlineSlider, type InlineSliderSize } from './components/InlineSlider'
+import {
+  SegmentedControl as LarsSegmentedControl,
+  type SegmentedControlContent,
+  type SegmentedControlOption,
+  type SegmentedControlSize,
+  type SegmentedControlType,
+} from './components/SegmentedControl'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -34,6 +41,12 @@ const CHIP_SIZE_OPTIONS: ReadonlyArray<{ label: string; value: ChipSize }> = [
   { label: 'Medium (14px)', value: 'medium' },
   { label: 'Large (16px)', value: 'large' },
 ]
+const SEGMENT_LABELS = ['Overview', 'Details', 'Activity', 'Files', 'History'] as const
+const SEGMENT_OPTIONS: readonly SegmentedControlOption[] = SEGMENT_LABELS.map((label) => ({
+  label,
+  value: label.toLowerCase(),
+  icon: <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.6 14.4 8 8 14.4 1.6 8 8 1.6Z" fill="currentColor" /></svg>,
+}))
 const INLINE_SLIDER_VIEW_CODE = `import { useState } from 'react'
 import { InlineSlider } from 'larsui'
 import 'larsui/style.css'
@@ -76,8 +89,31 @@ import 'larsui/style.css'
 >
   12%
 </Chip>`
+const SEGMENTED_CONTROL_VIEW_CODE = `import { useState } from 'react'
+import { SegmentedControl } from 'larsui'
+import 'larsui/style.css'
+
+export function Example() {
+  const [value, setValue] = useState('details')
+
+  return (
+    <SegmentedControl
+      label="View"
+      type="cornered"
+      size="default"
+      content="text-only"
+      options={[
+        { label: 'Overview', value: 'overview' },
+        { label: 'Details', value: 'details' },
+        { label: 'Activity', value: 'activity' },
+      ]}
+      value={value}
+      onValueChange={setValue}
+    />
+  )
+}`
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'chip'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -86,6 +122,7 @@ function getRouteFromHash(): Route {
   if (window.location.hash === '#/components/inline-slider') return 'inline-slider'
   if (window.location.hash === '#/components/buttons') return 'buttons'
   if (window.location.hash === '#/components/chip') return 'chip'
+  if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
   return 'home'
 }
 
@@ -410,6 +447,48 @@ function ChipStage() {
           type="button"
         >
           Mono
+        </BaseButton>
+      </div>
+    </div>
+  )
+}
+
+function SegmentedControlStage() {
+  const [type, setType] = useState<SegmentedControlType>('cornered')
+  const [value, setValue] = useState('details')
+  const [copied, setCopied] = useState(false)
+
+  async function copyComponentCode() {
+    try {
+      await navigator.clipboard.writeText(SEGMENTED_CONTROL_VIEW_CODE)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="lars-stage lars-stage--segmented-control">
+      <BaseButton className="lars-copy" type="button" onClick={copyComponentCode} aria-label="Copy Segmented Control code">
+        {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
+      </BaseButton>
+      <LarsSegmentedControl
+        content="text-only"
+        label="Preview view"
+        onValueChange={setValue}
+        options={SEGMENT_OPTIONS.slice(0, 3)}
+        size="default"
+        type={type}
+        value={value}
+      />
+      <div className="lars-modes" aria-label="Segmented control type" data-selected={type === 'cornered' ? 'first' : 'second'}>
+        <span className="lars-modes__indicator" aria-hidden="true" />
+        <BaseButton aria-pressed={type === 'cornered'} className={type === 'cornered' ? 'is-active' : ''} onClick={() => setType('cornered')} type="button">
+          Cornered
+        </BaseButton>
+        <BaseButton aria-pressed={type === 'square'} className={type === 'square' ? 'is-active' : ''} onClick={() => setType('square')} type="button">
+          Square
         </BaseButton>
       </div>
     </div>
@@ -1263,6 +1342,108 @@ import 'larsui/style.css'
   )
 }
 
+function SegmentedControlConfigurator() {
+  const [type, setType] = useState<SegmentedControlType>('cornered')
+  const [size, setSize] = useState<SegmentedControlSize>('default')
+  const [content, setContent] = useState<SegmentedControlContent>('text-only')
+  const [quantity, setQuantity] = useState(3)
+  const [value, setValue] = useState('details')
+  const [disabled, setDisabled] = useState(false)
+  const options = SEGMENT_OPTIONS.slice(0, quantity)
+  const codeOptions = options.map(({ label, value: optionValue }) =>
+    `    { label: '${label}', value: '${optionValue}'${content === 'text-icon' ? ', icon: <DiamondIcon />' : ''} },`
+  ).join('\n')
+  const code = `import { useState } from 'react'
+import { SegmentedControl } from 'larsui'
+import 'larsui/style.css'
+${content === 'text-icon' ? `
+function DiamondIcon() {
+  return <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.6 14.4 8 8 14.4 1.6 8Z" /></svg>
+}
+` : ''}
+export function Example() {
+  const [value, setValue] = useState('${value}')
+
+  return (
+    <SegmentedControl
+      label="View"
+      type="${type}"
+      size="${size}"
+      content="${content}"${disabled ? '\n      disabled' : ''}
+      options={[
+${codeOptions}
+      ]}
+      value={value}
+      onValueChange={setValue}
+    />
+  )
+}`
+
+  return (
+    <>
+      <div className="lars-configurator">
+        <div className="lars-stage lars-component-canvas lars-segmented-canvas">
+          <LarsSegmentedControl
+            content={content}
+            label="View"
+            onValueChange={setValue}
+            options={options}
+            size={size}
+            type={type}
+            value={value}
+            disabled={disabled}
+          />
+        </div>
+
+        <aside className="lars-properties" aria-labelledby="segmented-control-properties-title">
+          <header className="lars-properties__header">
+            <h2 id="segmented-control-properties-title">Properties</h2>
+          </header>
+          <div className="lars-properties__fields">
+            <SegmentedControl
+              label="Size"
+              onChange={setSize}
+              options={[{ label: 'Default', value: 'default' }, { label: 'Large', value: 'large' }]}
+              value={size}
+            />
+            <PropertySelect
+              label="Type"
+              onChange={setType}
+              options={[{ label: 'Cornered', value: 'cornered' }, { label: 'Square', value: 'square' }]}
+              value={type}
+            />
+            <PropertySelect
+              label="Content"
+              onChange={setContent}
+              options={[{ label: 'Text only', value: 'text-only' }, { label: 'Text & icon', value: 'text-icon' }]}
+              value={content}
+            />
+            <PropertySelect
+              label="Quantity"
+              onChange={(next) => {
+                const count = Number(next)
+                setQuantity(count)
+                if (!SEGMENT_OPTIONS.slice(0, count).some((option) => option.value === value)) {
+                  setValue(SEGMENT_OPTIONS[0].value)
+                }
+              }}
+              options={[2, 3, 4, 5].map((count) => ({ label: String(count), value: String(count) }))}
+              value={String(quantity)}
+            />
+            <SegmentedControl
+              label="Disabled"
+              onChange={(next) => setDisabled(next === 'true')}
+              options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+              value={disabled ? 'true' : 'false'}
+            />
+          </div>
+        </aside>
+      </div>
+      <CodeBlock code={code} fileName="SegmentedControl.tsx" label="Configured segmented control usage code" />
+    </>
+  )
+}
+
 function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   return (
     <div className="lars-shell">
@@ -1321,6 +1502,18 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
         </div>
       </section>
 
+      <section className="lars-showcase lars-showcase--segmented-control" aria-labelledby="segmented-control-title">
+        <SegmentedControlStage />
+
+        <div className="lars-showcase__meta">
+          <div className="lars-showcase__copy">
+            <h2 id="segmented-control-title">Segmented Control</h2>
+            <p>Choose one view from a compact set of related options.</p>
+          </div>
+          <a className="lars-view" href="#/components/segmented-control">View</a>
+        </div>
+      </section>
+
       <footer className="lars-footer">
         <span>
           Made by{' '}
@@ -1364,6 +1557,10 @@ function ComponentPage({
     chip: {
       description: 'A compact label for statuses, categories, and concise metadata.',
       title: 'Chip',
+    },
+    'segmented-control': {
+      description: 'Choose one view from a compact set of related options.',
+      title: 'Segmented Control',
     },
   }
   const { description, title } = details[component]
@@ -1415,6 +1612,7 @@ function ComponentPage({
         {component === 'inline-slider' && <SliderConfigurator />}
         {component === 'buttons' && <ButtonConfigurator />}
         {component === 'chip' && <ChipConfigurator />}
+        {component === 'segmented-control' && <SegmentedControlConfigurator />}
       </section>
     </div>
   )
