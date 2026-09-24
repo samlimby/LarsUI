@@ -28,3 +28,10 @@ export {
   type SegmentedControlSize,
   type SegmentedControlType,
 } from './components/SegmentedControl'
+
+export {
+  Table,
+  type TableColumn,
+  type TableProps,
+  type TableVariant,
+} from './components/Table'

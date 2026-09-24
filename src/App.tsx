@@ -18,6 +18,11 @@ import {
   type SegmentedControlSize,
   type SegmentedControlType,
 } from './components/SegmentedControl'
+import {
+  Table as LarsTable,
+  type TableColumn,
+  type TableVariant,
+} from './components/Table'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -112,8 +117,67 @@ export function Example() {
     />
   )
 }`
+type TeamMember = {
+  id: string
+  name: string
+  role: string
+  team: string
+  status: string
+  location: string
+  updated: string
+}
+const TABLE_COLUMNS: readonly TableColumn<TeamMember>[] = [
+  { key: 'name', header: 'Name' },
+  { key: 'role', header: 'Role' },
+  { key: 'team', header: 'Team' },
+  { key: 'status', header: 'Status' },
+  { key: 'location', header: 'Location' },
+  { key: 'updated', header: 'Updated' },
+]
+const TABLE_ROWS: readonly TeamMember[] = [
+  { id: 'ada', name: 'Ada Lin', role: 'Design', team: 'Core', status: 'Active', location: 'London', updated: '2m ago' },
+  { id: 'noah', name: 'Noah Kim', role: 'Engineer', team: 'Growth', status: 'Active', location: 'Seoul', updated: '12m ago' },
+  { id: 'maya', name: 'Maya Roy', role: 'Research', team: 'Core', status: 'Away', location: 'Paris', updated: '1h ago' },
+  { id: 'liam', name: 'Liam Fox', role: 'Product', team: 'Mobile', status: 'Active', location: 'Berlin', updated: '3h ago' },
+  { id: 'sara', name: 'Sara Iqbal', role: 'Engineer', team: 'Core', status: 'Away', location: 'Lahore', updated: '1d ago' },
+  { id: 'theo', name: 'Theo Park', role: 'Design', team: 'Growth', status: 'Active', location: 'Toronto', updated: '2d ago' },
+]
+const TABLE_CONFIG_ROWS: readonly TeamMember[] = Array.from({ length: 100 }, (_, index) => {
+  const source = TABLE_ROWS[index % TABLE_ROWS.length]
+  const group = Math.floor(index / TABLE_ROWS.length) + 1
+  return {
+    ...source,
+    id: `${source.id}-${index + 1}`,
+    name: group === 1 ? source.name : `${source.name} ${group}`,
+  }
+})
+const TABLE_VIEW_CODE = `import { Table, type TableColumn } from 'larsui'
+import 'larsui/style.css'
+
+type Member = {
+  id: string
+  name: string
+  role: string
+  status: string
+}
+
+const columns: TableColumn<Member>[] = [
+  { key: 'name', header: 'Name' },
+  { key: 'role', header: 'Role' },
+  { key: 'status', header: 'Status' },
+]
+
+<Table
+  ariaLabel="Team members"
+  columns={columns}
+  getRowId={(row) => row.id}
+  rows={members}
+  stickyHeader
+  onRowAction={(row) => openMember(row.id)}
+/>
+`
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -123,6 +187,7 @@ function getRouteFromHash(): Route {
   if (window.location.hash === '#/components/buttons') return 'buttons'
   if (window.location.hash === '#/components/chip') return 'chip'
   if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
+  if (window.location.hash === '#/components/table') return 'table'
   return 'home'
 }
 
@@ -495,6 +560,81 @@ function SegmentedControlStage() {
   )
 }
 
+function TablePreview({
+  rows = TABLE_ROWS,
+  selectable = true,
+  striped = true,
+  variant = 'default',
+}: {
+  rows?: readonly TeamMember[]
+  selectable?: boolean
+  striped?: boolean
+  variant?: TableVariant
+}) {
+  return (
+    <LarsTable
+      ariaLabel="Team members"
+      className="lars-table-preview"
+      columns={TABLE_COLUMNS}
+      getRowId={(row) => row.id}
+      onRowAction={() => undefined}
+      rowActionLabel={(row) => `Open actions for ${row.name}`}
+      rows={rows}
+      selectable={selectable}
+      stickyHeader
+      striped={striped}
+      variant={variant}
+    />
+  )
+}
+
+function TableStage() {
+  const [copied, setCopied] = useState(false)
+  const [variant, setVariant] = useState<TableVariant>('default')
+
+  async function copyComponentCode() {
+    try {
+      const code = variant === 'default'
+        ? TABLE_VIEW_CODE
+        : TABLE_VIEW_CODE.replace('  rows={members}\n', `  rows={members}\n  variant="${variant}"\n`)
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="lars-stage lars-stage--table">
+      <BaseButton className="lars-copy" type="button" onClick={copyComponentCode} aria-label="Copy Table code">
+        {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
+      </BaseButton>
+      <TablePreview variant={variant} />
+      <div className="lars-table-stage__controls">
+        <div
+          aria-label="Table variant"
+          className="lars-modes lars-modes--table-variant"
+          data-selected={variant === 'default' ? 'first' : variant === 'compact' ? 'second' : 'third'}
+        >
+          <span className="lars-modes__indicator" aria-hidden="true" />
+          {(['default', 'compact', 'relaxed'] as const).map((option) => (
+            <BaseButton
+              aria-pressed={variant === option}
+              className={variant === option ? 'is-active' : ''}
+              key={option}
+              onClick={() => setVariant(option)}
+              type="button"
+            >
+              {option[0].toUpperCase() + option.slice(1)}
+            </BaseButton>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CodeBlock({
   code,
   fileName,
@@ -568,11 +708,13 @@ function CodeBlock({
 }
 
 function SegmentedControl<T extends string>({
+  className = '',
   label,
   onChange,
   options,
   value,
 }: {
+  className?: string
   label: string
   onChange: (value: T) => void
   options: ReadonlyArray<{ label: string; value: T }>
@@ -582,7 +724,7 @@ function SegmentedControl<T extends string>({
   const prefersReducedMotion = useReducedMotion()
 
   return (
-    <div className="lars-property lars-property--segmented">
+    <div className={`lars-property lars-property--segmented${className ? ` ${className}` : ''}`}>
       <span>{label}</span>
       <div className="lars-segments" role="group" aria-label={label}>
         <LayoutGroup id={controlId}>
@@ -1444,6 +1586,136 @@ ${codeOptions}
   )
 }
 
+function TableConfigurator() {
+  const [striped, setStriped] = useState(true)
+  const [selectable, setSelectable] = useState(true)
+  const [variant, setVariant] = useState<TableVariant>('default')
+  const [rowCount, setRowCount] = useState(6)
+  const [columnCount, setColumnCount] = useState(6)
+  const [showActions, setShowActions] = useState(true)
+  const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const configuredColumns = TABLE_COLUMNS.slice(0, columnCount)
+  const codeColumns = configuredColumns
+    .map((column) => `  { key: '${String(column.key)}', header: '${String(column.header)}' },`)
+    .join('\n')
+
+  const code = `import { Table, type TableColumn } from 'larsui'
+import 'larsui/style.css'
+
+type Member = {
+  id: string
+  name: string
+  role: string
+  team: string
+  status: string
+  location: string
+  updated: string
+}
+
+const columns: TableColumn<Member>[] = [
+${codeColumns}
+]
+
+<Table
+  ariaLabel="Team members"
+  columns={columns}
+  getRowId={(row) => row.id}
+  rows={members}
+  stickyHeader${variant === 'default' ? '' : `
+  variant="${variant}"`}${selectable ? `
+  selectedRowIds={selectedRows}
+  onSelectedRowIdsChange={setSelectedRows}` : `
+  selectable={false}`}${striped || variant === 'relaxed' ? '' : `
+  striped={false}`}${showActions ? `
+  onRowAction={(row) => openMember(row.id)}` : ''}
+/>
+`
+
+  return (
+    <>
+      <div className="lars-configurator">
+        <div className="lars-stage lars-component-canvas lars-table-canvas">
+          <LarsTable
+            ariaLabel="Team members preview"
+            className="lars-table-preview"
+            columns={configuredColumns}
+            getRowId={(row) => row.id}
+            onRowAction={showActions ? () => undefined : undefined}
+            onSelectedRowIdsChange={setSelectedRows}
+            rowActionLabel={(row) => `Open actions for ${row.name}`}
+            rows={TABLE_CONFIG_ROWS.slice(0, rowCount)}
+            selectable={selectable}
+            selectedRowIds={selectedRows}
+            stickyHeader
+            striped={striped}
+            variant={variant}
+          />
+        </div>
+
+        <aside className="lars-properties" aria-labelledby="table-properties-title">
+          <header className="lars-properties__header">
+            <h2 id="table-properties-title">Properties</h2>
+          </header>
+          <div className="lars-properties__fields">
+            <SegmentedControl
+              className="lars-property--table-variant"
+              label="Variant"
+              onChange={(next) => setVariant(next as TableVariant)}
+              options={[
+                { label: 'Default', value: 'default' },
+                { label: 'Compact', value: 'compact' },
+                { label: 'Relaxed', value: 'relaxed' },
+              ]}
+              value={variant}
+            />
+            {variant !== 'relaxed' && (
+              <SegmentedControl
+                label="Striped"
+                onChange={(next) => setStriped(next === 'true')}
+                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+                value={striped ? 'true' : 'false'}
+              />
+            )}
+            <SegmentedControl
+              label="Selectable"
+              onChange={(next) => setSelectable(next === 'true')}
+              options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+              value={selectable ? 'true' : 'false'}
+            />
+            <SegmentedControl
+              label="Actions"
+              onChange={(next) => setShowActions(next === 'true')}
+              options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+              value={showActions ? 'true' : 'false'}
+            />
+            <InlineSlider
+              continuous
+              label="Rows"
+              max={100}
+              min={1}
+              onValueChange={setRowCount}
+              showTicks={false}
+              step={1}
+              value={rowCount}
+            />
+            <InlineSlider
+              label="Columns"
+              linearStops
+              max={6}
+              min={2}
+              onValueChange={setColumnCount}
+              step={1}
+              stops={[3, 4, 5]}
+              value={columnCount}
+            />
+          </div>
+        </aside>
+      </div>
+      <CodeBlock code={code} fileName="Table.tsx" label="Configured table usage code" />
+    </>
+  )
+}
+
 function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   return (
     <div className="lars-shell">
@@ -1514,6 +1786,18 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
         </div>
       </section>
 
+      <section className="lars-showcase lars-showcase--table" aria-labelledby="table-title">
+        <TableStage />
+
+        <div className="lars-showcase__meta">
+          <div className="lars-showcase__copy">
+            <h2 id="table-title">Table</h2>
+            <p>Organise dense information into clear, selectable rows.</p>
+          </div>
+          <a className="lars-view" href="#/components/table">View</a>
+        </div>
+      </section>
+
       <footer className="lars-footer">
         <span>
           Made by{' '}
@@ -1561,6 +1845,10 @@ function ComponentPage({
     'segmented-control': {
       description: 'Choose one view from a compact set of related options.',
       title: 'Segmented Control',
+    },
+    table: {
+      description: 'Organise dense information into clear, selectable rows.',
+      title: 'Table',
     },
   }
   const { description, title } = details[component]
@@ -1613,6 +1901,7 @@ function ComponentPage({
         {component === 'buttons' && <ButtonConfigurator />}
         {component === 'chip' && <ChipConfigurator />}
         {component === 'segmented-control' && <SegmentedControlConfigurator />}
+        {component === 'table' && <TableConfigurator />}
       </section>
     </div>
   )
@@ -1641,6 +1930,7 @@ export default function App() {
       })
     }
     window.addEventListener('hashchange', handleHashChange)
+    handleHashChange()
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 

@@ -1,0 +1,323 @@
+.lars-table-wrap {
+  --table-border: var(--lars-divider, #e0e0e0);
+  --table-divider: var(--lars-footer-divider, #e8e8e8);
+  --table-header: var(--lars-copy-hover, #f0f0f0);
+  --table-row: var(--lars-container, #fcfcfc);
+  --table-row-alt: var(--lars-container-subtle, #f9f9f9);
+  --table-row-hover: color-mix(
+    in srgb,
+    var(--secondary-hover, #e8e8e8) 66%,
+    transparent
+  );
+  --table-row-selected: color-mix(
+    in srgb,
+    var(--radix-blue-3, #e6f4fe) 72%,
+    transparent
+  );
+  --table-header-text: var(--lars-low-emphasis, #838383);
+  --table-body-text: var(--lars-text-secondary, #646464);
+  --table-checkbox-border: var(--lars-line, #d9d9d9);
+  --table-checkbox-hover-background: var(--container-low_emphasis, #f9f9f9);
+  --table-checkbox-hover-border: color-mix(
+    in srgb,
+    var(--color-low_emphasis, #838383) 64%,
+    transparent
+  );
+  --table-checkbox-selected: var(--radix-blue-11, #0d74ce);
+  --table-focus: var(--lars-text-primary, #202020);
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--table-border);
+  border-radius: 8px;
+  background: var(--table-row);
+  scrollbar-width: thin;
+}
+
+.lars-table__variant-state {
+  width: 100%;
+  transform-origin: center;
+}
+
+.lars-table {
+  width: 100%;
+  min-width: max-content;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--table-body-text);
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  table-layout: fixed;
+}
+
+.lars-table__selection-col,
+.lars-table__action-col { width: 44px; }
+
+.lars-table th,
+.lars-table td {
+  height: 40px;
+  padding: 12px;
+  overflow: hidden;
+  background: var(--table-row);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lars-table thead th {
+  background: var(--table-header);
+  color: var(--table-header-text);
+  font-weight: 500;
+}
+
+.lars-table[data-sticky-header] thead th {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  box-shadow: 0 1px 0 var(--table-divider);
+}
+
+.lars-table tbody tr:not(:first-child) > * { border-top: 1px solid var(--table-divider); }
+.lars-table[data-striped] tbody tr:nth-child(even) > * { background: var(--table-row-alt); }
+.lars-table tbody tr[data-selected] > *,
+.lars-table[data-striped] tbody tr[data-selected] > * { background: var(--table-row-selected); }
+
+.lars-table .lars-table__selection-cell,
+.lars-table .lars-table__action-cell {
+  width: 44px;
+  padding: 0 16px;
+  text-align: center;
+}
+
+.lars-table[data-variant='compact'] th {
+  height: 32px;
+  padding: 8px;
+}
+
+.lars-table[data-variant='compact'] td {
+  height: 24px;
+  padding: 4px 8px;
+}
+
+.lars-table[data-variant='compact'] .lars-table__selection-col,
+.lars-table[data-variant='compact'] .lars-table__selection-cell {
+  width: 36px;
+}
+
+.lars-table[data-variant='compact'] .lars-table__selection-cell {
+  padding-inline: 12px;
+}
+
+.lars-table[data-variant='compact'] .lars-table__action-cell {
+  width: 44px;
+  padding-block: 0;
+  padding-inline: 16px;
+}
+
+.lars-table-wrap[data-variant='relaxed'] {
+  --table-row: transparent;
+  --table-row-alt: transparent;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.lars-table[data-variant='relaxed'] {
+  display: block;
+  min-width: var(--table-relaxed-min-width);
+}
+
+.lars-table[data-variant='relaxed'] colgroup { display: none; }
+
+.lars-table[data-variant='relaxed'] thead,
+.lars-table[data-variant='relaxed'] tbody {
+  display: block;
+  width: 100%;
+}
+
+.lars-table[data-variant='relaxed'] thead {
+  overflow: hidden;
+  border: 1px solid var(--table-divider);
+  border-radius: 999px;
+}
+
+.lars-table[data-variant='relaxed'] tbody {
+  width: calc(100% - 16px);
+  margin: 12px 8px 0;
+}
+
+.lars-table[data-variant='relaxed'] tr {
+  display: grid;
+  width: 100%;
+}
+
+.lars-table[data-variant='relaxed'][data-selectable] thead tr {
+  grid-template-columns: 52px repeat(var(--table-column-count), minmax(0, 1fr)) 52px;
+}
+
+.lars-table[data-variant='relaxed']:not([data-selectable]) thead tr {
+  grid-template-columns: repeat(var(--table-column-count), minmax(0, 1fr)) 52px;
+}
+
+.lars-table[data-variant='relaxed'][data-selectable] tbody tr {
+  grid-template-columns: 44px repeat(var(--table-column-count), minmax(0, 1fr)) 44px;
+}
+
+.lars-table[data-variant='relaxed']:not([data-selectable]) tbody tr {
+  grid-template-columns: repeat(var(--table-column-count), minmax(0, 1fr)) 44px;
+}
+
+.lars-table[data-variant='relaxed'] th,
+.lars-table[data-variant='relaxed'] td {
+  width: auto;
+  min-width: 0;
+}
+
+.lars-table[data-variant='relaxed'] thead th {
+  height: 40px;
+  padding: 12px;
+}
+
+.lars-table[data-variant='relaxed'] tbody td {
+  height: 40px;
+  padding: 12px;
+}
+
+.lars-table[data-variant='relaxed'] .lars-table__selection-cell,
+.lars-table[data-variant='relaxed'] .lars-table__action-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  padding: 0;
+}
+
+.lars-table[data-variant='relaxed'] thead .lars-table__selection-cell {
+  justify-content: flex-start;
+  padding-left: 24px;
+}
+
+.lars-table[data-variant='relaxed'][data-sticky-header] thead {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+}
+
+.lars-table[data-variant='relaxed'][data-sticky-header] thead th {
+  position: static;
+  box-shadow: none;
+}
+
+.lars-table[data-variant='relaxed'] .lars-table__empty {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.lars-table__checkbox-control {
+  position: relative;
+  display: block;
+  width: 12px;
+  height: 12px;
+  color: var(--table-checkbox-selected);
+}
+
+.lars-table__checkbox {
+  position: absolute;
+  inset: 0;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  appearance: none;
+  border: 1px solid var(--table-checkbox-border);
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+  transition: 120ms ease;
+  transition-property: background-color, border-color;
+}
+
+.lars-table__checkbox:checked,
+.lars-table__checkbox:indeterminate {
+  border-color: transparent;
+  background: transparent;
+}
+
+.lars-table__checkbox-icon {
+  position: absolute;
+  inset: 0;
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+  transform-origin: center;
+  transition:
+    opacity 100ms ease,
+    transform 140ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.lars-table__checkbox-control[data-state='checked'] .lars-table__checkbox-icon--selected,
+.lars-table__checkbox-control[data-state='indeterminate'] .lars-table__checkbox-icon--partial {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.lars-table__checkbox:focus-visible,
+.lars-table__action:focus-visible {
+  outline: 2px solid var(--table-focus);
+  outline-offset: 2px;
+}
+
+.lars-table__action {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  margin: 0 -6px;
+  padding: 6px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--table-body-text);
+}
+
+.lars-table__action svg { fill: currentColor; }
+.lars-table__empty { height: 80px; color: var(--table-header-text); text-align: center; }
+
+.lars-page[data-theme='dark'] .lars-table-wrap {
+  --table-checkbox-hover-background: var(--container-low_emphasis, #191919);
+  --table-checkbox-hover-border: color-mix(
+    in srgb,
+    var(--color-low_emphasis, #7b7b7b) 64%,
+    transparent
+  );
+  --table-row-hover: color-mix(
+    in srgb,
+    var(--secondary-hover, #303030) 66%,
+    transparent
+  );
+  --table-row-selected: color-mix(in srgb, #173246 72%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lars-table tbody tr:hover > *,
+  .lars-table[data-striped] tbody tr:hover > * { background: var(--table-row-hover); }
+  .lars-table__checkbox:not(:checked):not(:indeterminate):hover {
+    border-color: var(--table-checkbox-hover-border);
+    background: var(--table-checkbox-hover-background);
+  }
+  .lars-table__action:hover { background: var(--table-divider); color: var(--table-focus); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lars-table__checkbox-icon,
+  .lars-table__checkbox-control[data-state='checked'] .lars-table__checkbox-icon--selected,
+  .lars-table__checkbox-control[data-state='indeterminate'] .lars-table__checkbox-icon--partial {
+    transform: none;
+    transition: opacity 100ms ease;
+  }
+}
