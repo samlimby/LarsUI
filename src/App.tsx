@@ -134,6 +134,7 @@ const TABLE_COLUMNS: readonly TableColumn<TeamMember>[] = [
   { key: 'location', header: 'Location' },
   { key: 'updated', header: 'Updated' },
 ]
+const TABLE_FILTERABLE_COLUMNS = ['status'] as const
 const TABLE_ROWS: readonly TeamMember[] = [
   { id: 'ada', name: 'Ada Lin', role: 'Design', team: 'Core', status: 'Active', location: 'London', updated: '2m ago' },
   { id: 'noah', name: 'Noah Kim', role: 'Engineer', team: 'Growth', status: 'Active', location: 'Seoul', updated: '12m ago' },
@@ -170,9 +171,11 @@ const columns: TableColumn<Member>[] = [
 <Table
   ariaLabel="Team members"
   columns={columns}
+  filterableColumns={['status']}
   getRowId={(row) => row.id}
   rows={members}
   stickyHeader
+  toolbar
   onRowAction={(row) => openMember(row.id)}
 />
 `
@@ -576,6 +579,7 @@ function TablePreview({
       ariaLabel="Team members"
       className="lars-table-preview"
       columns={TABLE_COLUMNS}
+      filterableColumns={TABLE_FILTERABLE_COLUMNS}
       getRowId={(row) => row.id}
       onRowAction={() => undefined}
       rowActionLabel={(row) => `Open actions for ${row.name}`}
@@ -583,6 +587,7 @@ function TablePreview({
       selectable={selectable}
       stickyHeader
       striped={striped}
+      toolbar
       variant={variant}
     />
   )
@@ -597,7 +602,7 @@ function TableStage() {
       const code = variant === 'default'
         ? TABLE_VIEW_CODE
         : TABLE_VIEW_CODE.replace('  rows={members}\n', `  rows={members}\n  variant="${variant}"\n`)
-      await navigator.clipboard.writeText(code)
+      await navigator.clipboard.writeText(variant === 'relaxed' ? code.replace('  toolbar\n', '') : code)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
@@ -1066,6 +1071,67 @@ function parseChipCode(code: string) {
     typeface: typeface === 'monospace' || typeface === 'sans-serif' ? typeface as ChipTypeface : null,
     variant: CHIP_VARIANTS.includes(variant as ChipVariant) ? variant as ChipVariant : null,
   }
+}
+
+function quoteTableString(value: string) {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`
+}
+
+function parseTableString(raw: string, quote: string) {
+  if (quote === '"') {
+    try {
+      return JSON.parse(`"${raw}"`) as string
+    } catch {
+      return null
+    }
+  }
+
+  return raw.replace(/\\(\\|'|n|r|t)/g, (_, escaped: string) => {
+    if (escaped === 'n') return '\n'
+    if (escaped === 'r') return '\r'
+    if (escaped === 't') return '\t'
+    return escaped
+  })
+}
+
+function parseTableColumnHeaders(code: string) {
+  const columnBody = code.match(/\bconst\s+columns\b[\s\S]*?=\s*\[([\s\S]*?)\]/)?.[1]
+  if (!columnBody) return null
+
+  const knownKeys = new Set(TABLE_COLUMNS.map((column) => String(column.key)))
+  const headers: Record<string, string> = {}
+  const entries = columnBody.matchAll(/\{\s*key\s*:\s*(['"])([^'"\r\n]+)\1\s*,\s*header\s*:\s*(['"])((?:\\.|[^\\\r\n])*?)\3\s*,?\s*\}/g)
+
+  for (const match of entries) {
+    const [, , key, quote, rawHeader] = match
+    if (!knownKeys.has(key)) continue
+    const header = parseTableString(rawHeader, quote)
+    if (header !== null) headers[key] = header
+  }
+
+  return headers
+}
+
+function parseTableMembers(code: string) {
+  const memberBody = code.match(/\bconst\s+members\b[\s\S]*?=\s*\[([\s\S]*?)\n\]/)?.[1]
+  if (!memberBody) return null
+
+  const knownIds = new Set(TABLE_CONFIG_ROWS.map((row) => row.id))
+  const memberKeys = ['id', 'name', 'role', 'team', 'status', 'location', 'updated'] as const
+  const members: Record<string, TeamMember> = {}
+
+  for (const line of memberBody.split('\n')) {
+    const fields: Record<string, string> = {}
+    const entries = line.matchAll(/\b(id|name|role|team|status|location|updated):\s*(['"])((?:\\.|[^\\\r\n])*?)\2/g)
+    for (const [, key, quote, rawValue] of entries) {
+      const value = parseTableString(rawValue, quote)
+      if (value !== null) fields[key] = value
+    }
+    if (!knownIds.has(fields.id) || !memberKeys.every((key) => key in fields)) continue
+    members[fields.id] = fields as TeamMember
+  }
+
+  return members
 }
 
 function ButtonConfigurator() {
@@ -1588,15 +1654,25 @@ ${codeOptions}
 
 function TableConfigurator() {
   const [striped, setStriped] = useState(true)
+  const [toolbar, setToolbar] = useState(true)
   const [selectable, setSelectable] = useState(true)
   const [variant, setVariant] = useState<TableVariant>('default')
   const [rowCount, setRowCount] = useState(6)
   const [columnCount, setColumnCount] = useState(6)
   const [showActions, setShowActions] = useState(true)
   const [selectedRows, setSelectedRows] = useState<string[]>([])
-  const configuredColumns = TABLE_COLUMNS.slice(0, columnCount)
+  const [columnHeaders, setColumnHeaders] = useState<Record<string, string>>({})
+  const [memberValues, setMemberValues] = useState<Record<string, TeamMember>>({})
+  const configuredColumns = TABLE_COLUMNS.slice(0, columnCount).map((column) => ({
+    ...column,
+    header: columnHeaders[String(column.key)] ?? column.header,
+  }))
+  const configuredRows = TABLE_CONFIG_ROWS.slice(0, rowCount).map((row) => memberValues[row.id] ?? row)
   const codeColumns = configuredColumns
-    .map((column) => `  { key: '${String(column.key)}', header: '${String(column.header)}' },`)
+    .map((column) => `  { key: '${String(column.key)}', header: ${quoteTableString(String(column.header))} },`)
+    .join('\n')
+  const codeMembers = configuredRows
+    .map((row) => `  { id: ${quoteTableString(row.id)}, name: ${quoteTableString(row.name)}, role: ${quoteTableString(row.role)}, team: ${quoteTableString(row.team)}, status: ${quoteTableString(row.status)}, location: ${quoteTableString(row.location)}, updated: ${quoteTableString(row.updated)} },`)
     .join('\n')
 
   const code = `import { Table, type TableColumn } from 'larsui'
@@ -1616,12 +1692,18 @@ const columns: TableColumn<Member>[] = [
 ${codeColumns}
 ]
 
+const members: Member[] = [
+${codeMembers}
+]
+
 <Table
   ariaLabel="Team members"
   columns={columns}
+  filterableColumns={['status']}
   getRowId={(row) => row.id}
   rows={members}
-  stickyHeader${variant === 'default' ? '' : `
+  stickyHeader${toolbar && variant !== 'relaxed' ? `
+  toolbar` : ''}${variant === 'default' ? '' : `
   variant="${variant}"`}${selectable ? `
   selectedRowIds={selectedRows}
   onSelectedRowIdsChange={setSelectedRows}` : `
@@ -1639,15 +1721,17 @@ ${codeColumns}
             ariaLabel="Team members preview"
             className="lars-table-preview"
             columns={configuredColumns}
+            filterableColumns={TABLE_FILTERABLE_COLUMNS}
             getRowId={(row) => row.id}
             onRowAction={showActions ? () => undefined : undefined}
             onSelectedRowIdsChange={setSelectedRows}
             rowActionLabel={(row) => `Open actions for ${row.name}`}
-            rows={TABLE_CONFIG_ROWS.slice(0, rowCount)}
+            rows={configuredRows}
             selectable={selectable}
             selectedRowIds={selectedRows}
             stickyHeader
             striped={striped}
+            toolbar={toolbar}
             variant={variant}
           />
         </div>
@@ -1668,6 +1752,14 @@ ${codeColumns}
               ]}
               value={variant}
             />
+            {variant !== 'relaxed' && (
+              <SegmentedControl
+                label="Toolbar"
+                onChange={(next) => setToolbar(next === 'true')}
+                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+                value={toolbar ? 'true' : 'false'}
+              />
+            )}
             {variant !== 'relaxed' && (
               <SegmentedControl
                 label="Striped"
@@ -1711,7 +1803,30 @@ ${codeColumns}
           </div>
         </aside>
       </div>
-      <CodeBlock code={code} fileName="Table.tsx" label="Configured table usage code" />
+      <CodeBlock
+        code={code}
+        fileName="Table.tsx"
+        label="Editable table usage code"
+        onChange={(nextCode) => {
+          const nextHeaders = parseTableColumnHeaders(nextCode)
+          if (nextHeaders && Object.keys(nextHeaders).length > 0) {
+            setColumnHeaders((current) => {
+              if (Object.entries(nextHeaders).every(([key, value]) => current[key] === value)) return current
+              return { ...current, ...nextHeaders }
+            })
+          }
+
+          const nextMembers = parseTableMembers(nextCode)
+          if (nextMembers && Object.keys(nextMembers).length > 0) {
+            setMemberValues((current) => {
+              if (Object.entries(nextMembers).every(([id, member]) =>
+                Object.entries(member).every(([key, value]) => current[id]?.[key as keyof TeamMember] === value)
+              )) return current
+              return { ...current, ...nextMembers }
+            })
+          }
+        }}
+      />
     </>
   )
 }

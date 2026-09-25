@@ -1,5 +1,7 @@
+import { Menu } from '@base-ui/react/menu'
+import { ScrollArea } from '@base-ui/react/scroll-area'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import './Table.css'
 
@@ -15,6 +17,13 @@ export type TableColumn<RowData> = {
 
 export type TableVariant = 'default' | 'compact' | 'relaxed'
 
+const TABLE_VARIANT_TRANSITION = {
+  duration: 0.42,
+  ease: [0.22, 1, 0.36, 1] as const,
+}
+const EMPTY_FILTERABLE_COLUMNS: readonly string[] = []
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
+
 export type TableProps<RowData> = {
   columns: readonly TableColumn<RowData>[]
   rows: readonly RowData[]
@@ -24,6 +33,10 @@ export type TableProps<RowData> = {
   selectable?: boolean
   stickyHeader?: boolean
   striped?: boolean
+  /** Shows the Paper-style toolbar above the default and compact variants. */
+  toolbar?: boolean
+  /** Columns whose unique cell values appear in the toolbar filter menu. */
+  filterableColumns?: readonly (keyof RowData | string)[]
   /** Controls the table's vertical density and container treatment. */
   variant?: TableVariant
   selectedRowIds?: readonly string[]
@@ -107,6 +120,30 @@ function KebabIcon() {
   )
 }
 
+function FilterIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
+      <path d="M2 5C2 4.447 2.448 4 3 4L17 4C17.554 4 18 4.447 18 5 18 5.554 17.554 6 17 6L3 6C2.448 6 2 5.554 2 5zM5 10C5 9.447 5.448 9 6 9L14 9C14.554 9 15 9.447 15 10 15 10.554 14.554 11 14 11L6 11C5.448 11 5 10.554 5 10zM12 15C12 15.554 11.554 16 11 16L9 16C8.448 16 8 15.554 8 15 8 14.447 8.448 14 9 14L11 14C11.554 14 12 14.447 12 15z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function FilterCheckIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 12 12" width="12" height="12">
+      <path d="m2 6 2.5 2.5L10 3" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
+      <path d="M15 8.5C15 9.934 14.534 11.259 13.75 12.334L17.706 16.294C18.098 16.684 18.098 17.319 17.706 17.709 17.316 18.1 16.681 18.1 16.291 17.709L12.334 13.75C11.259 14.534 9.934 15 8.5 15 4.909 15 2 12.091 2 8.5 2 4.909 4.909 2 8.5 2 12.091 2 15 4.909 15 8.5zM8.5 13C10.984 13 13 10.984 13 8.5 13 6.016 10.984 4 8.5 4 6.016 4 4 6.016 4 8.5 4 10.984 6.016 13 8.5 13z" fill="currentColor" />
+    </svg>
+  )
+}
+
 export function Table<RowData>({
   columns,
   rows,
@@ -116,6 +153,8 @@ export function Table<RowData>({
   selectable = true,
   stickyHeader = false,
   striped = true,
+  toolbar = false,
+  filterableColumns = EMPTY_FILTERABLE_COLUMNS,
   variant = 'default',
   selectedRowIds,
   defaultSelectedRowIds = [],
@@ -125,14 +164,102 @@ export function Table<RowData>({
   emptyMessage = 'No results',
 }: TableProps<RowData>) {
   const prefersReducedMotion = useReducedMotion()
+  const frameRef = useRef<HTMLDivElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchButtonRef = useRef<HTMLButtonElement>(null)
+  const [height, setHeight] = useState<number>()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [animateSearch, setAnimateSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQueryClipped, setSearchQueryClipped] = useState(false)
+  const [selectedOnly, setSelectedOnly] = useState(false)
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [activeView, setActiveView] = useState<1 | 2>(2)
   const controlled = selectedRowIds !== undefined
   const [internalSelection, setInternalSelection] = useState<readonly string[]>(defaultSelectedRowIds)
   const selection = controlled ? selectedRowIds : internalSelection
   const selected = useMemo(() => new Set(selection), [selection])
-  const rowIds = useMemo(() => rows.map(getRowId), [getRowId, rows])
+  const showToolbar = toolbar && variant !== 'relaxed'
+  const filterSelected = selectedOnly && selectable
+  const filterGroups = useMemo(() => filterableColumns.flatMap((filterKey) => {
+    const key = String(filterKey)
+    const column = columns.find((candidate) => String(candidate.key) === key)
+    if (!column) return []
+    const values = [...new Set(rows.map((row) => (row as Record<string, unknown>)[key])
+      .filter((value): value is string | number => typeof value === 'string' || typeof value === 'number')
+      .map(String)
+      .filter(Boolean))]
+    return values.length ? [{ key, label: typeof column.header === 'string' ? column.header : key, values }] : []
+  }), [columns, filterableColumns, rows])
+  const activeColumnFilters = useMemo(
+    () => filterGroups.filter((group) => group.values.includes(columnFilters[group.key])),
+    [columnFilters, filterGroups],
+  )
+  const hasActiveFilters = filterSelected || activeColumnFilters.length > 0
+  const visibleRows = useMemo(() => {
+    if (!showToolbar || (!hasActiveFilters && !searchQuery.trim())) return rows
+    const query = searchQuery.trim().toLocaleLowerCase()
+    return rows.filter((row) => {
+      if (filterSelected && !selected.has(getRowId(row))) return false
+      if (activeColumnFilters.some((group) => String((row as Record<string, unknown>)[group.key] ?? '') !== columnFilters[group.key])) return false
+      if (!query) return true
+      return columns.some((column) => {
+        const value = (row as Record<string, unknown>)[String(column.key)]
+        return String(value ?? '').toLocaleLowerCase().includes(query)
+      })
+    })
+  }, [activeColumnFilters, columnFilters, columns, filterSelected, getRowId, hasActiveFilters, rows, searchQuery, selected, showToolbar])
+  const rowIds = useMemo(() => visibleRows.map(getRowId), [getRowId, visibleRows])
   const selectedOnPage = rowIds.filter((id) => selected.has(id)).length
-  const allSelected = rows.length > 0 && selectedOnPage === rows.length
+  const allSelected = visibleRows.length > 0 && selectedOnPage === visibleRows.length
   const partiallySelected = selectedOnPage > 0 && !allSelected
+
+  useEffect(() => {
+    if (searchOpen && showToolbar) searchInputRef.current?.focus()
+  }, [searchOpen, showToolbar])
+
+  useEffect(() => {
+    if (!searchOpen || !showToolbar) return
+
+    const closeOnOutsidePointerDown = (event: PointerEvent) => {
+      if (searchRef.current?.contains(event.target as Node)) return
+      setAnimateSearch(true)
+      setSearchOpen(false)
+      setSearchQuery('')
+      setSearchQueryClipped(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePointerDown)
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointerDown)
+  }, [searchOpen, showToolbar])
+
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current
+    const content = contentRef.current
+    if (!root || !content) return
+
+    // Resize the frame without scaling its rows, text, or controls. The content
+    // retains its intrinsic height even while the scroll viewport is capped.
+    const measure = () => {
+      const style = getComputedStyle(root)
+      const border = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
+      const maxHeight = parseFloat(style.maxHeight)
+      const naturalHeight = content.getBoundingClientRect().height + border
+      setHeight(Math.min(naturalHeight, Number.isFinite(maxHeight) ? maxHeight : Infinity))
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(content)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [variant])
 
   const updateSelection = (next: string[]) => {
     if (!controlled) setInternalSelection(next)
@@ -154,33 +281,190 @@ export function Table<RowData>({
   }
 
   return (
-    <motion.div
-      className={`lars-table-wrap${className ? ` ${className}` : ''}`}
+    <div
+      className={`lars-table-frame${className ? ` ${className}` : ''}`}
+      data-toolbar={showToolbar || undefined}
       data-variant={variant}
-      layout={prefersReducedMotion ? false : 'position'}
-      style={{ borderRadius: variant === 'relaxed' ? 0 : 8 }}
-      transition={{ layout: { type: 'spring', duration: 0.28, bounce: 0 } }}
+      ref={frameRef}
     >
-      <AnimatePresence initial={false} mode="wait">
-        <motion.div
-          animate={{ opacity: 1, transform: 'translateY(0px) scale(1)' }}
-          className="lars-table__variant-state"
-          exit={prefersReducedMotion
-            ? { opacity: 0, transition: { duration: 0.06, ease: 'easeOut' } }
-            : {
-                opacity: 0,
-                transform: 'translateY(-2px) scale(0.995)',
-                transition: { duration: 0.1, ease: [0.25, 0.46, 0.45, 0.94] },
-              }}
-          initial={prefersReducedMotion
-            ? { opacity: 0 }
-            : { opacity: 0, transform: 'translateY(2px) scale(0.995)' }}
-          key={variant}
-          transition={prefersReducedMotion
-            ? { duration: 0.1, ease: 'easeOut' }
-            : { duration: 0.16, ease: [0.25, 0.46, 0.45, 0.94] }}
+      {showToolbar && (
+        <div
+          aria-label="Table tools"
+          className="lars-table__toolbar"
+          data-search-open={searchOpen || undefined}
+          role="toolbar"
         >
-          <table
+          <span className="lars-table__item-count">
+            {visibleRows.length} {visibleRows.length === 1 ? 'item' : 'items'}
+          </span>
+          <div className="lars-table__toolbar-end">
+            <div className="lars-table__tools" data-animate={animateSearch || undefined}>
+              <Menu.Root modal={false}>
+                <Menu.Trigger
+                  aria-label="Filter table"
+                  className="lars-table__tool lars-table__filter"
+                  data-filter-active={hasActiveFilters || undefined}
+                  title="Filter table"
+                >
+                  <FilterIcon />
+                </Menu.Trigger>
+                <Menu.Portal container={frameRef}>
+                  <Menu.Positioner align="start" className="lars-table__filter-positioner" side="bottom" sideOffset={8}>
+                    <Menu.Popup className="lars-table__filter-menu">
+                      <Menu.Group className="lars-table__filter-group">
+                        <Menu.GroupLabel className="lars-table__filter-group-label">Selection</Menu.GroupLabel>
+                        <Menu.CheckboxItem
+                          checked={filterSelected}
+                          className="lars-table__filter-item"
+                          disabled={!selectable}
+                          onCheckedChange={setSelectedOnly}
+                        >
+                          <span>Selected rows only</span>
+                          <span aria-hidden="true" className="lars-table__filter-indicator-slot">
+                            <Menu.CheckboxItemIndicator><FilterCheckIcon /></Menu.CheckboxItemIndicator>
+                          </span>
+                        </Menu.CheckboxItem>
+                      </Menu.Group>
+                      {filterGroups.map((group) => (
+                        <Menu.Group className="lars-table__filter-group" key={group.key}>
+                          <Menu.Separator className="lars-table__filter-separator" />
+                          <Menu.GroupLabel className="lars-table__filter-group-label">{group.label}</Menu.GroupLabel>
+                          <Menu.RadioGroup
+                            onValueChange={(value) => setColumnFilters((current) => ({ ...current, [group.key]: String(value) }))}
+                            value={columnFilters[group.key] ?? ''}
+                          >
+                            <Menu.RadioItem className="lars-table__filter-item" value="">
+                              <span>All</span>
+                              <span aria-hidden="true" className="lars-table__filter-indicator-slot">
+                                <Menu.RadioItemIndicator><FilterCheckIcon /></Menu.RadioItemIndicator>
+                              </span>
+                            </Menu.RadioItem>
+                            {group.values.map((value) => (
+                              <Menu.RadioItem className="lars-table__filter-item" key={value} value={value}>
+                                <span>{value}</span>
+                                <span aria-hidden="true" className="lars-table__filter-indicator-slot">
+                                  <Menu.RadioItemIndicator><FilterCheckIcon /></Menu.RadioItemIndicator>
+                                </span>
+                              </Menu.RadioItem>
+                            ))}
+                          </Menu.RadioGroup>
+                        </Menu.Group>
+                      ))}
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
+              <div
+                className="lars-table__search"
+                data-open={searchOpen || undefined}
+                data-query-clipped={searchQueryClipped || undefined}
+                ref={searchRef}
+              >
+                <span aria-hidden="true" className="lars-table__search-surface" />
+                <button
+                  aria-expanded={searchOpen}
+                  aria-label={searchOpen ? 'Close search' : 'Search table'}
+                  className="lars-table__search-icon"
+                  onClick={() => {
+                    setSearchOpen((current) => !current)
+                    if (searchOpen) {
+                      setSearchQuery('')
+                      setSearchQueryClipped(false)
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') setAnimateSearch(false)
+                  }}
+                  onPointerDown={() => setAnimateSearch(true)}
+                  ref={searchButtonRef}
+                  type="button"
+                >
+                  <SearchIcon />
+                </button>
+                <input
+                  aria-hidden={!searchOpen || undefined}
+                  aria-label="Search table"
+                  disabled={!searchOpen}
+                  onChange={(event) => {
+                    const input = event.currentTarget
+                    setSearchQuery(input.value)
+                    if (input.selectionStart === input.value.length && input.selectionEnd === input.value.length) {
+                      input.scrollLeft = input.scrollWidth
+                    }
+                    setSearchQueryClipped(input.scrollLeft > 0)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      setAnimateSearch(false)
+                      setSearchOpen(false)
+                      setSearchQuery('')
+                      setSearchQueryClipped(false)
+                      searchButtonRef.current?.focus()
+                    }
+                  }}
+                  onScroll={(event) => setSearchQueryClipped(event.currentTarget.scrollLeft > 0)}
+                  placeholder="Search table"
+                  ref={searchInputRef}
+                  tabIndex={searchOpen ? 0 : -1}
+                  type="search"
+                  value={searchQuery}
+                />
+              </div>
+            </div>
+            <div className="lars-table__views" role="group" aria-label="Table view">
+              <button
+                aria-pressed={activeView === 1}
+                className="lars-table__view"
+                onClick={() => setActiveView(1)}
+                type="button"
+              >View #1</button>
+              <span aria-hidden="true" className="lars-table__view-divider" />
+              <button
+                aria-pressed={activeView === 2}
+                className="lars-table__view"
+                onClick={() => setActiveView(2)}
+                type="button"
+              >View #2</button>
+            </div>
+          </div>
+        </div>
+      )}
+    <ScrollArea.Root
+      className="lars-table-wrap"
+      data-sticky-header={stickyHeader || undefined}
+      data-variant={variant}
+      ref={rootRef}
+      render={(
+        <motion.div
+          animate={{ height: height ?? 'auto' }}
+          initial={false}
+          transition={prefersReducedMotion ? { duration: 0 } : TABLE_VARIANT_TRANSITION}
+        />
+      )}
+      style={{ borderRadius: variant === 'relaxed' ? 0 : 8 }}
+    >
+      <ScrollArea.Viewport className="lars-table__viewport">
+        <ScrollArea.Content className="lars-table__scroll-content" ref={contentRef}>
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.div
+              animate={{ filter: 'blur(0px)', opacity: 1 }}
+              className="lars-table__variant-state"
+              exit={prefersReducedMotion
+                ? { opacity: 0, transition: { duration: 0.08, ease: 'easeOut' } }
+                : {
+                    filter: 'blur(1.5px)',
+                    opacity: 0,
+                    transition: TABLE_VARIANT_TRANSITION,
+                  }}
+              initial={prefersReducedMotion
+                ? { opacity: 0 }
+                : { filter: 'blur(1.5px)', opacity: 0 }}
+              key={variant}
+              transition={prefersReducedMotion
+                ? { duration: 0.1, ease: 'easeOut' }
+                : TABLE_VARIANT_TRANSITION}
+            >
+              <table
             aria-label={ariaLabel}
             className="lars-table"
             data-selectable={selectable || undefined}
@@ -226,7 +510,7 @@ export function Table<RowData>({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {visibleRows.map((row) => {
                 const rowId = getRowId(row)
                 return (
                   <tr data-selected={selected.has(rowId) || undefined} key={rowId}>
@@ -260,7 +544,7 @@ export function Table<RowData>({
                   </tr>
                 )
               })}
-              {rows.length === 0 && (
+              {visibleRows.length === 0 && (
                 <tr>
                   <td className="lars-table__empty" colSpan={columns.length + (selectable ? 2 : 1)}>
                     {emptyMessage}
@@ -268,9 +552,19 @@ export function Table<RowData>({
                 </tr>
               )}
             </tbody>
-          </table>
-        </motion.div>
-      </AnimatePresence>
-    </motion.div>
+              </table>
+            </motion.div>
+          </AnimatePresence>
+        </ScrollArea.Content>
+      </ScrollArea.Viewport>
+      <ScrollArea.Scrollbar className="lars-table__scrollbar">
+        <ScrollArea.Thumb className="lars-table__scrollbar-thumb" />
+      </ScrollArea.Scrollbar>
+      <ScrollArea.Scrollbar className="lars-table__scrollbar" orientation="horizontal">
+        <ScrollArea.Thumb className="lars-table__scrollbar-thumb" />
+      </ScrollArea.Scrollbar>
+      <ScrollArea.Corner className="lars-table__scrollbar-corner" />
+    </ScrollArea.Root>
+    </div>
   )
 }

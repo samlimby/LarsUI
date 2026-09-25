@@ -337,7 +337,7 @@
 .lars-stage--chip { padding-bottom: 58px; }
 
 .lars-stage--table {
-  padding: 32px 16px 58px;
+  padding: 16px 16px 52px;
 }
 
 .lars-table-preview {
@@ -345,17 +345,31 @@
   width: min(100%, 630px);
 }
 
-.lars-table-preview[data-variant='compact'] { width: min(100%, 622px); }
-.lars-table-preview[data-variant='relaxed'] { width: min(100%, 646px); }
+.lars-table-preview[data-variant='compact'] { width: min(100%, 630px); }
+.lars-table-preview[data-variant='relaxed'] { width: min(100%, 630px); }
+.lars-table-preview .lars-table[data-variant='relaxed'] { min-width: 100%; }
 
 .lars-table-canvas {
+  --lars-table-preview-max-height: 388px;
   justify-content: safe center;
   overflow: hidden;
 }
 
 .lars-table-canvas .lars-table-preview {
-  max-height: 100%;
-  overflow: auto;
+  max-height: var(--lars-table-preview-max-height);
+  overflow: hidden;
+}
+
+.lars-table-canvas .lars-table-preview .lars-table-wrap {
+  max-height: var(--lars-table-preview-max-height);
+}
+
+.lars-table-canvas .lars-table-preview[data-toolbar] .lars-table-wrap {
+  max-height: calc(var(--lars-table-preview-max-height) - 52px);
+}
+
+.lars-table-canvas .lars-table-preview .lars-table__viewport {
+  max-height: var(--lars-table-preview-max-height);
 }
 
 .lars-table-stage__controls {
@@ -1215,6 +1229,9 @@ html[data-theme='dark'] .lars-property-select__separator { background: #343434; 
   .lars-configurator { grid-template-columns: 1fr; }
   .lars-component-canvas,
   .lars-properties { height: min(400px, 58svh); }
+  .lars-table-canvas {
+    --lars-table-preview-max-height: calc(min(400px, 58svh) - 92px);
+  }
   .lars-code { max-height: 560px; padding: 20px; }
   .lars-showcase__meta { align-items: flex-end; }
   .lars-showcase__copy p { max-width: 31ch; }
@@ -1235,7 +1252,7 @@ html[data-theme='dark'] .lars-property-select__separator { background: #343434; 
     grid-template-columns: repeat(2, 77px);
     gap: 28px 20px;
   }
-  .lars-stage--table { padding: 24px 8px 76px; }
+  .lars-stage--table { padding: 16px 8px 76px; }
   .lars-table-stage__controls {
     bottom: 8px;
     flex-direction: column;
