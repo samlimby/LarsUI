@@ -3,6 +3,8 @@ import { ScrollArea } from '@base-ui/react/scroll-area'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
+import { Chip } from './Chip'
+import { SegmentedControl } from './SegmentedControl'
 import './Table.css'
 
 export type TableColumn<RowData> = {
@@ -35,6 +37,12 @@ export type TableProps<RowData> = {
   striped?: boolean
   /** Shows the Paper-style toolbar above the default and compact variants. */
   toolbar?: boolean
+  /** Shows the toolbar's View toggle. */
+  toolbarToggle?: boolean
+  /** Shows the toolbar's filter and search actions. */
+  toolbarActions?: boolean
+  /** Shows the toolbar's item counter. */
+  toolbarCounter?: boolean
   /** Columns whose unique cell values appear in the toolbar filter menu. */
   filterableColumns?: readonly (keyof RowData | string)[]
   /** Controls the table's vertical density and container treatment. */
@@ -42,6 +50,7 @@ export type TableProps<RowData> = {
   selectedRowIds?: readonly string[]
   defaultSelectedRowIds?: readonly string[]
   onSelectedRowIdsChange?: (rowIds: string[]) => void
+  /** Called when the row menu's View details item is chosen. */
   onRowAction?: (row: RowData) => void
   rowActionLabel?: (row: RowData) => string
   emptyMessage?: ReactNode
@@ -122,7 +131,7 @@ function KebabIcon() {
 
 function FilterIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
+    <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16">
       <path d="M2 5C2 4.447 2.448 4 3 4L17 4C17.554 4 18 4.447 18 5 18 5.554 17.554 6 17 6L3 6C2.448 6 2 5.554 2 5zM5 10C5 9.447 5.448 9 6 9L14 9C14.554 9 15 9.447 15 10 15 10.554 14.554 11 14 11L6 11C5.448 11 5 10.554 5 10zM12 15C12 15.554 11.554 16 11 16L9 16C8.448 16 8 15.554 8 15 8 14.447 8.448 14 9 14L11 14C11.554 14 12 14.447 12 15z" fill="currentColor" />
     </svg>
   )
@@ -136,9 +145,17 @@ function FilterCheckIcon() {
   )
 }
 
+function FilterCloseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 12 12" width="12" height="12">
+      <path d="M3.433 2.576C3.199 2.342 2.818 2.342 2.584 2.576 2.349 2.811 2.349 3.191 2.584 3.426L5.16 6 2.586 8.576C2.351 8.811 2.351 9.191 2.586 9.426 2.82 9.66 3.201 9.66 3.435 9.426L6.009 6.849 8.586 9.424C8.82 9.658 9.201 9.658 9.435 9.424 9.669 9.189 9.669 8.809 9.435 8.574L6.859 6 9.433 3.424C9.667 3.189 9.667 2.809 9.433 2.574 9.199 2.34 8.818 2.34 8.584 2.574L6.009 5.151 3.433 2.576z" fill="currentColor" />
+    </svg>
+  )
+}
+
 function SearchIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
+    <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16">
       <path d="M15 8.5C15 9.934 14.534 11.259 13.75 12.334L17.706 16.294C18.098 16.684 18.098 17.319 17.706 17.709 17.316 18.1 16.681 18.1 16.291 17.709L12.334 13.75C11.259 14.534 9.934 15 8.5 15 4.909 15 2 12.091 2 8.5 2 4.909 4.909 2 8.5 2 12.091 2 15 4.909 15 8.5zM8.5 13C10.984 13 13 10.984 13 8.5 13 6.016 10.984 4 8.5 4 6.016 4 4 6.016 4 8.5 4 10.984 6.016 13 8.5 13z" fill="currentColor" />
     </svg>
   )
@@ -154,6 +171,9 @@ export function Table<RowData>({
   stickyHeader = false,
   striped = true,
   toolbar = false,
+  toolbarToggle = true,
+  toolbarActions = true,
+  toolbarCounter = true,
   filterableColumns = EMPTY_FILTERABLE_COLUMNS,
   variant = 'default',
   selectedRowIds,
@@ -170,20 +190,26 @@ export function Table<RowData>({
   const searchRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchButtonRef = useRef<HTMLButtonElement>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const itemCountRef = useRef<HTMLSpanElement>(null)
+  const toolsRef = useRef<HTMLDivElement>(null)
+  const filterChipsRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState<number>()
+  const [toolbarOccupied, setToolbarOccupied] = useState(44)
+  const [chipsWrapped, setChipsWrapped] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [animateSearch, setAnimateSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchQueryClipped, setSearchQueryClipped] = useState(false)
   const [selectedOnly, setSelectedOnly] = useState(false)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
-  const [activeView, setActiveView] = useState<1 | 2>(2)
+  const [activeView, setActiveView] = useState('2')
   const controlled = selectedRowIds !== undefined
   const [internalSelection, setInternalSelection] = useState<readonly string[]>(defaultSelectedRowIds)
   const selection = controlled ? selectedRowIds : internalSelection
   const selected = useMemo(() => new Set(selection), [selection])
-  const showToolbar = toolbar && variant !== 'relaxed'
-  const filterSelected = selectedOnly && selectable
+  const showToolbar = toolbar && variant !== 'relaxed' && (toolbarToggle || toolbarActions || toolbarCounter)
+  const filterSelected = toolbarActions && selectedOnly && selectable
   const filterGroups = useMemo(() => filterableColumns.flatMap((filterKey) => {
     const key = String(filterKey)
     const column = columns.find((candidate) => String(candidate.key) === key)
@@ -195,13 +221,13 @@ export function Table<RowData>({
     return values.length ? [{ key, label: typeof column.header === 'string' ? column.header : key, values }] : []
   }), [columns, filterableColumns, rows])
   const activeColumnFilters = useMemo(
-    () => filterGroups.filter((group) => group.values.includes(columnFilters[group.key])),
-    [columnFilters, filterGroups],
+    () => toolbarActions ? filterGroups.filter((group) => group.values.includes(columnFilters[group.key])) : [],
+    [columnFilters, filterGroups, toolbarActions],
   )
   const hasActiveFilters = filterSelected || activeColumnFilters.length > 0
   const visibleRows = useMemo(() => {
     if (!showToolbar || (!hasActiveFilters && !searchQuery.trim())) return rows
-    const query = searchQuery.trim().toLocaleLowerCase()
+    const query = toolbarActions ? searchQuery.trim().toLocaleLowerCase() : ''
     return rows.filter((row) => {
       if (filterSelected && !selected.has(getRowId(row))) return false
       if (activeColumnFilters.some((group) => String((row as Record<string, unknown>)[group.key] ?? '') !== columnFilters[group.key])) return false
@@ -211,7 +237,7 @@ export function Table<RowData>({
         return String(value ?? '').toLocaleLowerCase().includes(query)
       })
     })
-  }, [activeColumnFilters, columnFilters, columns, filterSelected, getRowId, hasActiveFilters, rows, searchQuery, selected, showToolbar])
+  }, [activeColumnFilters, columnFilters, columns, filterSelected, getRowId, hasActiveFilters, rows, searchQuery, selected, showToolbar, toolbarActions])
   const rowIds = useMemo(() => visibleRows.map(getRowId), [getRowId, visibleRows])
   const selectedOnPage = rowIds.filter((id) => selected.has(id)).length
   const allSelected = visibleRows.length > 0 && selectedOnPage === visibleRows.length
@@ -220,6 +246,13 @@ export function Table<RowData>({
   useEffect(() => {
     if (searchOpen && showToolbar) searchInputRef.current?.focus()
   }, [searchOpen, showToolbar])
+
+  useEffect(() => {
+    if (toolbarActions) return
+    setSearchOpen(false)
+    setSearchQuery('')
+    setSearchQueryClipped(false)
+  }, [toolbarActions])
 
   useEffect(() => {
     if (!searchOpen || !showToolbar) return
@@ -259,7 +292,43 @@ export function Table<RowData>({
       observer.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [variant])
+  }, [variant, toolbarOccupied])
+
+  useIsomorphicLayoutEffect(() => {
+    const toolbar = toolbarRef.current
+    if (!toolbar || !showToolbar) return
+
+    const measure = () => {
+      const occupied = Math.ceil(toolbar.getBoundingClientRect().height + parseFloat(getComputedStyle(toolbar).marginBottom))
+      setToolbarOccupied((current) => current === occupied ? current : occupied)
+
+      const chips = filterChipsRef.current
+      const itemCount = itemCountRef.current
+      const tools = toolsRef.current
+      if (!chips || !tools) {
+        setChipsWrapped(false)
+        return
+      }
+
+      const gap = parseFloat(getComputedStyle(chips).columnGap) || 0
+      const buttons = Array.from(chips.children) as HTMLElement[]
+      const chipWidth = buttons.reduce((total, button) => total + button.getBoundingClientRect().width, 0)
+        + Math.max(0, buttons.length - 1) * gap
+      const filterLeft = tools.getBoundingClientRect().left + 12 + (searchOpen ? 0 : 100)
+      const leftBoundary = itemCount?.getBoundingClientRect().right ?? toolbar.getBoundingClientRect().left + 12
+      const available = filterLeft - leftBoundary - 16
+      const shouldWrap = chipWidth > available
+      setChipsWrapped((current) => current === shouldWrap ? current : shouldWrap)
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(toolbar)
+    if (filterChipsRef.current) observer.observe(filterChipsRef.current)
+    if (itemCountRef.current) observer.observe(itemCountRef.current)
+    if (toolsRef.current) observer.observe(toolsRef.current)
+    return () => observer.disconnect()
+  }, [activeColumnFilters, chipsWrapped, filterSelected, searchOpen, showToolbar])
 
   const updateSelection = (next: string[]) => {
     if (!controlled) setInternalSelection(next)
@@ -280,25 +349,72 @@ export function Table<RowData>({
     updateSelection([...next])
   }
 
+  const filterChips = hasActiveFilters && (
+    <div className="lars-table__filter-chips" aria-label="Active filters" ref={filterChipsRef} role="group">
+      {filterSelected && (
+        <button
+          aria-label="Remove Selected rows filter"
+          className="lars-table__filter-chip"
+          onClick={() => setSelectedOnly(false)}
+          title="Remove Selected rows filter"
+          type="button"
+        >
+          <Chip icon={<FilterCloseIcon />} iconPosition="end" size="small" typeface="sans-serif" variant="default">
+            Selected rows
+          </Chip>
+        </button>
+      )}
+      {activeColumnFilters.map((group) => {
+        const label = `${group.label}: ${columnFilters[group.key]}`
+        return (
+          <button
+            aria-label={`Remove ${label} filter`}
+            className="lars-table__filter-chip"
+            key={group.key}
+            onClick={() => setColumnFilters((current) => {
+              const next = { ...current }
+              delete next[group.key]
+              return next
+            })}
+            title={`Remove ${label} filter`}
+            type="button"
+          >
+            <Chip icon={<FilterCloseIcon />} iconPosition="end" size="small" typeface="sans-serif" variant="default">
+              {label}
+            </Chip>
+          </button>
+        )
+      })}
+    </div>
+  )
+
   return (
     <div
       className={`lars-table-frame${className ? ` ${className}` : ''}`}
+      data-chips-wrapped={chipsWrapped || undefined}
       data-toolbar={showToolbar || undefined}
       data-variant={variant}
       ref={frameRef}
+      style={{ '--lars-table-toolbar-occupied': `${toolbarOccupied}px` } as CSSProperties}
     >
       {showToolbar && (
         <div
           aria-label="Table tools"
           className="lars-table__toolbar"
+          data-chips-wrapped={chipsWrapped || undefined}
           data-search-open={searchOpen || undefined}
+          ref={toolbarRef}
           role="toolbar"
         >
-          <span className="lars-table__item-count">
-            {visibleRows.length} {visibleRows.length === 1 ? 'item' : 'items'}
-          </span>
+          {toolbarCounter && (
+            <span className="lars-table__item-count" ref={itemCountRef}>
+              {visibleRows.length} {visibleRows.length === 1 ? 'item' : 'items'}
+            </span>
+          )}
           <div className="lars-table__toolbar-end">
-            <div className="lars-table__tools" data-animate={animateSearch || undefined}>
+            {toolbarActions && (
+            <div className="lars-table__tools" data-animate={animateSearch || undefined} ref={toolsRef}>
+              {!chipsWrapped && filterChips}
               <Menu.Root modal={false}>
                 <Menu.Trigger
                   aria-label="Filter table"
@@ -411,22 +527,20 @@ export function Table<RowData>({
                 />
               </div>
             </div>
-            <div className="lars-table__views" role="group" aria-label="Table view">
-              <button
-                aria-pressed={activeView === 1}
-                className="lars-table__view"
-                onClick={() => setActiveView(1)}
-                type="button"
-              >View #1</button>
-              <span aria-hidden="true" className="lars-table__view-divider" />
-              <button
-                aria-pressed={activeView === 2}
-                className="lars-table__view"
-                onClick={() => setActiveView(2)}
-                type="button"
-              >View #2</button>
-            </div>
+            )}
+            {toolbarToggle && <SegmentedControl
+              className="lars-table__views"
+              label="Table view"
+              onValueChange={setActiveView}
+              options={[
+                { label: 'View #1', value: '1' },
+                { label: 'View #2', value: '2' },
+              ]}
+              type="square"
+              value={activeView}
+            />}
           </div>
+          {chipsWrapped && filterChips}
         </div>
       )}
     <ScrollArea.Root
@@ -531,14 +645,28 @@ export function Table<RowData>({
                     })}
                     <td aria-hidden={!onRowAction || undefined} className="lars-table__action-cell">
                       {onRowAction && (
-                        <button
-                          aria-label={rowActionLabel(row)}
-                          className="lars-table__action"
-                          onClick={() => onRowAction(row)}
-                          type="button"
-                        >
-                          <KebabIcon />
-                        </button>
+                        <Menu.Root modal={false}>
+                          <Menu.Trigger
+                            aria-label={rowActionLabel(row)}
+                            className="lars-table__action"
+                          >
+                            <KebabIcon />
+                          </Menu.Trigger>
+                          <Menu.Portal>
+                            <Menu.Positioner align="end" className="lars-table__action-positioner" side="bottom" sideOffset={4}>
+                              <Menu.Popup className="lars-table__filter-menu lars-table__action-menu">
+                                <Menu.Item className="lars-table__filter-item" onClick={() => onRowAction(row)}>
+                                  View details
+                                </Menu.Item>
+                                {selectable && (
+                                  <Menu.Item className="lars-table__filter-item" onClick={() => toggleRow(rowId)}>
+                                    {selected.has(rowId) ? 'Deselect row' : 'Select row'}
+                                  </Menu.Item>
+                                )}
+                              </Menu.Popup>
+                            </Menu.Positioner>
+                          </Menu.Portal>
+                        </Menu.Root>
                       )}
                     </td>
                   </tr>

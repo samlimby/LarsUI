@@ -1,7 +1,7 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { Fragment, useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
 import {
   Chip,
@@ -143,6 +143,7 @@ const TABLE_ROWS: readonly TeamMember[] = [
   { id: 'sara', name: 'Sara Iqbal', role: 'Engineer', team: 'Core', status: 'Away', location: 'Lahore', updated: '1d ago' },
   { id: 'theo', name: 'Theo Park', role: 'Design', team: 'Growth', status: 'Active', location: 'Toronto', updated: '2d ago' },
 ]
+const TABLE_HOME_ROWS = TABLE_ROWS.slice(0, 5)
 const TABLE_CONFIG_ROWS: readonly TeamMember[] = Array.from({ length: 100 }, (_, index) => {
   const source = TABLE_ROWS[index % TABLE_ROWS.length]
   const group = Math.floor(index / TABLE_ROWS.length) + 1
@@ -175,7 +176,6 @@ const columns: TableColumn<Member>[] = [
   getRowId={(row) => row.id}
   rows={members}
   stickyHeader
-  toolbar
   onRowAction={(row) => openMember(row.id)}
 />
 `
@@ -587,7 +587,6 @@ function TablePreview({
       selectable={selectable}
       stickyHeader
       striped={striped}
-      toolbar
       variant={variant}
     />
   )
@@ -602,7 +601,7 @@ function TableStage() {
       const code = variant === 'default'
         ? TABLE_VIEW_CODE
         : TABLE_VIEW_CODE.replace('  rows={members}\n', `  rows={members}\n  variant="${variant}"\n`)
-      await navigator.clipboard.writeText(variant === 'relaxed' ? code.replace('  toolbar\n', '') : code)
+      await navigator.clipboard.writeText(code)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
@@ -615,7 +614,7 @@ function TableStage() {
       <BaseButton className="lars-copy" type="button" onClick={copyComponentCode} aria-label="Copy Table code">
         {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
       </BaseButton>
-      <TablePreview variant={variant} />
+      <TablePreview rows={TABLE_HOME_ROWS} variant={variant} />
       <div className="lars-table-stage__controls">
         <div
           aria-label="Table variant"
@@ -818,13 +817,14 @@ function PropertySelect<T extends string>({
           >
             <Select.Popup className="lars-property-select__popup">
               <Select.List className="lars-property-select__list">
-                {options.map((option, index) => (
-                  <Fragment key={option.value}>
-                    {index > 0 && <Select.Separator className="lars-property-select__separator" />}
-                    <Select.Item className="lars-property-select__item" value={option.value}>
-                      <Select.ItemText>{option.label}</Select.ItemText>
-                    </Select.Item>
-                  </Fragment>
+                {options.map((option) => (
+                  <Select.Item
+                    className="lars-property-select__item"
+                    key={option.value}
+                    value={option.value}
+                  >
+                    <Select.ItemText>{option.label}</Select.ItemText>
+                  </Select.Item>
                 ))}
               </Select.List>
             </Select.Popup>
@@ -1652,9 +1652,117 @@ ${codeOptions}
   )
 }
 
+function TableToolbarProperties({
+  hovering,
+  toggle,
+  actions,
+  counter,
+  onHoveringChange,
+  onToggleChange,
+  onActionsChange,
+  onCounterChange,
+}: {
+  hovering: boolean
+  toggle: boolean
+  actions: boolean
+  counter: boolean
+  onHoveringChange: (value: boolean) => void
+  onToggleChange: (value: boolean) => void
+  onActionsChange: (value: boolean) => void
+  onCounterChange: (value: boolean) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
+  const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popupId = useId()
+  const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
+
+  useEffect(() => {
+    if (!open) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      triggerRef.current?.focus()
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  return (
+    <div className="lars-table-toolbar-property" data-open={open || undefined} ref={rootRef}>
+      <BaseButton
+        aria-controls={open ? popupId : undefined}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className="lars-table-toolbar-property__trigger"
+        onClick={() => setOpen((current) => !current)}
+        ref={triggerRef}
+        type="button"
+      >
+        <span>Toolbar</span>
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+          <path d="M11.778 7.435C12.09 7.747 12.09 8.255 11.778 8.567L6.978 13.367C6.665 13.68 6.158 13.68 5.845 13.367 5.533 13.055 5.533 12.547 5.845 12.235L10.08 8 5.848 3.765C5.535 3.452 5.535 2.945 5.848 2.632 6.16 2.32 6.668 2.32 6.98 2.632L11.78 7.432z" fill="currentColor" />
+        </svg>
+      </BaseButton>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            aria-label="Toolbar properties"
+            animate={{ opacity: 1 }}
+            className="lars-table-toolbar-property__popup"
+            exit={{ opacity: 0, transition: { duration: prefersReducedMotion ? 0 : 0.12 } }}
+            id={popupId}
+            initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
+            key="toolbar-properties"
+            role="dialog"
+            transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: [0.19, 1, 0.22, 1] }}
+          >
+          <div className="lars-table-toolbar-property__heading">
+            <span>Toolbar</span>
+            <BaseButton
+              aria-label="Close toolbar properties"
+              className="lars-table-toolbar-property__close"
+              onClick={() => {
+                setOpen(false)
+                triggerRef.current?.focus()
+              }}
+              type="button"
+            >
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+                <path d="M4.578 3.435C4.265 3.122 3.758 3.122 3.445 3.435 3.133 3.747 3.133 4.255 3.445 4.567L6.88 8 3.448 11.435C3.135 11.747 3.135 12.255 3.448 12.567 3.76 12.88 4.268 12.88 4.58 12.567L8.013 9.132 11.448 12.565C11.76 12.877 12.268 12.877 12.58 12.565 12.893 12.252 12.893 11.745 12.58 11.432L9.145 8 12.578 4.565C12.89 4.252 12.89 3.745 12.578 3.432 12.265 3.12 11.758 3.12 11.445 3.432L8.013 6.867 4.578 3.435z" fill="currentColor" />
+              </svg>
+            </BaseButton>
+          </div>
+          <div className="lars-table-toolbar-property__options">
+            <div className="lars-table-toolbar-property__divider" />
+            <SegmentedControl label="Hovering" onChange={(next) => onHoveringChange(next === 'true')} options={booleanOptions} value={hovering ? 'true' : 'false'} />
+            <SegmentedControl label="Toggle" onChange={(next) => onToggleChange(next === 'true')} options={booleanOptions} value={toggle ? 'true' : 'false'} />
+            <SegmentedControl label="Actions" onChange={(next) => onActionsChange(next === 'true')} options={booleanOptions} value={actions ? 'true' : 'false'} />
+            <SegmentedControl label="Counter" onChange={(next) => onCounterChange(next === 'true')} options={booleanOptions} value={counter ? 'true' : 'false'} />
+          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 function TableConfigurator() {
   const [striped, setStriped] = useState(true)
-  const [toolbar, setToolbar] = useState(true)
+  const [toolbarHovering, setToolbarHovering] = useState(true)
+  const [toolbarToggle, setToolbarToggle] = useState(true)
+  const [toolbarActions, setToolbarActions] = useState(true)
+  const [toolbarCounter, setToolbarCounter] = useState(true)
   const [selectable, setSelectable] = useState(true)
   const [variant, setVariant] = useState<TableVariant>('default')
   const [rowCount, setRowCount] = useState(6)
@@ -1674,6 +1782,12 @@ function TableConfigurator() {
   const codeMembers = configuredRows
     .map((row) => `  { id: ${quoteTableString(row.id)}, name: ${quoteTableString(row.name)}, role: ${quoteTableString(row.role)}, team: ${quoteTableString(row.team)}, status: ${quoteTableString(row.status)}, location: ${quoteTableString(row.location)}, updated: ${quoteTableString(row.updated)} },`)
     .join('\n')
+  const toolbarCode = variant === 'relaxed' ? '' : [
+    '  toolbar',
+    ...(!toolbarToggle ? ['  toolbarToggle={false}'] : []),
+    ...(!toolbarActions ? ['  toolbarActions={false}'] : []),
+    ...(!toolbarCounter ? ['  toolbarCounter={false}'] : []),
+  ].join('\n')
 
   const code = `import { Table, type TableColumn } from 'larsui'
 import 'larsui/style.css'
@@ -1702,8 +1816,8 @@ ${codeMembers}
   filterableColumns={['status']}
   getRowId={(row) => row.id}
   rows={members}
-  stickyHeader${toolbar && variant !== 'relaxed' ? `
-  toolbar` : ''}${variant === 'default' ? '' : `
+  stickyHeader${toolbarCode ? `
+${toolbarCode}` : ''}${variant === 'default' ? '' : `
   variant="${variant}"`}${selectable ? `
   selectedRowIds={selectedRows}
   onSelectedRowIdsChange={setSelectedRows}` : `
@@ -1731,7 +1845,10 @@ ${codeMembers}
             selectedRowIds={selectedRows}
             stickyHeader
             striped={striped}
-            toolbar={toolbar}
+            toolbar
+            toolbarActions={toolbarActions}
+            toolbarCounter={toolbarCounter}
+            toolbarToggle={toolbarToggle}
             variant={variant}
           />
         </div>
@@ -1752,12 +1869,36 @@ ${codeMembers}
               ]}
               value={variant}
             />
+            <InlineSlider
+              continuous
+              label="Rows"
+              max={100}
+              min={1}
+              onValueChange={setRowCount}
+              showTicks={false}
+              step={1}
+              value={rowCount}
+            />
+            <InlineSlider
+              label="Columns"
+              linearStops
+              max={6}
+              min={2}
+              onValueChange={setColumnCount}
+              step={1}
+              stops={[3, 4, 5]}
+              value={columnCount}
+            />
             {variant !== 'relaxed' && (
-              <SegmentedControl
-                label="Toolbar"
-                onChange={(next) => setToolbar(next === 'true')}
-                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
-                value={toolbar ? 'true' : 'false'}
+              <TableToolbarProperties
+                actions={toolbarActions}
+                counter={toolbarCounter}
+                hovering={toolbarHovering}
+                onActionsChange={setToolbarActions}
+                onCounterChange={setToolbarCounter}
+                onHoveringChange={setToolbarHovering}
+                onToggleChange={setToolbarToggle}
+                toggle={toolbarToggle}
               />
             )}
             {variant !== 'relaxed' && (
@@ -1779,26 +1920,6 @@ ${codeMembers}
               onChange={(next) => setShowActions(next === 'true')}
               options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
               value={showActions ? 'true' : 'false'}
-            />
-            <InlineSlider
-              continuous
-              label="Rows"
-              max={100}
-              min={1}
-              onValueChange={setRowCount}
-              showTicks={false}
-              step={1}
-              value={rowCount}
-            />
-            <InlineSlider
-              label="Columns"
-              linearStops
-              max={6}
-              min={2}
-              onValueChange={setColumnCount}
-              step={1}
-              stops={[3, 4, 5]}
-              value={columnCount}
             />
           </div>
         </aside>
