@@ -969,9 +969,17 @@ html[data-theme='dark'] .lars-property-select__item[data-highlighted] {
   cursor: pointer;
 }
 
-.lars-table-toolbar-property__trigger svg {
-  flex-shrink: 0;
+.lars-table-toolbar-property__icon {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  right: 8px;
+  pointer-events: none;
   color: var(--lars-text-secondary);
+}
+
+.lars-table-toolbar-property:not([data-open]) .lars-table-toolbar-property__popup {
+  pointer-events: none;
 }
 
 .lars-table-toolbar-property__trigger:focus-visible,

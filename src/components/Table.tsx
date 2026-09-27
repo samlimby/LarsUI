@@ -407,8 +407,10 @@ export function Table<RowData>({
           role="toolbar"
         >
           {toolbarCounter && (
-            <span className="lars-table__item-count" ref={itemCountRef}>
-              {visibleRows.length} {visibleRows.length === 1 ? 'item' : 'items'}
+            <span aria-live="polite" className="lars-table__item-count" ref={itemCountRef}>
+              {selectedOnPage > 0
+                ? `${selectedOnPage} of ${visibleRows.length} selected`
+                : `${visibleRows.length} ${visibleRows.length === 1 ? 'item' : 'items'}`}
             </span>
           )}
           <div className="lars-table__toolbar-end">

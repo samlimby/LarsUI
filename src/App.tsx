@@ -1677,6 +1677,10 @@ function TableToolbarProperties({
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupId = useId()
   const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
+  const iconTransition = {
+    duration: prefersReducedMotion ? 0 : open ? 0.35 : 0.2,
+    ease: [0.25, 0.1, 0.25, 1] as const,
+  }
 
   useEffect(() => {
     if (!open) return
@@ -1710,9 +1714,6 @@ function TableToolbarProperties({
         type="button"
       >
         <span>Toolbar</span>
-        <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
-          <path d="M11.778 7.435C12.09 7.747 12.09 8.255 11.778 8.567L6.978 13.367C6.665 13.68 6.158 13.68 5.845 13.367 5.533 13.055 5.533 12.547 5.845 12.235L10.08 8 5.848 3.765C5.535 3.452 5.535 2.945 5.848 2.632 6.16 2.32 6.668 2.32 6.98 2.632L11.78 7.432z" fill="currentColor" />
-        </svg>
       </BaseButton>
       <AnimatePresence initial={false}>
         {open && (
@@ -1720,12 +1721,15 @@ function TableToolbarProperties({
             aria-label="Toolbar properties"
             animate={{ opacity: 1 }}
             className="lars-table-toolbar-property__popup"
-            exit={{ opacity: 0, transition: { duration: prefersReducedMotion ? 0 : 0.12 } }}
+            exit={{
+              opacity: 0,
+              transition: { duration: prefersReducedMotion ? 0 : 0.2, ease: [0.25, 0.1, 0.25, 1] },
+            }}
             id={popupId}
             initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
             key="toolbar-properties"
             role="dialog"
-            transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: [0.19, 1, 0.22, 1] }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           >
           <div className="lars-table-toolbar-property__heading">
             <span>Toolbar</span>
@@ -1738,9 +1742,6 @@ function TableToolbarProperties({
               }}
               type="button"
             >
-              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
-                <path d="M4.578 3.435C4.265 3.122 3.758 3.122 3.445 3.435 3.133 3.747 3.133 4.255 3.445 4.567L6.88 8 3.448 11.435C3.135 11.747 3.135 12.255 3.448 12.567 3.76 12.88 4.268 12.88 4.58 12.567L8.013 9.132 11.448 12.565C11.76 12.877 12.268 12.877 12.58 12.565 12.893 12.252 12.893 11.745 12.58 11.432L9.145 8 12.578 4.565C12.89 4.252 12.89 3.745 12.578 3.432 12.265 3.12 11.758 3.12 11.445 3.432L8.013 6.867 4.578 3.435z" fill="currentColor" />
-              </svg>
             </BaseButton>
           </div>
           <div className="lars-table-toolbar-property__options">
@@ -1753,6 +1754,29 @@ function TableToolbarProperties({
           </motion.div>
         )}
       </AnimatePresence>
+      <svg
+        aria-hidden="true"
+        className="lars-table-toolbar-property__icon"
+        fill="none"
+        focusable="false"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+      >
+        <motion.path
+          animate={{ d: open ? 'M3.9 3.9L12.1 12.1' : 'M6.2 3.2L11 8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+        <motion.path
+          animate={{ d: open ? 'M12.1 3.9L3.9 12.1' : 'M11 8L6.2 12.8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+      </svg>
     </div>
   )
 }
@@ -1760,7 +1784,7 @@ function TableToolbarProperties({
 function TableConfigurator() {
   const [striped, setStriped] = useState(true)
   const [toolbarHovering, setToolbarHovering] = useState(true)
-  const [toolbarToggle, setToolbarToggle] = useState(true)
+  const [toolbarToggle, setToolbarToggle] = useState(false)
   const [toolbarActions, setToolbarActions] = useState(true)
   const [toolbarCounter, setToolbarCounter] = useState(true)
   const [selectable, setSelectable] = useState(true)
@@ -1924,30 +1948,43 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
           </div>
         </aside>
       </div>
-      <CodeBlock
-        code={code}
-        fileName="Table.tsx"
-        label="Editable table usage code"
-        onChange={(nextCode) => {
-          const nextHeaders = parseTableColumnHeaders(nextCode)
-          if (nextHeaders && Object.keys(nextHeaders).length > 0) {
-            setColumnHeaders((current) => {
-              if (Object.entries(nextHeaders).every(([key, value]) => current[key] === value)) return current
-              return { ...current, ...nextHeaders }
-            })
-          }
+      <div className="lars-code-with-footnote">
+        <CodeBlock
+          code={code}
+          fileName="Table.tsx"
+          label="Editable table usage code"
+          onChange={(nextCode) => {
+            const nextHeaders = parseTableColumnHeaders(nextCode)
+            if (nextHeaders && Object.keys(nextHeaders).length > 0) {
+              setColumnHeaders((current) => {
+                if (Object.entries(nextHeaders).every(([key, value]) => current[key] === value)) return current
+                return { ...current, ...nextHeaders }
+              })
+            }
 
-          const nextMembers = parseTableMembers(nextCode)
-          if (nextMembers && Object.keys(nextMembers).length > 0) {
-            setMemberValues((current) => {
-              if (Object.entries(nextMembers).every(([id, member]) =>
-                Object.entries(member).every(([key, value]) => current[id]?.[key as keyof TeamMember] === value)
-              )) return current
-              return { ...current, ...nextMembers }
-            })
-          }
-        }}
-      />
+            const nextMembers = parseTableMembers(nextCode)
+            if (nextMembers && Object.keys(nextMembers).length > 0) {
+              setMemberValues((current) => {
+                if (Object.entries(nextMembers).every(([id, member]) =>
+                  Object.entries(member).every(([key, value]) => current[id]?.[key as keyof TeamMember] === value)
+                )) return current
+                return { ...current, ...nextMembers }
+              })
+            }
+          }}
+        />
+        <aside className="lars-footnotes" aria-label="Notes">
+          <p id="table-footnote-1" tabIndex={-1}>
+            <sup>1</sup>
+            <span>
+              The hovering toolbar was inspired by an iteration featured in{' '}
+              <a href="https://www.youtube.com/watch?v=neE6wOuBIP8" target="_blank" rel="noreferrer">
+                Kole Jain’s video
+              </a>.
+            </span>
+          </p>
+        </aside>
+      </div>
     </>
   )
 }
@@ -2089,9 +2126,11 @@ function ComponentPage({
   }
   const { description, title } = details[component]
   const reduceMotion = useReducedMotion()
+  const footnoteId = component === 'chip' ? 'chip-footnote-1' : component === 'table' ? 'table-footnote-1' : null
 
-  const scrollToChipFootnote = () => {
-    const footnote = document.getElementById('chip-footnote-1')
+  const scrollToFootnote = () => {
+    if (!footnoteId) return
+    const footnote = document.getElementById(footnoteId)
     if (!footnote) return
     footnote.scrollIntoView({
       behavior: reduceMotion ? 'auto' : 'smooth',
@@ -2115,14 +2154,14 @@ function ComponentPage({
         <header className="lars-detail__intro">
           <div className="lars-detail__title">
             <h1 id="component-detail-title">{title}</h1>
-            {component === 'chip' && (
+            {footnoteId && (
               <sup>
                 <a
                   aria-label="Read note 1"
-                  href="#chip-footnote-1"
+                  href={`#${footnoteId}`}
                   onClick={(event) => {
                     event.preventDefault()
-                    scrollToChipFootnote()
+                    scrollToFootnote()
                   }}
                 >
                   1
