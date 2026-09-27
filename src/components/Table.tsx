@@ -638,13 +638,14 @@ export function Table<RowData>({
               <table
             aria-label={ariaLabel}
             className="lars-table"
+            data-actions={onRowAction ? true : undefined}
             data-selectable={selectable || undefined}
             data-sticky-header={stickyHeader || undefined}
             data-striped={striped || undefined}
             data-variant={variant}
             style={{
               '--table-column-count': columns.length,
-              '--table-relaxed-min-width': `${columns.length * 90 + (selectable ? 104 : 52)}px`,
+              '--table-relaxed-min-width': `${columns.length * 90 + (selectable ? 52 : 0) + (onRowAction ? 52 : 0)}px`,
             } as CSSProperties}
           >
             <colgroup>
@@ -655,7 +656,7 @@ export function Table<RowData>({
                   style={column.width === undefined ? undefined : { width: column.width }}
                 />
               ))}
-              <col className="lars-table__action-col" />
+              {onRowAction && <col className="lars-table__action-col" />}
             </colgroup>
             <thead>
               <tr>
@@ -672,12 +673,9 @@ export function Table<RowData>({
                 {columns.map((column) => (
                   <th key={String(column.key)} scope="col">{column.header}</th>
                 ))}
-                <th
-                  aria-hidden={!onRowAction || undefined}
-                  aria-label={onRowAction ? 'Row actions' : undefined}
-                  className="lars-table__action-cell"
-                  scope="col"
-                />
+                {onRowAction && (
+                  <th aria-label="Row actions" className="lars-table__action-cell" scope="col" />
+                )}
               </tr>
             </thead>
             <tbody>
@@ -700,8 +698,8 @@ export function Table<RowData>({
                         : (row as Record<string, ReactNode>)[String(column.key)]
                       return <td key={String(column.key)}>{value}</td>
                     })}
-                    <td aria-hidden={!onRowAction || undefined} className="lars-table__action-cell">
-                      {onRowAction && (
+                    {onRowAction && (
+                      <td className="lars-table__action-cell">
                         <Menu.Root modal={false}>
                           <Menu.Trigger
                             aria-label={rowActionLabel(row)}
@@ -724,14 +722,14 @@ export function Table<RowData>({
                             </Menu.Positioner>
                           </Menu.Portal>
                         </Menu.Root>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 )
               })}
               {visibleRows.length === 0 && (
                 <tr>
-                  <td className="lars-table__empty" colSpan={columns.length + (selectable ? 2 : 1)}>
+                  <td className="lars-table__empty" colSpan={columns.length + (selectable ? 1 : 0) + (onRowAction ? 1 : 0)}>
                     {emptyMessage}
                   </td>
                 </tr>

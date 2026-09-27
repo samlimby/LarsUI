@@ -860,7 +860,6 @@
 .lars-property-select__list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   max-height: var(--available-height);
   overflow-y: auto;
   outline: none;
@@ -870,8 +869,9 @@
   display: flex;
   align-items: center;
   width: 100%;
-  height: 32px;
+  height: 36px;
   padding: 8px;
+  border: 0;
   border-radius: 4px;
   outline: none;
   color: var(--lars-text-primary, #202020);

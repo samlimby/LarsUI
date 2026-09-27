@@ -1,7 +1,7 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { useEffect, useId, useRef, useState } from 'react'
+import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
 import {
   Chip,
@@ -143,16 +143,32 @@ const TABLE_ROWS: readonly TeamMember[] = [
   { id: 'sara', name: 'Sara Iqbal', role: 'Engineer', team: 'Core', status: 'Away', location: 'Lahore', updated: '1d ago' },
   { id: 'theo', name: 'Theo Park', role: 'Design', team: 'Growth', status: 'Active', location: 'Toronto', updated: '2d ago' },
 ]
+const TABLE_PREVIEW_FIRST_NAMES = [
+  'Aisha', 'Alex', 'Amara', 'Anika', 'Arjun', 'Avery', 'Camila', 'Chloe', 'Daniel', 'Elena',
+  'Emi', 'Fatima', 'Grace', 'Hugo', 'Imani', 'Jasper', 'Keira', 'Leo', 'Mina', 'Omar',
+]
+const TABLE_PREVIEW_LAST_NAMES = [
+  'Ahmed', 'Bennett', 'Chen', 'Das', 'Evans', 'Flores', 'Garcia', 'Hassan', 'Ito', 'Johnson',
+  'Kaur', 'Lopez', 'Miller', 'Nguyen', 'Okafor', 'Patel', 'Quinn', 'Rivera', 'Singh', 'Wilson',
+]
 const TABLE_HOME_ROWS = TABLE_ROWS.slice(0, 5)
 const TABLE_CONFIG_ROWS: readonly TeamMember[] = Array.from({ length: 100 }, (_, index) => {
   const source = TABLE_ROWS[index % TABLE_ROWS.length]
-  const group = Math.floor(index / TABLE_ROWS.length) + 1
+  // A fixed coprime stride varies the names without reshuffling them as row count changes.
+  const nameIndex = (index * 73 + 17)
+    % (TABLE_PREVIEW_FIRST_NAMES.length * TABLE_PREVIEW_LAST_NAMES.length)
   return {
     ...source,
-    id: `${source.id}-${index + 1}`,
-    name: group === 1 ? source.name : `${source.name} ${group}`,
+    id: `member-${index + 1}`,
+    name: index < TABLE_ROWS.length
+      ? source.name
+      : `${TABLE_PREVIEW_FIRST_NAMES[nameIndex % TABLE_PREVIEW_FIRST_NAMES.length]} ${TABLE_PREVIEW_LAST_NAMES[Math.floor(nameIndex / TABLE_PREVIEW_FIRST_NAMES.length)]}`,
   }
 })
+const getTeamMemberId = (row: TeamMember) => row.id
+const getTeamMemberActionLabel = (row: TeamMember) => `Open actions for ${row.name}`
+const noopRowAction = () => undefined
+const MemoizedTeamTable = memo(LarsTable<TeamMember>)
 const TABLE_VIEW_CODE = `import { Table, type TableColumn } from 'larsui'
 import 'larsui/style.css'
 
@@ -654,6 +670,8 @@ function CodeBlock({
   const editing = useRef(false)
   const previewRef = useRef<HTMLPreElement>(null)
   const previousCode = useRef(code)
+  const displayedCode = onChange ? draft : code
+  const highlightedCode = useMemo(() => highlightTsx(displayedCode), [displayedCode])
 
   useEffect(() => {
     if (code === previousCode.current) return
@@ -672,7 +690,7 @@ function CodeBlock({
       {onChange ? (
         <div className="lars-code-editor">
           <pre ref={previewRef} aria-hidden="true" className="lars-code lars-code--preview" data-language="tsx">
-            <code>{highlightTsx(draft)}</code>
+            <code>{highlightedCode}</code>
           </pre>
           <textarea
             aria-label={`Edit ${fileName}`}
@@ -704,12 +722,14 @@ function CodeBlock({
         </div>
       ) : (
         <pre className="lars-code" data-language="tsx">
-          <code>{highlightTsx(code)}</code>
+          <code>{highlightedCode}</code>
         </pre>
       )}
     </section>
   )
 }
+
+const MemoizedCodeBlock = memo(CodeBlock)
 
 function SegmentedControl<T extends string>({
   className = '',
@@ -1790,22 +1810,27 @@ function TableConfigurator() {
   const [selectable, setSelectable] = useState(true)
   const [variant, setVariant] = useState<TableVariant>('default')
   const [rowCount, setRowCount] = useState(15)
+  const [codeRowCount, setCodeRowCount] = useState(15)
   const [columnCount, setColumnCount] = useState(6)
   const [showActions, setShowActions] = useState(true)
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [columnHeaders, setColumnHeaders] = useState<Record<string, string>>({})
   const [memberValues, setMemberValues] = useState<Record<string, TeamMember>>({})
-  const configuredColumns = TABLE_COLUMNS.slice(0, columnCount).map((column) => ({
+  const renderedRowCount = useDeferredValue(rowCount)
+  const configuredColumns = useMemo(() => TABLE_COLUMNS.slice(0, columnCount).map((column) => ({
     ...column,
     header: columnHeaders[String(column.key)] ?? column.header,
-  }))
-  const configuredRows = TABLE_CONFIG_ROWS.slice(0, rowCount).map((row) => memberValues[row.id] ?? row)
-  const codeColumns = configuredColumns
+  })), [columnCount, columnHeaders])
+  const configuredRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, renderedRowCount)
+    .map((row) => memberValues[row.id] ?? row), [renderedRowCount, memberValues])
+  const codeRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, codeRowCount)
+    .map((row) => memberValues[row.id] ?? row), [codeRowCount, memberValues])
+  const codeColumns = useMemo(() => configuredColumns
     .map((column) => `  { key: '${String(column.key)}', header: ${quoteTableString(String(column.header))} },`)
-    .join('\n')
-  const codeMembers = configuredRows
+    .join('\n'), [configuredColumns])
+  const codeMembers = useMemo(() => codeRows
     .map((row) => `  { id: ${quoteTableString(row.id)}, name: ${quoteTableString(row.name)}, role: ${quoteTableString(row.role)}, team: ${quoteTableString(row.team)}, status: ${quoteTableString(row.status)}, location: ${quoteTableString(row.location)}, updated: ${quoteTableString(row.updated)} },`)
-    .join('\n')
+    .join('\n'), [codeRows])
   const toolbarCode = variant === 'relaxed' ? '' : [
     '  toolbar',
     ...(toolbarFloating ? ['  toolbarFloating'] : []),
@@ -1852,19 +1877,39 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
 />
 `
 
+  const handleTableCodeChange = useCallback((nextCode: string) => {
+    const nextHeaders = parseTableColumnHeaders(nextCode)
+    if (nextHeaders && Object.keys(nextHeaders).length > 0) {
+      setColumnHeaders((current) => {
+        if (Object.entries(nextHeaders).every(([key, value]) => current[key] === value)) return current
+        return { ...current, ...nextHeaders }
+      })
+    }
+
+    const nextMembers = parseTableMembers(nextCode)
+    if (nextMembers && Object.keys(nextMembers).length > 0) {
+      setMemberValues((current) => {
+        if (Object.entries(nextMembers).every(([id, member]) =>
+          Object.entries(member).every(([key, value]) => current[id]?.[key as keyof TeamMember] === value)
+        )) return current
+        return { ...current, ...nextMembers }
+      })
+    }
+  }, [])
+
   return (
     <>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-table-canvas">
-          <LarsTable
+          <MemoizedTeamTable
             ariaLabel="Team members preview"
             className="lars-table-preview"
             columns={configuredColumns}
             filterableColumns={TABLE_FILTERABLE_COLUMNS}
-            getRowId={(row) => row.id}
-            onRowAction={showActions ? () => undefined : undefined}
+            getRowId={getTeamMemberId}
+            onRowAction={showActions ? noopRowAction : undefined}
             onSelectedRowIdsChange={setSelectedRows}
-            rowActionLabel={(row) => `Open actions for ${row.name}`}
+            rowActionLabel={getTeamMemberActionLabel}
             rows={configuredRows}
             selectable={selectable}
             selectedRowIds={selectedRows}
@@ -1901,6 +1946,7 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
               max={100}
               min={1}
               onValueChange={setRowCount}
+              onValueCommit={(next) => startTransition(() => setCodeRowCount(next))}
               showTicks={false}
               step={1}
               value={rowCount}
@@ -1951,29 +1997,11 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
         </aside>
       </div>
       <div className="lars-code-with-footnote">
-        <CodeBlock
+        <MemoizedCodeBlock
           code={code}
           fileName="Table.tsx"
           label="Editable table usage code"
-          onChange={(nextCode) => {
-            const nextHeaders = parseTableColumnHeaders(nextCode)
-            if (nextHeaders && Object.keys(nextHeaders).length > 0) {
-              setColumnHeaders((current) => {
-                if (Object.entries(nextHeaders).every(([key, value]) => current[key] === value)) return current
-                return { ...current, ...nextHeaders }
-              })
-            }
-
-            const nextMembers = parseTableMembers(nextCode)
-            if (nextMembers && Object.keys(nextMembers).length > 0) {
-              setMemberValues((current) => {
-                if (Object.entries(nextMembers).every(([id, member]) =>
-                  Object.entries(member).every(([key, value]) => current[id]?.[key as keyof TeamMember] === value)
-                )) return current
-                return { ...current, ...nextMembers }
-              })
-            }
-          }}
+          onChange={handleTableCodeChange}
         />
         <aside className="lars-footnotes" aria-label="Notes">
           <p id="table-footnote-1" tabIndex={-1}>
