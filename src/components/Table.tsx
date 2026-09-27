@@ -26,6 +26,11 @@ const TABLE_VARIANT_TRANSITION = {
 const EMPTY_FILTERABLE_COLUMNS: readonly string[] = []
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
+function isAtScrollBottom(viewport: HTMLElement) {
+  return viewport.scrollHeight > viewport.clientHeight + 1
+    && viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 2
+}
+
 export type TableProps<RowData> = {
   columns: readonly TableColumn<RowData>[]
   rows: readonly RowData[]
@@ -37,6 +42,8 @@ export type TableProps<RowData> = {
   striped?: boolean
   /** Shows the Paper-style toolbar above the default and compact variants. */
   toolbar?: boolean
+  /** Shows the floating Paper toolbar below short tables and over scrollable tables. */
+  toolbarFloating?: boolean
   /** Shows the toolbar's View toggle. */
   toolbarToggle?: boolean
   /** Shows the toolbar's filter and search actions. */
@@ -171,6 +178,7 @@ export function Table<RowData>({
   stickyHeader = false,
   striped = true,
   toolbar = false,
+  toolbarFloating = false,
   toolbarToggle = true,
   toolbarActions = true,
   toolbarCounter = true,
@@ -186,6 +194,7 @@ export function Table<RowData>({
   const prefersReducedMotion = useReducedMotion()
   const frameRef = useRef<HTMLDivElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -195,6 +204,8 @@ export function Table<RowData>({
   const toolsRef = useRef<HTMLDivElement>(null)
   const filterChipsRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState<number>()
+  const [tableScrollable, setTableScrollable] = useState(false)
+  const [atScrollBottom, setAtScrollBottom] = useState(false)
   const [toolbarOccupied, setToolbarOccupied] = useState(44)
   const [chipsWrapped, setChipsWrapped] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -208,7 +219,8 @@ export function Table<RowData>({
   const [internalSelection, setInternalSelection] = useState<readonly string[]>(defaultSelectedRowIds)
   const selection = controlled ? selectedRowIds : internalSelection
   const selected = useMemo(() => new Set(selection), [selection])
-  const showToolbar = toolbar && variant !== 'relaxed' && (toolbarToggle || toolbarActions || toolbarCounter)
+  const showToolbar = toolbar && variant !== 'relaxed' && (toolbarToggle || toolbarActions || toolbarCounter || (toolbarFloating && selectable))
+  const isFloating = showToolbar && toolbarFloating
   const filterSelected = toolbarActions && selectedOnly && selectable
   const filterGroups = useMemo(() => filterableColumns.flatMap((filterKey) => {
     const key = String(filterKey)
@@ -271,8 +283,9 @@ export function Table<RowData>({
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current
+    const viewport = viewportRef.current
     const content = contentRef.current
-    if (!root || !content) return
+    if (!root || !viewport || !content) return
 
     // Resize the frame without scaling its rows, text, or controls. The content
     // retains its intrinsic height even while the scroll viewport is capped.
@@ -281,24 +294,33 @@ export function Table<RowData>({
       const border = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
       const maxHeight = parseFloat(style.maxHeight)
       const naturalHeight = content.getBoundingClientRect().height + border
+      setTableScrollable(isFloating && Number.isFinite(maxHeight) && naturalHeight > maxHeight + 0.5)
+      setAtScrollBottom(isFloating && isAtScrollBottom(viewport))
       setHeight(Math.min(naturalHeight, Number.isFinite(maxHeight) ? maxHeight : Infinity))
     }
 
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(content)
+    observer.observe(root)
+    observer.observe(viewport)
     window.addEventListener('resize', measure)
     return () => {
       observer.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [variant, toolbarOccupied])
+  }, [variant, toolbarOccupied, isFloating, visibleRows.length])
 
   useIsomorphicLayoutEffect(() => {
     const toolbar = toolbarRef.current
     if (!toolbar || !showToolbar) return
 
     const measure = () => {
+      if (isFloating) {
+        setChipsWrapped(false)
+        return
+      }
+
       const occupied = Math.ceil(toolbar.getBoundingClientRect().height + parseFloat(getComputedStyle(toolbar).marginBottom))
       setToolbarOccupied((current) => current === occupied ? current : occupied)
 
@@ -328,7 +350,7 @@ export function Table<RowData>({
     if (itemCountRef.current) observer.observe(itemCountRef.current)
     if (toolsRef.current) observer.observe(toolsRef.current)
     return () => observer.disconnect()
-  }, [activeColumnFilters, chipsWrapped, filterSelected, searchOpen, showToolbar])
+  }, [activeColumnFilters, chipsWrapped, filterSelected, isFloating, searchOpen, showToolbar])
 
   const updateSelection = (next: string[]) => {
     if (!controlled) setInternalSelection(next)
@@ -349,7 +371,7 @@ export function Table<RowData>({
     updateSelection([...next])
   }
 
-  const filterChips = hasActiveFilters && (
+  const filterChips = hasActiveFilters && !isFloating && (
     <div className="lars-table__filter-chips" aria-label="Active filters" ref={filterChipsRef} role="group">
       {filterSelected && (
         <button
@@ -388,163 +410,192 @@ export function Table<RowData>({
     </div>
   )
 
+  const toolbarElement = showToolbar && (
+    <div
+      aria-label="Table tools"
+      className="lars-table__toolbar"
+      data-chips-wrapped={chipsWrapped || undefined}
+      data-floating={isFloating || undefined}
+      data-search-open={searchOpen || undefined}
+      ref={toolbarRef}
+      role="toolbar"
+    >
+      {(toolbarCounter || (isFloating && selectable)) && (
+        <div className="lars-table__toolbar-count">
+          {isFloating && selectable && (
+            <Checkbox
+              checked={allSelected}
+              indeterminate={partiallySelected}
+              label={allSelected ? 'Deselect all rows' : 'Select all rows'}
+              onChange={toggleAll}
+            />
+          )}
+          {toolbarCounter && (
+            <span aria-live="polite" className="lars-table__item-count" ref={itemCountRef}>
+              {isFloating
+                ? <>
+                    <span aria-hidden="true" className="lars-table__item-count-sizer">
+                      {`${visibleRows.length} of ${visibleRows.length} selected`}
+                    </span>
+                    <span className="lars-table__item-count-value">
+                      {`${selectedOnPage} of ${visibleRows.length} selected`}
+                    </span>
+                  </>
+                : selectedOnPage > 0
+                  ? `${selectedOnPage} of ${visibleRows.length} selected`
+                  : `${visibleRows.length} ${visibleRows.length === 1 ? 'item' : 'items'}`}
+            </span>
+          )}
+        </div>
+      )}
+      <div className="lars-table__toolbar-end">
+        {toolbarActions && (
+        <div className="lars-table__tools" data-animate={animateSearch || undefined} ref={toolsRef}>
+          {!chipsWrapped && filterChips}
+          <Menu.Root modal={false}>
+            <Menu.Trigger
+              aria-description={hasActiveFilters && isFloating ? 'Filters active' : undefined}
+              aria-label="Filter table"
+              className="lars-table__tool lars-table__filter"
+              data-filter-active={hasActiveFilters || undefined}
+              title="Filter table"
+            >
+              <FilterIcon />
+            </Menu.Trigger>
+            <Menu.Portal container={frameRef}>
+              <Menu.Positioner align="start" className="lars-table__filter-positioner" side={isFloating ? 'top' : 'bottom'} sideOffset={8}>
+                <Menu.Popup className="lars-table__filter-menu">
+                  <Menu.Group className="lars-table__filter-group">
+                    <Menu.GroupLabel className="lars-table__filter-group-label">Selection</Menu.GroupLabel>
+                    <Menu.CheckboxItem
+                      checked={filterSelected}
+                      className="lars-table__filter-item"
+                      disabled={!selectable}
+                      onCheckedChange={setSelectedOnly}
+                    >
+                      <span>Selected rows only</span>
+                      <span aria-hidden="true" className="lars-table__filter-indicator-slot">
+                        <Menu.CheckboxItemIndicator><FilterCheckIcon /></Menu.CheckboxItemIndicator>
+                      </span>
+                    </Menu.CheckboxItem>
+                  </Menu.Group>
+                  {filterGroups.map((group) => (
+                    <Menu.Group className="lars-table__filter-group" key={group.key}>
+                      <Menu.Separator className="lars-table__filter-separator" />
+                      <Menu.GroupLabel className="lars-table__filter-group-label">{group.label}</Menu.GroupLabel>
+                      <Menu.RadioGroup
+                        onValueChange={(value) => setColumnFilters((current) => ({ ...current, [group.key]: String(value) }))}
+                        value={columnFilters[group.key] ?? ''}
+                      >
+                        <Menu.RadioItem className="lars-table__filter-item" value="">
+                          <span>All</span>
+                          <span aria-hidden="true" className="lars-table__filter-indicator-slot">
+                            <Menu.RadioItemIndicator><FilterCheckIcon /></Menu.RadioItemIndicator>
+                          </span>
+                        </Menu.RadioItem>
+                        {group.values.map((value) => (
+                          <Menu.RadioItem className="lars-table__filter-item" key={value} value={value}>
+                            <span>{value}</span>
+                            <span aria-hidden="true" className="lars-table__filter-indicator-slot">
+                              <Menu.RadioItemIndicator><FilterCheckIcon /></Menu.RadioItemIndicator>
+                            </span>
+                          </Menu.RadioItem>
+                        ))}
+                      </Menu.RadioGroup>
+                    </Menu.Group>
+                  ))}
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
+          <span aria-hidden="true" className="lars-table__floating-divider" />
+          <div
+            className="lars-table__search"
+            data-open={searchOpen || undefined}
+            data-query-clipped={searchQueryClipped || undefined}
+            ref={searchRef}
+          >
+            <span aria-hidden="true" className="lars-table__search-surface" />
+            <button
+              aria-expanded={searchOpen}
+              aria-label={searchOpen ? 'Close search' : 'Search table'}
+              className="lars-table__search-icon"
+              onClick={() => {
+                setSearchOpen((current) => !current)
+                if (searchOpen) {
+                  setSearchQuery('')
+                  setSearchQueryClipped(false)
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') setAnimateSearch(false)
+              }}
+              onPointerDown={() => setAnimateSearch(true)}
+              ref={searchButtonRef}
+              type="button"
+            >
+              <SearchIcon />
+            </button>
+            <input
+              aria-hidden={!searchOpen || undefined}
+              aria-label="Search table"
+              disabled={!searchOpen}
+              onChange={(event) => {
+                const input = event.currentTarget
+                setSearchQuery(input.value)
+                if (input.selectionStart === input.value.length && input.selectionEnd === input.value.length) {
+                  input.scrollLeft = input.scrollWidth
+                }
+                setSearchQueryClipped(input.scrollLeft > 0)
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  setAnimateSearch(false)
+                  setSearchOpen(false)
+                  setSearchQuery('')
+                  setSearchQueryClipped(false)
+                  searchButtonRef.current?.focus()
+                }
+              }}
+              onScroll={(event) => setSearchQueryClipped(event.currentTarget.scrollLeft > 0)}
+              placeholder="Search table"
+              ref={searchInputRef}
+              tabIndex={searchOpen ? 0 : -1}
+              type="search"
+              value={searchQuery}
+            />
+          </div>
+        </div>
+        )}
+        {toolbarToggle && <SegmentedControl
+          className="lars-table__views"
+          label="Table view"
+          onValueChange={setActiveView}
+          options={[
+            { label: 'View #1', value: '1' },
+            { label: 'View #2', value: '2' },
+          ]}
+          type="square"
+          value={activeView}
+        />}
+      </div>
+      {chipsWrapped && filterChips}
+    </div>
+  )
+
   return (
     <div
       className={`lars-table-frame${className ? ` ${className}` : ''}`}
       data-chips-wrapped={chipsWrapped || undefined}
+      data-floating={isFloating || undefined}
+      data-at-scroll-bottom={tableScrollable && atScrollBottom || undefined}
+      data-scrollable={tableScrollable || undefined}
       data-toolbar={showToolbar || undefined}
       data-variant={variant}
       ref={frameRef}
       style={{ '--lars-table-toolbar-occupied': `${toolbarOccupied}px` } as CSSProperties}
     >
-      {showToolbar && (
-        <div
-          aria-label="Table tools"
-          className="lars-table__toolbar"
-          data-chips-wrapped={chipsWrapped || undefined}
-          data-search-open={searchOpen || undefined}
-          ref={toolbarRef}
-          role="toolbar"
-        >
-          {toolbarCounter && (
-            <span aria-live="polite" className="lars-table__item-count" ref={itemCountRef}>
-              {selectedOnPage > 0
-                ? `${selectedOnPage} of ${visibleRows.length} selected`
-                : `${visibleRows.length} ${visibleRows.length === 1 ? 'item' : 'items'}`}
-            </span>
-          )}
-          <div className="lars-table__toolbar-end">
-            {toolbarActions && (
-            <div className="lars-table__tools" data-animate={animateSearch || undefined} ref={toolsRef}>
-              {!chipsWrapped && filterChips}
-              <Menu.Root modal={false}>
-                <Menu.Trigger
-                  aria-label="Filter table"
-                  className="lars-table__tool lars-table__filter"
-                  data-filter-active={hasActiveFilters || undefined}
-                  title="Filter table"
-                >
-                  <FilterIcon />
-                </Menu.Trigger>
-                <Menu.Portal container={frameRef}>
-                  <Menu.Positioner align="start" className="lars-table__filter-positioner" side="bottom" sideOffset={8}>
-                    <Menu.Popup className="lars-table__filter-menu">
-                      <Menu.Group className="lars-table__filter-group">
-                        <Menu.GroupLabel className="lars-table__filter-group-label">Selection</Menu.GroupLabel>
-                        <Menu.CheckboxItem
-                          checked={filterSelected}
-                          className="lars-table__filter-item"
-                          disabled={!selectable}
-                          onCheckedChange={setSelectedOnly}
-                        >
-                          <span>Selected rows only</span>
-                          <span aria-hidden="true" className="lars-table__filter-indicator-slot">
-                            <Menu.CheckboxItemIndicator><FilterCheckIcon /></Menu.CheckboxItemIndicator>
-                          </span>
-                        </Menu.CheckboxItem>
-                      </Menu.Group>
-                      {filterGroups.map((group) => (
-                        <Menu.Group className="lars-table__filter-group" key={group.key}>
-                          <Menu.Separator className="lars-table__filter-separator" />
-                          <Menu.GroupLabel className="lars-table__filter-group-label">{group.label}</Menu.GroupLabel>
-                          <Menu.RadioGroup
-                            onValueChange={(value) => setColumnFilters((current) => ({ ...current, [group.key]: String(value) }))}
-                            value={columnFilters[group.key] ?? ''}
-                          >
-                            <Menu.RadioItem className="lars-table__filter-item" value="">
-                              <span>All</span>
-                              <span aria-hidden="true" className="lars-table__filter-indicator-slot">
-                                <Menu.RadioItemIndicator><FilterCheckIcon /></Menu.RadioItemIndicator>
-                              </span>
-                            </Menu.RadioItem>
-                            {group.values.map((value) => (
-                              <Menu.RadioItem className="lars-table__filter-item" key={value} value={value}>
-                                <span>{value}</span>
-                                <span aria-hidden="true" className="lars-table__filter-indicator-slot">
-                                  <Menu.RadioItemIndicator><FilterCheckIcon /></Menu.RadioItemIndicator>
-                                </span>
-                              </Menu.RadioItem>
-                            ))}
-                          </Menu.RadioGroup>
-                        </Menu.Group>
-                      ))}
-                    </Menu.Popup>
-                  </Menu.Positioner>
-                </Menu.Portal>
-              </Menu.Root>
-              <div
-                className="lars-table__search"
-                data-open={searchOpen || undefined}
-                data-query-clipped={searchQueryClipped || undefined}
-                ref={searchRef}
-              >
-                <span aria-hidden="true" className="lars-table__search-surface" />
-                <button
-                  aria-expanded={searchOpen}
-                  aria-label={searchOpen ? 'Close search' : 'Search table'}
-                  className="lars-table__search-icon"
-                  onClick={() => {
-                    setSearchOpen((current) => !current)
-                    if (searchOpen) {
-                      setSearchQuery('')
-                      setSearchQueryClipped(false)
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') setAnimateSearch(false)
-                  }}
-                  onPointerDown={() => setAnimateSearch(true)}
-                  ref={searchButtonRef}
-                  type="button"
-                >
-                  <SearchIcon />
-                </button>
-                <input
-                  aria-hidden={!searchOpen || undefined}
-                  aria-label="Search table"
-                  disabled={!searchOpen}
-                  onChange={(event) => {
-                    const input = event.currentTarget
-                    setSearchQuery(input.value)
-                    if (input.selectionStart === input.value.length && input.selectionEnd === input.value.length) {
-                      input.scrollLeft = input.scrollWidth
-                    }
-                    setSearchQueryClipped(input.scrollLeft > 0)
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape') {
-                      setAnimateSearch(false)
-                      setSearchOpen(false)
-                      setSearchQuery('')
-                      setSearchQueryClipped(false)
-                      searchButtonRef.current?.focus()
-                    }
-                  }}
-                  onScroll={(event) => setSearchQueryClipped(event.currentTarget.scrollLeft > 0)}
-                  placeholder="Search table"
-                  ref={searchInputRef}
-                  tabIndex={searchOpen ? 0 : -1}
-                  type="search"
-                  value={searchQuery}
-                />
-              </div>
-            </div>
-            )}
-            {toolbarToggle && <SegmentedControl
-              className="lars-table__views"
-              label="Table view"
-              onValueChange={setActiveView}
-              options={[
-                { label: 'View #1', value: '1' },
-                { label: 'View #2', value: '2' },
-              ]}
-              type="square"
-              value={activeView}
-            />}
-          </div>
-          {chipsWrapped && filterChips}
-        </div>
-      )}
+      {!isFloating && toolbarElement}
     <ScrollArea.Root
       className="lars-table-wrap"
       data-sticky-header={stickyHeader || undefined}
@@ -559,7 +610,11 @@ export function Table<RowData>({
       )}
       style={{ borderRadius: variant === 'relaxed' ? 0 : 8 }}
     >
-      <ScrollArea.Viewport className="lars-table__viewport">
+      <ScrollArea.Viewport
+        className="lars-table__viewport"
+        onScroll={(event) => setAtScrollBottom(isAtScrollBottom(event.currentTarget))}
+        ref={viewportRef}
+      >
         <ScrollArea.Content className="lars-table__scroll-content" ref={contentRef}>
           <AnimatePresence initial={false} mode="popLayout">
             <motion.div
@@ -695,6 +750,7 @@ export function Table<RowData>({
       </ScrollArea.Scrollbar>
       <ScrollArea.Corner className="lars-table__scrollbar-corner" />
     </ScrollArea.Root>
+    {isFloating && toolbarElement}
     </div>
   )
 }

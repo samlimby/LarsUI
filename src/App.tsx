@@ -1653,20 +1653,20 @@ ${codeOptions}
 }
 
 function TableToolbarProperties({
-  hovering,
+  floating,
   toggle,
   actions,
   counter,
-  onHoveringChange,
+  onFloatingChange,
   onToggleChange,
   onActionsChange,
   onCounterChange,
 }: {
-  hovering: boolean
+  floating: boolean
   toggle: boolean
   actions: boolean
   counter: boolean
-  onHoveringChange: (value: boolean) => void
+  onFloatingChange: (value: boolean) => void
   onToggleChange: (value: boolean) => void
   onActionsChange: (value: boolean) => void
   onCounterChange: (value: boolean) => void
@@ -1746,7 +1746,7 @@ function TableToolbarProperties({
           </div>
           <div className="lars-table-toolbar-property__options">
             <div className="lars-table-toolbar-property__divider" />
-            <SegmentedControl label="Hovering" onChange={(next) => onHoveringChange(next === 'true')} options={booleanOptions} value={hovering ? 'true' : 'false'} />
+            <SegmentedControl label="Floating" onChange={(next) => onFloatingChange(next === 'true')} options={booleanOptions} value={floating ? 'true' : 'false'} />
             <SegmentedControl label="Toggle" onChange={(next) => onToggleChange(next === 'true')} options={booleanOptions} value={toggle ? 'true' : 'false'} />
             <SegmentedControl label="Actions" onChange={(next) => onActionsChange(next === 'true')} options={booleanOptions} value={actions ? 'true' : 'false'} />
             <SegmentedControl label="Counter" onChange={(next) => onCounterChange(next === 'true')} options={booleanOptions} value={counter ? 'true' : 'false'} />
@@ -1783,13 +1783,13 @@ function TableToolbarProperties({
 
 function TableConfigurator() {
   const [striped, setStriped] = useState(true)
-  const [toolbarHovering, setToolbarHovering] = useState(true)
+  const [toolbarFloating, setToolbarFloating] = useState(true)
   const [toolbarToggle, setToolbarToggle] = useState(false)
   const [toolbarActions, setToolbarActions] = useState(true)
   const [toolbarCounter, setToolbarCounter] = useState(true)
   const [selectable, setSelectable] = useState(true)
   const [variant, setVariant] = useState<TableVariant>('default')
-  const [rowCount, setRowCount] = useState(6)
+  const [rowCount, setRowCount] = useState(15)
   const [columnCount, setColumnCount] = useState(6)
   const [showActions, setShowActions] = useState(true)
   const [selectedRows, setSelectedRows] = useState<string[]>([])
@@ -1808,6 +1808,7 @@ function TableConfigurator() {
     .join('\n')
   const toolbarCode = variant === 'relaxed' ? '' : [
     '  toolbar',
+    ...(toolbarFloating ? ['  toolbarFloating'] : []),
     ...(!toolbarToggle ? ['  toolbarToggle={false}'] : []),
     ...(!toolbarActions ? ['  toolbarActions={false}'] : []),
     ...(!toolbarCounter ? ['  toolbarCounter={false}'] : []),
@@ -1872,6 +1873,7 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
             toolbar
             toolbarActions={toolbarActions}
             toolbarCounter={toolbarCounter}
+            toolbarFloating={toolbarFloating}
             toolbarToggle={toolbarToggle}
             variant={variant}
           />
@@ -1917,10 +1919,10 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
               <TableToolbarProperties
                 actions={toolbarActions}
                 counter={toolbarCounter}
-                hovering={toolbarHovering}
+                floating={toolbarFloating}
                 onActionsChange={setToolbarActions}
                 onCounterChange={setToolbarCounter}
-                onHoveringChange={setToolbarHovering}
+                onFloatingChange={setToolbarFloating}
                 onToggleChange={setToolbarToggle}
                 toggle={toolbarToggle}
               />
@@ -1934,13 +1936,13 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
               />
             )}
             <SegmentedControl
-              label="Selectable"
+              label="Multi-select"
               onChange={(next) => setSelectable(next === 'true')}
               options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
               value={selectable ? 'true' : 'false'}
             />
             <SegmentedControl
-              label="Actions"
+              label="Kebab"
               onChange={(next) => setShowActions(next === 'true')}
               options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
               value={showActions ? 'true' : 'false'}
@@ -1977,7 +1979,7 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
           <p id="table-footnote-1" tabIndex={-1}>
             <sup>1</sup>
             <span>
-              The hovering toolbar was inspired by an iteration featured in{' '}
+              The floating toolbar was inspired by an iteration featured in{' '}
               <a href="https://www.youtube.com/watch?v=neE6wOuBIP8" target="_blank" rel="noreferrer">
                 Kole Jain’s video
               </a>.

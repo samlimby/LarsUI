@@ -1,8 +1,10 @@
 .lars-table-frame {
+  position: relative;
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
 }
-
+.lars-table-frame[data-floating][data-scrollable] { padding-bottom: 44px; }
 .lars-table__toolbar {
   display: flex;
   align-items: center;
@@ -26,6 +28,7 @@
 }
 
 .lars-table__item-count { flex-shrink: 0; white-space: nowrap; }
+.lars-table__toolbar-count { display: flex; align-items: center; flex-shrink: 0; }
 .lars-table__toolbar-end,
 .lars-table__tools {
   display: flex;
@@ -259,6 +262,183 @@ html[data-theme='dark'] .lars-table__action-menu {
 .lars-table__views {
   flex-shrink: 0;
 }
+.lars-table__floating-divider { display: none; }
+
+.lars-table__toolbar[data-floating] {
+  --lars-floating-toolbar-y: 0px;
+  --table-checkbox-background: #222222;
+  --table-checkbox-border: #606060;
+  --table-checkbox-hover-background: #303030;
+  --table-checkbox-hover-border: #b4b4b4;
+  --table-checkbox-selected: var(--radix-indigo-dark-11, #9eb1ff);
+  position: relative;
+  z-index: 10;
+  width: max-content;
+  max-width: calc(100% - 8px);
+  height: 36px;
+  min-height: 36px;
+  margin: 8px auto 0;
+  padding: 2px 4px 2px 0;
+  flex-wrap: nowrap;
+  gap: 8px;
+  border-radius: 8px;
+  background: #111111;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 12%);
+  color: #eeeeee;
+  transform: translateY(var(--lars-floating-toolbar-y));
+  animation: lars-floating-toolbar-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lars-table-frame[data-floating][data-scrollable] .lars-table__toolbar[data-floating] {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  margin: 0;
+  translate: -50% 0;
+  transition: transform 260ms cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+.lars-table-frame[data-floating][data-scrollable][data-at-scroll-bottom] .lars-table__toolbar[data-floating] {
+  --lars-floating-toolbar-y: 52px;
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes lars-floating-toolbar-enter {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--lars-floating-toolbar-y) + 12px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(var(--lars-floating-toolbar-y));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lars-table__toolbar[data-floating] {
+    animation: none;
+  }
+  .lars-table-frame[data-floating][data-scrollable] .lars-table__toolbar[data-floating],
+  .lars-table-frame[data-floating][data-scrollable][data-at-scroll-bottom] .lars-table__toolbar[data-floating] {
+    transition-duration: 0.01ms;
+  }
+}
+.lars-table__toolbar[data-floating] .lars-table__toolbar-count {
+  height: 32px;
+  gap: 8px;
+  padding: 0 16px 0 12px;
+}
+.lars-table__toolbar[data-floating] .lars-table__item-count {
+  display: grid;
+  font-variant-numeric: tabular-nums;
+}
+.lars-table__toolbar[data-floating] .lars-table__item-count > span { grid-area: 1 / 1; }
+.lars-table__toolbar[data-floating] .lars-table__item-count-sizer { visibility: hidden; }
+.lars-table__toolbar[data-floating] .lars-table__toolbar-end {
+  gap: 8px;
+  margin-left: 0;
+}
+.lars-table__toolbar[data-floating] .lars-table__tools {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: auto;
+  height: 32px;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+.lars-table__toolbar[data-floating] .lars-table__filter {
+  --lars-floating-filter-background: #111111;
+  position: relative;
+  left: auto;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  background: var(--lars-floating-filter-background);
+  color: #838383;
+  transform: none;
+}
+.lars-table__toolbar[data-floating] .lars-table__filter[data-filter-active]::after {
+  position: absolute;
+  top: 4px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f76b15;
+  box-shadow: 0 0 0 2px var(--lars-floating-filter-background);
+  content: '';
+  transition: box-shadow 140ms ease;
+}
+.lars-table__toolbar[data-floating][data-search-open] .lars-table__filter {
+  transform: none;
+}
+.lars-table__toolbar[data-floating] .lars-table__floating-divider {
+  display: block;
+  width: 1px;
+  height: 12px;
+  flex: 0 0 1px;
+  border-radius: 999px;
+  background: #646464;
+}
+.lars-table__toolbar[data-floating] .lars-table__search {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+.lars-table__toolbar[data-floating] .lars-table__search[data-open] { width: 136px; }
+.lars-table__toolbar[data-floating] .lars-table__search-surface {
+  clip-path: none;
+  background: #222222;
+}
+.lars-table__toolbar[data-floating] .lars-table__search-icon {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 32px;
+  height: 32px;
+  color: #7c8481;
+  transform: none;
+}
+.lars-table__toolbar[data-floating] .lars-table__search[data-open] .lars-table__search-icon {
+  transform: none;
+}
+.lars-table__toolbar[data-floating] .lars-table__search input {
+  top: 0;
+  left: 32px;
+  width: 100px;
+  height: 32px;
+  color: #eeeeee;
+}
+.lars-table__toolbar[data-floating] .lars-table__search input::placeholder { color: #8d8d8d; }
+.lars-table__toolbar[data-floating] .lars-table__filter[data-popup-open],
+.lars-table__toolbar[data-floating] .lars-table__filter:focus-visible {
+  --lars-floating-filter-background: #2a2a2a;
+}
+.lars-table__toolbar[data-floating] .lars-table__filter[data-popup-open],
+.lars-table__toolbar[data-floating] .lars-table__filter:focus-visible,
+.lars-table__toolbar[data-floating] .lars-table__search-icon:focus-visible {
+  background: var(--lars-floating-filter-background, #2a2a2a);
+  color: #eeeeee;
+}
+.lars-table__toolbar[data-floating] .lars-table__tool:focus-visible,
+.lars-table__toolbar[data-floating] .lars-table__search-icon:focus-visible,
+.lars-table__toolbar[data-floating] .lars-table__checkbox:focus-visible {
+  outline-color: #eeeeee;
+}
+.lars-table__toolbar[data-floating] .lars-table__views {
+  --segment-bg: #222222;
+  --segment-selected-bg: #3a3a3a;
+  --segment-selected-text: #eeeeee;
+  --segment-text: #b4b4b4;
+  --segment-border: #484848;
+  --segment-divider: #484848;
+}
+.lars-table__toolbar[data-floating] .lars-segmented-control__segment {
+  height: 28px;
+  padding-inline: 8px;
+}
 .lars-table__tool:focus-visible,
 .lars-table__search-icon:focus-visible {
   outline: 2px solid var(--lars-text-primary, #202020);
@@ -278,11 +458,12 @@ html[data-theme='dark'] .lars-table__action-menu {
   );
   --table-row-selected: color-mix(
     in srgb,
-    var(--radix-blue-3, #e6f4fe) 72%,
+    var(--radix-indigo-3, #edf2fe) 72%,
     transparent
   );
   --table-header-text: var(--lars-low-emphasis, #838383);
   --table-body-text: var(--lars-text-secondary, #646464);
+  --table-checkbox-background: #fff;
   --table-checkbox-border: var(--lars-line, #d9d9d9);
   --table-checkbox-hover-background: var(--container-low_emphasis, #f9f9f9);
   --table-checkbox-hover-border: color-mix(
@@ -290,7 +471,7 @@ html[data-theme='dark'] .lars-table__action-menu {
     var(--color-low_emphasis, #838383) 64%,
     transparent
   );
-  --table-checkbox-selected: var(--radix-blue-11, #0d74ce);
+  --table-checkbox-selected: var(--radix-indigo-11, #3a5bc7);
   --table-focus: var(--lars-text-primary, #202020);
   --table-header-height: 40px;
   --table-scrollbar: color-mix(in srgb, var(--table-body-text) 36%, transparent);
@@ -307,6 +488,7 @@ html[data-theme='dark'] .lars-table__action-menu {
   width: 100%;
   height: 100%;
   max-height: inherit;
+  overscroll-behavior-y: none;
   scrollbar-width: none;
 }
 
@@ -561,7 +743,7 @@ html[data-theme='dark'] .lars-table__action-menu {
   appearance: none;
   border: 1px solid var(--table-checkbox-border);
   border-radius: 2px;
-  background: #fff;
+  background: var(--table-checkbox-background);
   cursor: pointer;
   transition: 120ms ease;
   transition-property: background-color, border-color;
@@ -617,18 +799,17 @@ html[data-theme='dark'] .lars-table__action-menu {
 .lars-table__empty { height: 80px; color: var(--table-header-text); text-align: center; }
 
 .lars-page[data-theme='dark'] .lars-table-wrap {
-  --table-checkbox-hover-background: var(--container-low_emphasis, #191919);
-  --table-checkbox-hover-border: color-mix(
-    in srgb,
-    var(--color-low_emphasis, #7b7b7b) 64%,
-    transparent
-  );
+  --table-checkbox-background: #222222;
+  --table-checkbox-border: #606060;
+  --table-checkbox-hover-background: var(--lars-copy-hover, #303030);
+  --table-checkbox-hover-border: #b4b4b4;
+  --table-checkbox-selected: var(--radix-indigo-dark-11, #9eb1ff);
   --table-row-hover: color-mix(
     in srgb,
     var(--secondary-hover, #303030) 66%,
     transparent
   );
-  --table-row-selected: color-mix(in srgb, #173246 72%, transparent);
+  --table-row-selected: color-mix(in srgb, #182449 72%, transparent);
 }
 
 .lars-page[data-theme='dark'] .lars-table__search-surface {
@@ -647,6 +828,14 @@ html[data-theme='dark'] .lars-table__action-menu {
   }
   .lars-page[data-theme='dark'] .lars-table__filter:hover {
     background: var(--secondary-hover, #2a2a2a);
+  }
+  .lars-table__toolbar[data-floating] .lars-table__filter:hover,
+  .lars-table__toolbar[data-floating] .lars-table__search:not([data-open]) .lars-table__search-icon:hover {
+    background: var(--lars-floating-filter-background, #2a2a2a);
+    color: #eeeeee;
+  }
+  .lars-table__toolbar[data-floating] .lars-table__filter:hover {
+    --lars-floating-filter-background: #2a2a2a;
   }
   .lars-table__search:not([data-open]) .lars-table__search-icon:hover {
     background: var(--secondary-hover, #e8e8e8);

@@ -368,6 +368,10 @@
   max-height: calc(var(--lars-table-preview-max-height) - var(--lars-table-toolbar-occupied, 44px));
 }
 
+.lars-table-canvas .lars-table-preview[data-floating] .lars-table-wrap {
+  max-height: calc(var(--lars-table-preview-max-height) - 44px);
+}
+
 .lars-table-canvas .lars-table-preview .lars-table__viewport {
   max-height: var(--lars-table-preview-max-height);
 }
