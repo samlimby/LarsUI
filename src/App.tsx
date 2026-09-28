@@ -2483,7 +2483,7 @@ function AiComposerExample({ variant }: { variant: AiComposerVariant }) {
 }
 
 function AiComposerStage() {
-  const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
+  const [variant, setVariant] = useState<AiComposerVariant>('structured')
 
   return (
     <div className="lars-stage lars-stage--ai-composer" data-variant={variant}>
@@ -2493,7 +2493,7 @@ function AiComposerStage() {
           className="lars-ai-stage__switch"
           label="Composer variant"
           onValueChange={(next) => setVariant(next as AiComposerVariant)}
-          options={[{ label: 'Unstructured', value: 'unstructured' }, { label: 'Structured', value: 'structured' }]}
+          options={[{ label: 'Structured', value: 'structured' }, { label: 'Unstructured', value: 'unstructured' }]}
           value={variant}
         />
       </div>
