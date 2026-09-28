@@ -119,18 +119,6 @@ export function Example() {
     />
   )
 }`
-const AI_COMPOSER_VIEW_CODE = `import { AiComposer } from 'larsui'
-import 'larsui/style.css'
-
-<AiComposer
-  variant="unstructured"
-  onSubmit={({ message, files }) => sendMessage(message, files)}
-/>
-
-<AiComposer
-  variant="structured"
-  onSubmit={({ message, files }) => runAnalysis({ message, files })}
-/>`
 type TeamMember = {
   id: string
   name: string
@@ -2514,20 +2502,40 @@ function AiComposerStage() {
 }
 
 function AiComposerDetail() {
+  const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
+  const code = `import { AiComposer } from 'larsui'
+import 'larsui/style.css'
+
+<AiComposer
+  variant="${variant}"
+  onSubmit={({ message, files }) => sendMessage(message, files)}
+/>`
+
   return (
-    <div className="lars-ai-detail">
-      <div className="lars-ai-detail__variants">
-        <section className="lars-ai-detail__variant" aria-labelledby="ai-unstructured-title">
-          <div className="lars-ai-detail__heading"><span>01</span><h2 id="ai-unstructured-title">Unstructured</h2><p>A compact, open prompt with only the essential actions.</p></div>
-          <AiComposerExample variant="unstructured" />
-        </section>
-        <section className="lars-ai-detail__variant" aria-labelledby="ai-structured-title">
-          <div className="lars-ai-detail__heading"><span>02</span><h2 id="ai-structured-title">Structured</h2><p>A compact prompt in a clearly defined frame.</p></div>
-          <AiComposerExample variant="structured" />
-        </section>
+    <>
+      <div className="lars-configurator">
+        <div className="lars-stage lars-component-canvas">
+          <AiComposerExample key={variant} variant={variant} />
+        </div>
+        <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">
+          <header className="lars-properties__header">
+            <h2 id="ai-composer-properties-title">Properties</h2>
+          </header>
+          <div className="lars-properties__fields">
+            <PropertySelect
+              label="Variant"
+              onChange={setVariant}
+              options={[
+                { label: 'Unstructured', value: 'unstructured' },
+                { label: 'Structured', value: 'structured' },
+              ]}
+              value={variant}
+            />
+          </div>
+        </aside>
       </div>
-      <MemoizedCodeBlock code={AI_COMPOSER_VIEW_CODE} fileName="AiComposer.tsx" label="AI Composer usage code" />
-    </div>
+      <MemoizedCodeBlock code={code} fileName="AiComposer.tsx" label="AI Composer usage code" />
+    </>
   )
 }
 
