@@ -18,7 +18,13 @@
   background: var(--lars-container-subtle, #f9f9f9);
   box-shadow: none;
 }
-.lars-ai-composer--structured { min-height: 148px; border-radius: 28px; }
+.lars-ai-composer--structured {
+  min-height: 150px;
+  border-color: var(--lars-divider, #e0e0e0);
+  border-radius: 8px;
+  background: var(--lars-container-subtle, #f9f9f9);
+  box-shadow: none;
+}
 
 .lars-ai-composer__sr-only {
   position: absolute;
@@ -42,7 +48,7 @@
 }
 
 .lars-ai-composer--unstructured .lars-ai-composer__body { min-height: 148px; padding: 24px 8px 8px; }
-.lars-ai-composer--structured .lars-ai-composer__body { min-height: 146px; padding: 20px 24px; }
+.lars-ai-composer--structured .lars-ai-composer__body { min-height: 148px; padding: 24px 12px 12px; }
 
 .lars-ai-composer__input {
   display: block;
@@ -61,7 +67,14 @@
   line-height: 26px;
 }
 
-.lars-ai-composer--structured .lars-ai-composer__input { height: 0; min-height: 60px; line-height: 28px; }
+.lars-ai-composer--structured .lars-ai-composer__input {
+  height: 0;
+  min-height: 48px;
+  padding-inline: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+}
 .lars-ai-composer--unstructured .lars-ai-composer__input {
   height: 0;
   min-height: 48px;
@@ -72,6 +85,7 @@
 }
 .lars-ai-composer__input::placeholder { color: var(--lars-low-emphasis, #838383); opacity: 1; }
 .lars-ai-composer--unstructured .lars-ai-composer__input::placeholder { color: var(--lars-text-secondary, #646464); }
+.lars-ai-composer--structured .lars-ai-composer__input::placeholder { color: var(--lars-text-secondary, #646464); }
 .lars-ai-composer:focus-within { border-color: var(--lars-text-secondary, #646464); }
 .lars-ai-composer--unstructured:focus-within { outline: 2px solid var(--lars-accent, #0d74ce); outline-offset: 2px; }
 
@@ -91,11 +105,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 40px;
+  min-height: 38px;
 }
 
-.lars-ai-composer__actions,
-.lars-ai-composer__parameters { display: flex; align-items: center; gap: 6px; }
+.lars-ai-composer__actions { display: flex; align-items: center; gap: 16px; }
 .lars-ai-composer__actions svg,
 .lars-ai-composer__send svg { display: block; width: 20px; height: 20px; }
 .lars-ai-composer__actions .lars-button--tertiary { color: var(--lars-text-secondary, #646464); }
@@ -122,9 +135,7 @@
   cursor: pointer;
 }
 .lars-ai-composer__attach-item[data-highlighted] { background: var(--lars-copy-hover, #f0f0f0); }
-.lars-ai-composer--unstructured .lars-ai-composer__toolbar { min-height: 38px; }
-.lars-ai-composer--unstructured .lars-ai-composer__actions { gap: 16px; }
-.lars-ai-composer--unstructured .lars-ai-composer__icon-button.lars-button {
+.lars-ai-composer__icon-button.lars-button {
   width: 32px;
   min-width: 32px;
   height: 32px;
@@ -132,52 +143,15 @@
   border-radius: 999px;
   color: var(--lars-text-primary, #202020);
 }
-.lars-ai-composer--unstructured .lars-ai-composer__icon-button svg { width: 16px; height: 16px; }
-.lars-ai-composer__toolbar--structured { min-height: 46px; }
-.lars-ai-composer__parameters { gap: 10px; min-width: 0; }
+.lars-ai-composer__icon-button svg { width: 16px; height: 16px; }
 
 .lars-ai-composer__send.lars-button {
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
   padding: 0;
-  border-radius: 10px;
-}
-
-.lars-ai-composer--structured .lars-ai-composer__send.lars-button { width: 46px; min-width: 46px; height: 46px; border-radius: 999px; }
-.lars-ai-composer--unstructured .lars-ai-composer__send.lars-button { width: 32px; min-width: 32px; height: 32px; border-radius: 999px; }
-.lars-ai-composer--unstructured .lars-ai-composer__send svg { width: 16px; height: 16px; }
-.lars-ai-composer__send.lars-button:disabled { opacity: .48; }
-.lars-ai-composer--unstructured .lars-ai-composer__send.lars-button:disabled { opacity: 1; }
-
-.lars-ai-composer__select-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 0 1 auto;
-  min-width: 0;
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--lars-divider, #e0e0e0);
   border-radius: 999px;
-  background: var(--lars-container, #fcfcfc);
-  box-shadow: 0 2px 5px rgb(32 32 32 / 4%);
 }
 
-.lars-ai-composer__select-wrap:focus-within { outline: 2px solid var(--lars-accent, #0d74ce); outline-offset: 2px; }
-.lars-ai-composer__select-wrap--workspace { width: 112px; }
-.lars-ai-composer__select-wrap--role { width: 205px; }
-.lars-ai-composer__select-wrap select { width: 100%; min-width: 0; padding: 0 4px 0 8px; appearance: none; border: 0; outline: 0; background: transparent; color: var(--lars-text-primary, #202020); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.lars-ai-composer__select-wrap > svg { width: 14px; height: 14px; flex: 0 0 14px; color: var(--lars-low-emphasis, #838383); pointer-events: none; }
-.lars-ai-composer__workspace-mark { width: 16px; height: 16px; flex: 0 0 16px; border-radius: 4px; background: #ffd19a; }
-.lars-ai-composer__role-mark { display: grid; width: 16px; height: 16px; flex: 0 0 16px; border-radius: 5px; background: #e6f4fe; color: #0d74ce; place-items: center; }
-.lars-ai-composer__role-mark svg { width: 12px; height: 12px; }
-.lars-ai-composer__sources.lars-button { height: 44px; min-width: 0; gap: 6px; padding: 0 10px; color: var(--lars-text-secondary, #646464); font-size: 14px; font-weight: 500; white-space: nowrap; }
-
-@media (max-width: 560px) {
-  .lars-ai-composer--structured .lars-ai-composer__body { padding: 18px 16px; }
-  .lars-ai-composer__toolbar--structured { align-items: flex-end; }
-  .lars-ai-composer__parameters { flex-wrap: wrap; gap: 8px; }
-  .lars-ai-composer__select-wrap--role { width: min(205px, 100%); }
-  .lars-ai-composer__sources.lars-button { height: 38px; }
-}
+.lars-ai-composer__send svg { width: 16px; height: 16px; }
+.lars-ai-composer__send.lars-button:disabled { opacity: 1; }

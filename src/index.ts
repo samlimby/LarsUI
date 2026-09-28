@@ -8,7 +8,6 @@ export {
 export {
   AiComposer,
   type AiComposerAction,
-  type AiComposerOption,
   type AiComposerProps,
   type AiComposerSubmission,
   type AiComposerVariant,

@@ -129,11 +129,7 @@ import 'larsui/style.css'
 
 <AiComposer
   variant="structured"
-  defaultValue="Help me identify the customs programs relevant to goods movement"
-  workspaceOptions={[{ label: 'S4H', value: 's4h' }]}
-  roleOptions={[{ label: 'Functional Analyst', value: 'analyst' }]}
-  onSubmit={({ message, workspace, role, files }) =>
-    runAnalysis({ message, workspace, role, files })}
+  onSubmit={({ message, files }) => runAnalysis({ message, files })}
 />`
 type TeamMember = {
   id: string
@@ -2487,27 +2483,12 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
   )
 }
 
-const COMPOSER_WORKSPACES = [
-  { label: 'S4H', value: 's4h' },
-  { label: 'Commerce', value: 'commerce' },
-  { label: 'Global Trade', value: 'global-trade' },
-] as const
-
-const COMPOSER_ROLES = [
-  { label: 'Functional Analyst', value: 'functional-analyst' },
-  { label: 'Researcher', value: 'researcher' },
-  { label: 'Operations Lead', value: 'operations-lead' },
-] as const
-
 function AiComposerExample({ variant }: { variant: AiComposerVariant }) {
   return (
     <div className="lars-ai-example">
       <AiComposer
-        defaultValue={variant === 'structured' ? 'Help me identify the customs programs relevant to goods movement' : ''}
         key={variant}
-        roleOptions={COMPOSER_ROLES}
         variant={variant}
-        workspaceOptions={COMPOSER_WORKSPACES}
       />
     </div>
   )
@@ -2541,7 +2522,7 @@ function AiComposerDetail() {
           <AiComposerExample variant="unstructured" />
         </section>
         <section className="lars-ai-detail__variant" aria-labelledby="ai-structured-title">
-          <div className="lars-ai-detail__heading"><span>02</span><h2 id="ai-structured-title">Structured</h2><p>Set a workspace and role alongside a focused prompt.</p></div>
+          <div className="lars-ai-detail__heading"><span>02</span><h2 id="ai-structured-title">Structured</h2><p>A compact prompt in a clearly defined frame.</p></div>
           <AiComposerExample variant="structured" />
         </section>
       </div>
@@ -2638,7 +2619,7 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
         <div className="lars-showcase__meta">
           <div className="lars-showcase__copy">
             <h2 id="ai-composer-title">AI Composer</h2>
-            <p>Two ways to compose: open conversation or guided, contextual prompting.</p>
+            <p>Two compact ways to compose: an open prompt or a framed one.</p>
           </div>
           <a className="lars-view" href="#/components/ai-composer">View</a>
         </div>
@@ -2697,7 +2678,7 @@ function ComponentPage({
       title: 'Table',
     },
     'ai-composer': {
-      description: 'Compose with open conversation or a structured workspace and role.',
+      description: 'Compose in an open or framed prompt with file attachments.',
       title: 'AI Composer',
     },
   }
