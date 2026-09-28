@@ -739,7 +739,7 @@
   border-radius: 8px;
 }
 
-.lars-component-canvas--ai-composer { background: var(--lars-container); }
+.lars-component-canvas--ai-composer { background: var(--lars-container-high-emphasis); }
 
 .lars-properties {
   display: flex;
