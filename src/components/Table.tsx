@@ -646,7 +646,6 @@ export function Table<RowData>({
       style={{ '--lars-table-toolbar-occupied': `${toolbarOccupied}px` } as CSSProperties}
     >
       {!isFloating && toolbarElement}
-      <span aria-hidden="true" className="lars-table__scroll-cue">Swipe for more →</span>
     <ScrollArea.Root
       className="lars-table-wrap"
       data-sticky-header={stickyHeader || undefined}

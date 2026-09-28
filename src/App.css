@@ -1421,8 +1421,11 @@ html[data-theme='dark'] .lars-property-select__item[data-highlighted] {
   .lars-stage { height: min(400px, 58svh); }
   .lars-detail { padding: 64px 0 40px; }
   .lars-configurator { grid-template-columns: 1fr; }
-  .lars-component-canvas,
-  .lars-properties { height: min(400px, 58svh); }
+  .lars-component-canvas { height: min(400px, 58svh); }
+  .lars-properties {
+    height: auto;
+    min-height: min(400px, 58svh);
+  }
   .lars-table-canvas {
     --lars-table-preview-max-height: calc(min(400px, 58svh) - 92px);
   }
