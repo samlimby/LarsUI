@@ -1,0 +1,14 @@
+:root {
+  --lars-focus-ring: var(--radix-indigo-8, #8da4ef);
+}
+
+html[data-theme='dark'],
+.lars-page[data-theme='dark'] {
+  --lars-focus-ring: var(--radix-indigo-dark-8, #3e5cbb);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    --lars-focus-ring: var(--radix-indigo-dark-8, #3e5cbb);
+  }
+}

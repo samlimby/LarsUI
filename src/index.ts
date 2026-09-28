@@ -1,7 +1,10 @@
+import './components/Focus.css'
+
 export {
   Button,
   type ButtonProps,
   type ButtonShape,
+  type ButtonSpinner,
   type ButtonVariant,
 } from './components/Button'
 

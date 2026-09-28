@@ -131,7 +131,7 @@
 
 .lars-segmented-control--square .lars-segmented-control__segment:not(:last-child) > .lars-segmented-control__divider { opacity: 1; }
 .lars-segmented-control--square.lars-segmented-control--large .lars-segmented-control__divider { height: 20px; }
-.lars-segmented-control__segment:has(input:focus-visible) { outline: 2px solid var(--segment-selected-text); outline-offset: 2px; }
+.lars-segmented-control__segment:has(input:focus-visible) { outline: 2px solid var(--lars-focus-ring, #8da4ef); outline-offset: 2px; }
 
 .lars-page[data-theme='dark'] .lars-segmented-control {
   --segment-bg: #313131; /* Radix Gray Dark 5 */

@@ -35,7 +35,11 @@ export type TableProps<RowData> = {
   columns: readonly TableColumn<RowData>[]
   rows: readonly RowData[]
   getRowId: (row: RowData) => string
+  /** Human-readable row name for selection controls. Defaults to a name field, then the row ID. */
+  getRowLabel?: (row: RowData) => string
   ariaLabel?: string
+  /** Accessible table caption. Defaults to ariaLabel. */
+  caption?: ReactNode
   className?: string
   selectable?: boolean
   stickyHeader?: boolean
@@ -50,6 +54,11 @@ export type TableProps<RowData> = {
   toolbarActions?: boolean
   /** Shows the toolbar's item counter. */
   toolbarCounter?: boolean
+  /** Available toolbar views. View changes are reported to the caller to update rows. */
+  viewOptions?: readonly { label: string; value: string }[]
+  view?: string
+  defaultView?: string
+  onViewChange?: (view: string) => void
   /** Columns whose unique cell values appear in the toolbar filter menu. */
   filterableColumns?: readonly (keyof RowData | string)[]
   /** Controls the table's vertical density and container treatment. */
@@ -172,7 +181,12 @@ export function Table<RowData>({
   columns,
   rows,
   getRowId,
+  getRowLabel = (row) => {
+    const name = (row as Record<string, unknown>).name
+    return typeof name === 'string' && name.trim() ? name : getRowId(row)
+  },
   ariaLabel = 'Data table',
+  caption,
   className = '',
   selectable = true,
   stickyHeader = false,
@@ -182,6 +196,13 @@ export function Table<RowData>({
   toolbarToggle = true,
   toolbarActions = true,
   toolbarCounter = true,
+  viewOptions = [
+    { label: 'View #1', value: '1' },
+    { label: 'View #2', value: '2' },
+  ],
+  view,
+  defaultView = '2',
+  onViewChange,
   filterableColumns = EMPTY_FILTERABLE_COLUMNS,
   variant = 'default',
   selectedRowIds,
@@ -195,6 +216,7 @@ export function Table<RowData>({
   const frameRef = useRef<HTMLDivElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
+  const afterTableRef = useRef<HTMLSpanElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -206,6 +228,8 @@ export function Table<RowData>({
   const [height, setHeight] = useState<number>()
   const [tableScrollable, setTableScrollable] = useState(false)
   const [atScrollBottom, setAtScrollBottom] = useState(false)
+  const [horizontalOverflow, setHorizontalOverflow] = useState(false)
+  const [atHorizontalEnd, setAtHorizontalEnd] = useState(false)
   const [toolbarOccupied, setToolbarOccupied] = useState(44)
   const [chipsWrapped, setChipsWrapped] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -214,12 +238,14 @@ export function Table<RowData>({
   const [searchQueryClipped, setSearchQueryClipped] = useState(false)
   const [selectedOnly, setSelectedOnly] = useState(false)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
-  const [activeView, setActiveView] = useState('2')
+  const [internalView, setInternalView] = useState(defaultView)
+  const activeView = view ?? internalView
   const controlled = selectedRowIds !== undefined
   const [internalSelection, setInternalSelection] = useState<readonly string[]>(defaultSelectedRowIds)
   const selection = controlled ? selectedRowIds : internalSelection
   const selected = useMemo(() => new Set(selection), [selection])
-  const showToolbar = toolbar && variant !== 'relaxed' && (toolbarToggle || toolbarActions || toolbarCounter || (toolbarFloating && selectable))
+  const showViewToggle = toolbarToggle && onViewChange !== undefined && viewOptions.length >= 2
+  const showToolbar = toolbar && variant !== 'relaxed' && (showViewToggle || toolbarActions || toolbarCounter || (toolbarFloating && selectable))
   const isFloating = showToolbar && toolbarFloating
   const filterSelected = toolbarActions && selectedOnly && selectable
   const filterGroups = useMemo(() => filterableColumns.flatMap((filterKey) => {
@@ -262,7 +288,6 @@ export function Table<RowData>({
   useEffect(() => {
     if (toolbarActions) return
     setSearchOpen(false)
-    setSearchQuery('')
     setSearchQueryClipped(false)
   }, [toolbarActions])
 
@@ -270,16 +295,15 @@ export function Table<RowData>({
     if (!searchOpen || !showToolbar) return
 
     const closeOnOutsidePointerDown = (event: PointerEvent) => {
-      if (searchRef.current?.contains(event.target as Node)) return
+      if (searchRef.current?.contains(event.target as Node) || searchQuery.trim()) return
       setAnimateSearch(true)
       setSearchOpen(false)
-      setSearchQuery('')
       setSearchQueryClipped(false)
     }
 
     document.addEventListener('pointerdown', closeOnOutsidePointerDown)
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointerDown)
-  }, [searchOpen, showToolbar])
+  }, [searchOpen, searchQuery, showToolbar])
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current
@@ -296,6 +320,8 @@ export function Table<RowData>({
       const naturalHeight = content.getBoundingClientRect().height + border
       setTableScrollable(isFloating && Number.isFinite(maxHeight) && naturalHeight > maxHeight + 0.5)
       setAtScrollBottom(isFloating && isAtScrollBottom(viewport))
+      setHorizontalOverflow(viewport.scrollWidth > viewport.clientWidth + 1)
+      setAtHorizontalEnd(viewport.scrollWidth - viewport.clientWidth - viewport.scrollLeft <= 2)
       setHeight(Math.min(naturalHeight, Number.isFinite(maxHeight) ? maxHeight : Infinity))
     }
 
@@ -432,7 +458,9 @@ export function Table<RowData>({
           )}
           {toolbarCounter && (
             <span aria-live="polite" className="lars-table__item-count" ref={itemCountRef}>
-              {isFloating
+              {!selectable
+                ? `${visibleRows.length} ${visibleRows.length === 1 ? 'item' : 'items'}`
+                : isFloating
                 ? <>
                     <span aria-hidden="true" className="lars-table__item-count-sizer">
                       {`${visibleRows.length} of ${visibleRows.length} selected`}
@@ -518,14 +546,12 @@ export function Table<RowData>({
             <span aria-hidden="true" className="lars-table__search-surface" />
             <button
               aria-expanded={searchOpen}
-              aria-label={searchOpen ? 'Close search' : 'Search table'}
+              aria-label={searchOpen ? searchQuery ? 'Focus search' : 'Close search' : 'Search table'}
               className="lars-table__search-icon"
               onClick={() => {
-                setSearchOpen((current) => !current)
-                if (searchOpen) {
-                  setSearchQuery('')
-                  setSearchQueryClipped(false)
-                }
+                if (!searchOpen) setSearchOpen(true)
+                else if (!searchQuery.trim()) setSearchOpen(false)
+                else searchInputRef.current?.focus()
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') setAnimateSearch(false)
@@ -551,9 +577,7 @@ export function Table<RowData>({
               onKeyDown={(event) => {
                 if (event.key === 'Escape') {
                   setAnimateSearch(false)
-                  setSearchOpen(false)
-                  setSearchQuery('')
-                  setSearchQueryClipped(false)
+                  if (!searchQuery.trim()) setSearchOpen(false)
                   searchButtonRef.current?.focus()
                 }
               }}
@@ -564,17 +588,31 @@ export function Table<RowData>({
               type="search"
               value={searchQuery}
             />
+            {searchOpen && searchQuery && (
+              <button
+                aria-label="Clear table search"
+                className="lars-table__search-clear"
+                onClick={() => {
+                  setSearchQuery('')
+                  setSearchQueryClipped(false)
+                  searchInputRef.current?.focus()
+                }}
+                type="button"
+              >
+                <FilterCloseIcon />
+              </button>
+            )}
           </div>
         </div>
         )}
-        {toolbarToggle && <SegmentedControl
+        {showViewToggle && <SegmentedControl
           className="lars-table__views"
           label="Table view"
-          onValueChange={setActiveView}
-          options={[
-            { label: 'View #1', value: '1' },
-            { label: 'View #2', value: '2' },
-          ]}
+          onValueChange={(nextView) => {
+            if (view === undefined) setInternalView(nextView)
+            onViewChange?.(nextView)
+          }}
+          options={viewOptions}
           type="square"
           value={activeView}
         />}
@@ -589,6 +627,8 @@ export function Table<RowData>({
       data-chips-wrapped={chipsWrapped || undefined}
       data-floating={isFloating || undefined}
       data-at-scroll-bottom={tableScrollable && atScrollBottom || undefined}
+      data-horizontal-overflow={horizontalOverflow || undefined}
+      data-at-horizontal-end={atHorizontalEnd || undefined}
       data-scrollable={tableScrollable || undefined}
       data-toolbar={showToolbar || undefined}
       data-variant={variant}
@@ -596,10 +636,16 @@ export function Table<RowData>({
       style={{ '--lars-table-toolbar-occupied': `${toolbarOccupied}px` } as CSSProperties}
     >
       {!isFloating && toolbarElement}
+      <button className="lars-table__skip" onClick={() => afterTableRef.current?.focus()} type="button">
+        Skip table rows
+      </button>
+      <span aria-hidden="true" className="lars-table__scroll-cue">Swipe for more →</span>
     <ScrollArea.Root
       className="lars-table-wrap"
       data-sticky-header={stickyHeader || undefined}
       data-variant={variant}
+      data-horizontal-overflow={horizontalOverflow || undefined}
+      data-at-horizontal-end={atHorizontalEnd || undefined}
       ref={rootRef}
       render={(
         <motion.div
@@ -612,7 +658,11 @@ export function Table<RowData>({
     >
       <ScrollArea.Viewport
         className="lars-table__viewport"
-        onScroll={(event) => setAtScrollBottom(isAtScrollBottom(event.currentTarget))}
+        onScroll={(event) => {
+          const viewport = event.currentTarget
+          setAtScrollBottom(isAtScrollBottom(viewport))
+          setAtHorizontalEnd(viewport.scrollWidth - viewport.clientWidth - viewport.scrollLeft <= 2)
+        }}
         ref={viewportRef}
       >
         <ScrollArea.Content className="lars-table__scroll-content" ref={contentRef}>
@@ -636,7 +686,6 @@ export function Table<RowData>({
                 : TABLE_VARIANT_TRANSITION}
             >
               <table
-            aria-label={ariaLabel}
             className="lars-table"
             data-actions={onRowAction ? true : undefined}
             data-selectable={selectable || undefined}
@@ -648,6 +697,7 @@ export function Table<RowData>({
               '--table-relaxed-min-width': `${columns.length * 90 + (selectable ? 52 : 0) + (onRowAction ? 52 : 0)}px`,
             } as CSSProperties}
           >
+            <caption className="lars-table__caption">{caption ?? ariaLabel}</caption>
             <colgroup>
               {selectable && <col className="lars-table__selection-col" />}
               {columns.map((column) => (
@@ -662,12 +712,12 @@ export function Table<RowData>({
               <tr>
                 {selectable && (
                   <th className="lars-table__selection-cell" scope="col">
-                    <Checkbox
+                    {!isFloating && <Checkbox
                       checked={allSelected}
                       indeterminate={partiallySelected}
                       label={allSelected ? 'Deselect all rows' : 'Select all rows'}
                       onChange={toggleAll}
-                    />
+                    />}
                   </th>
                 )}
                 {columns.map((column) => (
@@ -682,12 +732,12 @@ export function Table<RowData>({
               {visibleRows.map((row) => {
                 const rowId = getRowId(row)
                 return (
-                  <tr data-selected={selected.has(rowId) || undefined} key={rowId}>
+                  <tr aria-selected={selectable ? selected.has(rowId) : undefined} data-selected={selectable && selected.has(rowId) || undefined} key={rowId}>
                     {selectable && (
                       <td className="lars-table__selection-cell">
                         <Checkbox
                           checked={selected.has(rowId)}
-                          label={`${selected.has(rowId) ? 'Deselect' : 'Select'} row ${rowId}`}
+                          label={`${selected.has(rowId) ? 'Deselect' : 'Select'} row ${getRowLabel(row)}`}
                           onChange={() => toggleRow(rowId)}
                         />
                       </td>
@@ -696,7 +746,9 @@ export function Table<RowData>({
                       const value = column.render
                         ? column.render(row)
                         : (row as Record<string, ReactNode>)[String(column.key)]
-                      return <td key={String(column.key)}>{value}</td>
+                      const sourceValue = (row as Record<string, unknown>)[String(column.key)]
+                      const title = typeof sourceValue === 'string' || typeof sourceValue === 'number' ? String(sourceValue) : undefined
+                      return <td key={String(column.key)} title={title}>{value}</td>
                     })}
                     {onRowAction && (
                       <td className="lars-table__action-cell">
@@ -749,6 +801,7 @@ export function Table<RowData>({
       <ScrollArea.Corner className="lars-table__scrollbar-corner" />
     </ScrollArea.Root>
     {isFloating && toolbarElement}
+    <span className="lars-table__after" ref={afterTableRef} tabIndex={-1} />
     </div>
   )
 }

@@ -1,9 +1,9 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { Atom, Blocks, Classic, Clock, Flip, Gather, Loading, Morph, Ring, Slide, Swirl, Trace } from 'loading-dev'
-import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
+import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Button, type ButtonShape, type ButtonSpinner, type ButtonVariant } from './components/Button'
+import './components/Focus.css'
 import {
   Chip,
   type ChipIconPosition,
@@ -77,12 +77,13 @@ export function Example() {
 const BUTTON_VIEW_CODE = `import { Button } from 'larsui'
 import 'larsui/style.css'
 
-<Button
-  variant="primary"
-  shape="full"
->
-  View
-</Button>`
+export function Example() {
+  return (
+    <Button variant="primary" shape="full">
+      View
+    </Button>
+  )
+}`
 const CHIP_VIEW_CODE = `import { Chip } from 'larsui'
 import 'larsui/style.css'
 
@@ -136,6 +137,7 @@ const TABLE_COLUMNS: readonly TableColumn<TeamMember>[] = [
   { key: 'updated', header: 'Updated' },
 ]
 const TABLE_FILTERABLE_COLUMNS = ['status'] as const
+const TABLE_VIEW_OPTIONS = [{ label: 'All', value: 'all' }, { label: 'Active', value: 'active' }] as const
 const TABLE_ROWS: readonly TeamMember[] = [
   { id: 'ada', name: 'Ada Lin', role: 'Design', team: 'Core', status: 'Active', location: 'London', updated: '2m ago' },
   { id: 'noah', name: 'Noah Kim', role: 'Engineer', team: 'Growth', status: 'Active', location: 'Seoul', updated: '12m ago' },
@@ -170,32 +172,56 @@ const getTeamMemberId = (row: TeamMember) => row.id
 const getTeamMemberActionLabel = (row: TeamMember) => `Open actions for ${row.name}`
 const noopRowAction = () => undefined
 const MemoizedTeamTable = memo(LarsTable<TeamMember>)
-const TABLE_VIEW_CODE = `import { Table, type TableColumn } from 'larsui'
+const TABLE_VIEW_CODE = `import { useState } from 'react'
+import { Table, type TableColumn } from 'larsui'
 import 'larsui/style.css'
 
 type Member = {
   id: string
   name: string
   role: string
+  team: string
   status: string
+  location: string
+  updated: string
 }
 
 const columns: TableColumn<Member>[] = [
   { key: 'name', header: 'Name' },
   { key: 'role', header: 'Role' },
+  { key: 'team', header: 'Team' },
   { key: 'status', header: 'Status' },
+  { key: 'location', header: 'Location' },
+  { key: 'updated', header: 'Updated' },
 ]
 
-<Table
-  ariaLabel="Team members"
-  columns={columns}
-  filterableColumns={['status']}
-  getRowId={(row) => row.id}
-  rows={members}
-  stickyHeader
-  onRowAction={(row) => openMember(row.id)}
-/>
-`
+const members: Member[] = [
+  { id: 'ada', name: 'Ada Lin', role: 'Design', team: 'Core', status: 'Active', location: 'London', updated: '2m ago' },
+  { id: 'noah', name: 'Noah Kim', role: 'Engineer', team: 'Growth', status: 'Active', location: 'Seoul', updated: '12m ago' },
+  { id: 'maya', name: 'Maya Roy', role: 'Research', team: 'Core', status: 'Away', location: 'Paris', updated: '1h ago' },
+  { id: 'liam', name: 'Liam Fox', role: 'Product', team: 'Mobile', status: 'Active', location: 'Berlin', updated: '3h ago' },
+  { id: 'sara', name: 'Sara Iqbal', role: 'Engineer', team: 'Core', status: 'Away', location: 'Lahore', updated: '1d ago' },
+]
+
+export function Example() {
+  const [selectedRows, setSelectedRows] = useState<string[]>([])
+
+  return (
+    <Table
+      ariaLabel="Team members"
+      columns={columns}
+      filterableColumns={['status']}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      rows={members}
+      selectedRowIds={selectedRows}
+      onSelectedRowIdsChange={setSelectedRows}
+      stickyHeader
+      onRowAction={(row) => window.alert(row.name)}
+      rowActionLabel={(row) => 'Open actions for ' + row.name}
+    />
+  )
+}`
 type Theme = 'light' | 'dark'
 type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table'
 type Route = 'home' | ComponentRoute
@@ -390,10 +416,10 @@ function ButtonPreview({ animate, shape }: { animate: boolean; shape: ButtonShap
       aria-label={`${shape === 'full' ? 'Full' : 'Neat'} button variants`}
       data-animate={animate}
       data-shape={shape}
+      role="group"
     >
       {BUTTON_VARIANTS.map((variant) => (
         <Button
-          aria-label={`${variant} button`}
           key={variant}
           shape={shape}
           type="button"
@@ -598,6 +624,7 @@ function TablePreview({
       columns={TABLE_COLUMNS}
       filterableColumns={TABLE_FILTERABLE_COLUMNS}
       getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
       onRowAction={() => undefined}
       rowActionLabel={(row) => `Open actions for ${row.name}`}
       rows={rows}
@@ -617,7 +644,7 @@ function TableStage() {
     try {
       const code = variant === 'default'
         ? TABLE_VIEW_CODE
-        : TABLE_VIEW_CODE.replace('  rows={members}\n', `  rows={members}\n  variant="${variant}"\n`)
+        : TABLE_VIEW_CODE.replace('      rows={members}\n', `      rows={members}\n      variant="${variant}"\n`)
       await navigator.clipboard.writeText(code)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
@@ -637,6 +664,7 @@ function TableStage() {
           aria-label="Table variant"
           className="lars-modes lars-modes--table-variant"
           data-selected={variant === 'default' ? 'first' : variant === 'compact' ? 'second' : 'third'}
+          role="group"
         >
           <span className="lars-modes__indicator" aria-hidden="true" />
           {(['default', 'compact', 'relaxed'] as const).map((option) => (
@@ -1163,21 +1191,7 @@ function parseTableMembers(code: string) {
 
 type ButtonLoadingMode = 'idle' | 'generating' | 'loading'
 
-const BUTTON_EFFECT_COMPONENTS = {
-  atom: Atom,
-  blocks: Blocks,
-  classic: Classic,
-  clock: Clock,
-  flip: Flip,
-  gather: Gather,
-  loading: Loading,
-  morph: Morph,
-  ring: Ring,
-  slide: Slide,
-  swirl: Swirl,
-  trace: Trace,
-}
-type ButtonLoadingEffect = keyof typeof BUTTON_EFFECT_COMPONENTS
+type ButtonLoadingEffect = ButtonSpinner
 
 const BUTTON_EFFECT_OPTIONS: Record<
   Exclude<ButtonLoadingMode, 'idle'>,
@@ -1228,68 +1242,33 @@ function ButtonLoadingProperties({
 }) {
   const [open, setOpen] = useState(false)
   const reduceMotion = useReducedMotion()
-  const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupId = useId()
-  const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
   const iconTransition = {
     duration: reduceMotion ? 0 : open ? 0.35 : 0.2,
     ease: [0.25, 0.1, 0.25, 1] as const,
   }
 
-  useLayoutEffect(() => {
-    if (!open || !rootRef.current) return
-
-    const root = rootRef.current
-    const properties = root.closest<HTMLElement>('.lars-properties')
-    const fields = root.closest<HTMLElement>('.lars-properties__fields')
-    if (!properties || !fields) return
-
-    const updateHeight = () => {
-      const height = properties.getBoundingClientRect().bottom - root.getBoundingClientRect().top - 8
-      root.style.setProperty('--loading-property-popup-height', `${Math.max(0, height)}px`)
-    }
-
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
-    observer.observe(properties)
-    observer.observe(fields)
-    window.addEventListener('resize', updateHeight)
-
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', updateHeight)
-    }
-  }, [open])
-
   useEffect(() => {
     if (!open) return
 
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Element && target.closest('.lars-button-loading-property__effect-popup')) return
-      if (!rootRef.current?.contains(target as Node)) setOpen(false)
-    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       setOpen(false)
       triggerRef.current?.focus()
     }
 
-    document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open])
 
   return (
-    <div className="lars-button-loading-property" data-open={open || undefined} ref={rootRef}>
+    <div className="lars-button-loading-property" data-open={open || undefined}>
       <BaseButton
         aria-controls={open ? popupId : undefined}
         aria-expanded={open}
-        aria-haspopup="dialog"
         className="lars-button-loading-property__trigger"
         onClick={() => setOpen((current) => !current)}
         ref={triggerRef}
@@ -1310,28 +1289,20 @@ function ButtonLoadingProperties({
             id={popupId}
             initial={{ opacity: reduceMotion ? 1 : 0 }}
             key="loading-state-properties"
-            role="dialog"
+            role="group"
             transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <div className="lars-button-loading-property__heading">
-              <span>Loading states</span>
-              <BaseButton
-                aria-label="Close loading state properties"
-                className="lars-button-loading-property__close"
-                onClick={() => {
-                  setOpen(false)
-                  triggerRef.current?.focus()
-                }}
-                type="button"
-              />
-            </div>
             <div className="lars-button-loading-property__options">
-              <div className="lars-button-loading-property__divider" />
               <SegmentedControl
-                label="Generating"
-                onChange={(next) => onModeChange(next === 'true' ? 'generating' : mode === 'generating' ? 'idle' : mode)}
-                options={booleanOptions}
-                value={mode === 'generating' ? 'true' : 'false'}
+                className="lars-property--loading-state"
+                label="State"
+                onChange={onModeChange}
+                options={[
+                  { label: 'Idle', value: 'idle' },
+                  { label: 'Loading', value: 'loading' },
+                  { label: 'Generating', value: 'generating' },
+                ]}
+                value={mode}
               />
               {mode === 'generating' && (
                 <PropertySelect<ButtonLoadingEffect>
@@ -1342,12 +1313,6 @@ function ButtonLoadingProperties({
                   value={generatingEffect}
                 />
               )}
-              <SegmentedControl
-                label="Loading"
-                onChange={(next) => onModeChange(next === 'true' ? 'loading' : mode === 'loading' ? 'idle' : mode)}
-                options={booleanOptions}
-                value={mode === 'loading' ? 'true' : 'false'}
-              />
               {mode === 'loading' && (
                 <PropertySelect<ButtonLoadingEffect>
                   label="Loading effect"
@@ -1388,17 +1353,6 @@ function ButtonLoadingProperties({
   )
 }
 
-function ButtonStatusText({ mode }: { mode: Exclude<ButtonLoadingMode, 'idle'> }) {
-  return (
-    <span className="lars-button-status">
-      {mode === 'loading' ? 'Loading' : 'Generating'}
-      <span aria-hidden="true" className="lars-button-status__dots">
-        <span>.</span><span>.</span><span>.</span>
-      </span>
-    </span>
-  )
-}
-
 function ButtonConfigurator() {
   const [label, setLabel] = useState('View')
   const [variant, setVariant] = useState<ButtonVariant>('primary')
@@ -1407,10 +1361,6 @@ function ButtonConfigurator() {
   const [shape, setShape] = useState<ButtonShape>('full')
   const [disabled, setDisabled] = useState(false)
   const [loadingMode, setLoadingMode] = useState<ButtonLoadingMode>('idle')
-  const [previewActive, setPreviewActive] = useState(false)
-  const [previewWidths, setPreviewWidths] = useState<{ idle: number; status: number } | null>(null)
-  const idleMeasureRef = useRef<HTMLSpanElement>(null)
-  const statusMeasureRef = useRef<HTMLSpanElement>(null)
   const [loadingEffects, setLoadingEffects] = useState<Record<ButtonShape, ButtonLoadingEffect>>({
     full: 'ring',
     neat: 'flip',
@@ -1420,114 +1370,46 @@ function ButtonConfigurator() {
     neat: 'gather',
   })
   const reduceMotion = useReducedMotion()
-  useEffect(() => {
-    if (!previewActive) return
-
-    const timeout = window.setTimeout(() => setPreviewActive(false), 3500)
-    return () => window.clearTimeout(timeout)
-  }, [previewActive])
-
   const buttonLabel = label || 'Button'
-  const activeEffect = loadingMode === 'loading' ? loadingEffects[shape] : generatingEffects[shape]
-  const effectName = loadingMode === 'idle'
-    ? null
-    : BUTTON_EFFECT_OPTIONS[loadingMode][shape].find((option) => option.value === activeEffect)?.label
-  const Spinner = BUTTON_EFFECT_COMPONENTS[activeEffect]
-  const statusLabel = loadingMode === 'loading' ? 'Loading' : 'Generating'
-  const showStatus = loadingMode !== 'idle' && previewActive
-
-  useLayoutEffect(() => {
-    const idleMeasure = idleMeasureRef.current
-    const statusMeasure = statusMeasureRef.current
-    if (!idleMeasure || !statusMeasure) return
-
-    const updateWidths = () => {
-      const minWidth = shape === 'full' ? 77 : 53
-      const padding = shape === 'full' ? 48 : 24
-      const idle = iconOnly ? 32 : Math.max(minWidth, idleMeasure.getBoundingClientRect().width + padding)
-      const status = iconOnly ? 32 : Math.max(minWidth, statusMeasure.getBoundingClientRect().width + padding)
-      setPreviewWidths((current) => current?.idle === idle && current.status === status ? current : { idle, status })
-    }
-
-    updateWidths()
-    const observer = new ResizeObserver(updateWidths)
-    observer.observe(idleMeasure)
-    observer.observe(statusMeasure)
-    return () => observer.disconnect()
-  }, [buttonLabel, icon, iconOnly, shape, statusLabel])
-
+  const activeEffect = loadingMode === 'generating' ? generatingEffects[shape] : loadingEffects[shape]
+  const statusLabel = loadingMode === 'generating' ? 'Generating' : 'Loading'
   const idleContent = iconOnly
     ? '<span aria-hidden="true">→</span>'
-    : `${buttonLabel}${icon === 'true' ? '\n          <span aria-hidden="true">→</span>' : ''}`
-
-  const code = loadingMode === 'idle' ? `import { Button } from 'larsui'
-import 'larsui/style.css'
-
-<Button
-${iconOnly ? `  aria-label=${JSON.stringify(buttonLabel)}
-` : ''}  variant="${variant}"
-  shape="${shape}"${iconOnly ? '\n  iconOnly' : ''}${disabled ? '\n  disabled' : ''}
->
-  ${idleContent}
-</Button>` : `import { useEffect, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { Button } from 'larsui'
-import { ${effectName} } from 'loading-dev'
+    : `${buttonLabel}${icon === 'true' ? '\n      <span aria-hidden="true">→</span>' : ''}`
+  const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}`
+  const code = loadingMode === 'idle'
+    ? `import { Button } from 'larsui'
 import 'larsui/style.css'
 
 export function Example() {
-  const [active, setActive] = useState(false)
-  const reduceMotion = useReducedMotion()
-  useEffect(() => {
-    if (!active) return
+  return (
+    <Button${buttonProps}
+    >
+      ${idleContent}
+    </Button>
+  )
+}`
+    : `import { useEffect, useState } from 'react'
+import { Button } from 'larsui'
+import 'larsui/style.css'
 
-    const timeout = window.setTimeout(() => setActive(false), 3500)
+export function Example() {
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!loading) return
+    const timeout = window.setTimeout(() => setLoading(false), 3500)
     return () => window.clearTimeout(timeout)
-  }, [active])
+  }, [loading])
 
   return (
-    <Button
-      aria-busy={active || undefined}
-      aria-label={active ? ${JSON.stringify(`${statusLabel} ${buttonLabel}`)} : ${JSON.stringify(buttonLabel)}}
-      variant="${variant}"
-      shape="${shape}"${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}
-      style={{ gap: active ? 6 : undefined }}
-      onClick={() => setActive((current) => !current)}
+    <Button${buttonProps}
+      loading={loading}
+      loadingText="${statusLabel}"
+      spinner="${activeEffect}"
+      onClick={() => setLoading(true)}
     >
-      {active ? (
-        <>
-          <motion.span
-            aria-hidden="true"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.22, delay: reduceMotion ? 0 : 0.06 }}
-          >
-            <${effectName} size={16} />
-          </motion.span>
-${iconOnly ? '' : `          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.08 }}
-          >
-            ${statusLabel}
-            <span aria-hidden="true" style={{ display: 'inline-flex' }}>
-              {[0, 1, 2].map((index) => (
-                <motion.span
-                  key={index}
-                  animate={reduceMotion ? undefined : { opacity: [0.5, 1, 0.5], x: [0, 2, 0] }}
-                  style={{ display: 'inline-block' }}
-                  transition={{ duration: 1.8, repeat: Infinity, delay: index * 0.12 }}
-                >.</motion.span>
-              ))}
-            </span>
-          </motion.span>
-`}
-        </>
-      ) : (
-        <>
-          ${idleContent}
-        </>
-      )}
+      ${idleContent}
     </Button>
   )
 }`
@@ -1536,66 +1418,20 @@ ${iconOnly ? '' : `          <motion.span
     <>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas">
-          <span aria-hidden="true" className="lars-button-preview__measure" ref={idleMeasureRef}>
-            <span className="lars-button-preview__content">
-              {iconOnly ? <span>→</span> : buttonLabel}
-              {!iconOnly && icon === 'true' && <span>→</span>}
-            </span>
-          </span>
-          <span aria-hidden="true" className="lars-button-preview__measure" ref={statusMeasureRef}>
-            <span className="lars-button-preview__content">
-              <span className="lars-button-preview__icon-measure" />
-              <ButtonStatusText mode={loadingMode === 'idle' ? 'loading' : loadingMode} />
-            </span>
-          </span>
           <Button
-            aria-busy={showStatus || undefined}
-            aria-label={showStatus ? `${statusLabel} ${buttonLabel}` : iconOnly ? buttonLabel : undefined}
+            aria-label={iconOnly ? buttonLabel : undefined}
             className="lars-button-preview"
             disabled={disabled}
             iconOnly={iconOnly}
-            onClick={() => {
-              if (loadingMode !== 'idle') setPreviewActive((current) => !current)
-            }}
+            loading={loadingMode !== 'idle'}
+            loadingText={statusLabel}
             shape={shape}
-            style={{ width: previewWidths ? (showStatus ? previewWidths.status : previewWidths.idle) : undefined }}
+            spinner={activeEffect}
+            type="button"
             variant={variant}
           >
-            <AnimatePresence initial={false}>
-              {showStatus ? (
-                <motion.span
-                  animate={{ opacity: 1 }}
-                  className="lars-button-preview__content"
-                  exit={{ opacity: 0, transition: { duration: 0.08 } }}
-                  initial={{ opacity: 0 }}
-                  key="status"
-                  transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.08, ease: 'easeOut' }}
-                >
-                  <motion.span
-                    animate={{ opacity: 1 }}
-                    aria-hidden="true"
-                    className="lars-button-preview__glyph"
-                    initial={{ opacity: 0 }}
-                    transition={{ duration: reduceMotion ? 0.14 : 0.22, delay: reduceMotion ? 0 : 0.06, ease: 'easeOut' }}
-                  >
-                    <Spinner size={16} />
-                  </motion.span>
-                  {!iconOnly && <ButtonStatusText mode={loadingMode} />}
-                </motion.span>
-              ) : (
-                <motion.span
-                  animate={{ opacity: 1 }}
-                  className="lars-button-preview__content"
-                  exit={{ opacity: 0, transition: { duration: 0.08 } }}
-                  initial={{ opacity: 0 }}
-                  key="idle"
-                  transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.08, ease: 'easeOut' }}
-                >
-                  {iconOnly ? <span aria-hidden="true">→</span> : buttonLabel}
-                  {!iconOnly && icon === 'true' && <span aria-hidden="true">→</span>}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {iconOnly ? <span aria-hidden="true">→</span> : buttonLabel}
+            {!iconOnly && icon === 'true' && <span aria-hidden="true">→</span>}
           </Button>
         </div>
 
@@ -1657,10 +1493,7 @@ ${iconOnly ? '' : `          <motion.span
               mode={loadingMode}
               onGeneratingEffectChange={(value) => setGeneratingEffects((current) => ({ ...current, [shape]: value }))}
               onLoadingEffectChange={(value) => setLoadingEffects((current) => ({ ...current, [shape]: value }))}
-              onModeChange={(nextMode) => {
-                setLoadingMode(nextMode)
-                setPreviewActive(false)
-              }}
+              onModeChange={setLoadingMode}
               shape={shape}
             />
 
@@ -1703,7 +1536,7 @@ ${iconOnly ? '' : `          <motion.span
               <SegmentedControl
                 label="Disabled"
                 onChange={(value) => setDisabled(value === 'true')}
-                options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
                 value={disabled ? 'true' : 'false'}
               />
             </motion.div>
@@ -2143,7 +1976,6 @@ function TableToolbarProperties({
 }) {
   const [open, setOpen] = useState(false)
   const prefersReducedMotion = useReducedMotion()
-  const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupId = useId()
   const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
@@ -2155,29 +1987,23 @@ function TableToolbarProperties({
   useEffect(() => {
     if (!open) return
 
-    const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
-    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       setOpen(false)
       triggerRef.current?.focus()
     }
 
-    document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open])
 
   return (
-    <div className="lars-table-toolbar-property" data-open={open || undefined} ref={rootRef}>
+    <div className="lars-table-toolbar-property" data-open={open || undefined}>
       <BaseButton
         aria-controls={open ? popupId : undefined}
         aria-expanded={open}
-        aria-haspopup="dialog"
         className="lars-table-toolbar-property__trigger"
         onClick={() => setOpen((current) => !current)}
         ref={triggerRef}
@@ -2198,24 +2024,10 @@ function TableToolbarProperties({
             id={popupId}
             initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
             key="toolbar-properties"
-            role="dialog"
+            role="group"
             transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           >
-          <div className="lars-table-toolbar-property__heading">
-            <span>Toolbar</span>
-            <BaseButton
-              aria-label="Close toolbar properties"
-              className="lars-table-toolbar-property__close"
-              onClick={() => {
-                setOpen(false)
-                triggerRef.current?.focus()
-              }}
-              type="button"
-            >
-            </BaseButton>
-          </div>
           <div className="lars-table-toolbar-property__options">
-            <div className="lars-table-toolbar-property__divider" />
             <SegmentedControl label="Floating" onChange={(next) => onFloatingChange(next === 'true')} options={booleanOptions} value={floating ? 'true' : 'false'} />
             <SegmentedControl label="Toggle" onChange={(next) => onToggleChange(next === 'true')} options={booleanOptions} value={toggle ? 'true' : 'false'} />
             <SegmentedControl label="Actions" onChange={(next) => onActionsChange(next === 'true')} options={booleanOptions} value={actions ? 'true' : 'false'} />
@@ -2264,6 +2076,7 @@ function TableConfigurator() {
   const [columnCount, setColumnCount] = useState(6)
   const [showActions, setShowActions] = useState(true)
   const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [activeView, setActiveView] = useState('all')
   const [columnHeaders, setColumnHeaders] = useState<Record<string, string>>({})
   const [memberValues, setMemberValues] = useState<Record<string, TeamMember>>({})
   const renderedRowCount = useDeferredValue(rowCount)
@@ -2273,23 +2086,38 @@ function TableConfigurator() {
   })), [columnCount, columnHeaders])
   const configuredRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, renderedRowCount)
     .map((row) => memberValues[row.id] ?? row), [renderedRowCount, memberValues])
+  const viewRows = useMemo(() => activeView === 'active'
+    ? configuredRows.filter((row) => row.status === 'Active')
+    : configuredRows, [activeView, configuredRows])
   const codeRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, codeRowCount)
     .map((row) => memberValues[row.id] ?? row), [codeRowCount, memberValues])
   const codeColumns = useMemo(() => configuredColumns
     .map((column) => `  { key: '${String(column.key)}', header: ${quoteTableString(String(column.header))} },`)
     .join('\n'), [configuredColumns])
-  const codeMembers = useMemo(() => codeRows
+  const codeMembers = useMemo(() => codeRows.slice(0, 6)
     .map((row) => `  { id: ${quoteTableString(row.id)}, name: ${quoteTableString(row.name)}, role: ${quoteTableString(row.role)}, team: ${quoteTableString(row.team)}, status: ${quoteTableString(row.status)}, location: ${quoteTableString(row.location)}, updated: ${quoteTableString(row.updated)} },`)
     .join('\n'), [codeRows])
+  const viewEnabled = variant !== 'relaxed' && toolbarToggle
+  const usesState = selectable || viewEnabled
   const toolbarCode = variant === 'relaxed' ? '' : [
-    '  toolbar',
-    ...(toolbarFloating ? ['  toolbarFloating'] : []),
-    ...(!toolbarToggle ? ['  toolbarToggle={false}'] : []),
-    ...(!toolbarActions ? ['  toolbarActions={false}'] : []),
-    ...(!toolbarCounter ? ['  toolbarCounter={false}'] : []),
+    '      toolbar',
+    ...(toolbarFloating ? ['      toolbarFloating'] : []),
+    ...(!toolbarToggle ? ['      toolbarToggle={false}'] : []),
+    ...(!toolbarActions ? ['      toolbarActions={false}'] : []),
+    ...(!toolbarCounter ? ['      toolbarCounter={false}'] : []),
   ].join('\n')
+  const generatedRows = codeRowCount > 6 ? `
+const allMembers: Member[] = Array.from({ length: ${codeRowCount} }, (_, index) => {
+  const member = members[index % members.length]
+  return {
+    ...member,
+    id: 'member-' + (index + 1),
+    name: index < members.length ? member.name : 'Member ' + (index + 1),
+  }
+})` : `
+const allMembers = members`
 
-  const code = `import { Table, type TableColumn } from 'larsui'
+  const code = `${usesState ? "import { useState } from 'react'\n" : ''}import { Table, type TableColumn } from 'larsui'
 import 'larsui/style.css'
 
 type Member = {
@@ -2309,23 +2137,33 @@ ${codeColumns}
 const members: Member[] = [
 ${codeMembers}
 ]
+${generatedRows}
 
-<Table
-  ariaLabel="Team members"
-  columns={columns}
-  filterableColumns={['status']}
-  getRowId={(row) => row.id}
-  rows={members}
-  stickyHeader${toolbarCode ? `
+export function Example() {
+${selectable ? '  const [selectedRows, setSelectedRows] = useState<string[]>([])\n' : ''}${viewEnabled ? "  const [view, setView] = useState('all')\n  const viewRows = view === 'active' ? allMembers.filter((row) => row.status === 'Active') : allMembers\n" : ''}
+  return (
+    <Table
+      ariaLabel="Team members"
+      columns={columns}
+      filterableColumns={['status']}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      rows={${viewEnabled ? 'viewRows' : 'allMembers'}}
+      stickyHeader${toolbarCode ? `
 ${toolbarCode}` : ''}${variant === 'default' ? '' : `
-  variant="${variant}"`}${selectable ? `
-  selectedRowIds={selectedRows}
-  onSelectedRowIdsChange={setSelectedRows}` : `
-  selectable={false}`}${striped || variant === 'relaxed' ? '' : `
-  striped={false}`}${showActions ? `
-  onRowAction={(row) => openMember(row.id)}` : ''}
-/>
-`
+      variant="${variant}"`}${selectable ? `
+      selectedRowIds={selectedRows}
+      onSelectedRowIdsChange={setSelectedRows}` : `
+      selectable={false}`}${striped || variant === 'relaxed' ? '' : `
+      striped={false}`}${viewEnabled ? `
+      view={view}
+      viewOptions={[{ label: 'All', value: 'all' }, { label: 'Active', value: 'active' }]}
+      onViewChange={setView}` : ''}${showActions ? `
+      onRowAction={(row) => window.alert(row.name)}
+      rowActionLabel={(row) => 'Open actions for ' + row.name}` : ''}
+    />
+  )
+}`
 
   const handleTableCodeChange = useCallback((nextCode: string) => {
     const nextHeaders = parseTableColumnHeaders(nextCode)
@@ -2357,10 +2195,11 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
             columns={configuredColumns}
             filterableColumns={TABLE_FILTERABLE_COLUMNS}
             getRowId={getTeamMemberId}
+            getRowLabel={(row) => row.name}
             onRowAction={showActions ? noopRowAction : undefined}
             onSelectedRowIdsChange={setSelectedRows}
             rowActionLabel={getTeamMemberActionLabel}
-            rows={configuredRows}
+            rows={viewRows}
             selectable={selectable}
             selectedRowIds={selectedRows}
             stickyHeader
@@ -2371,6 +2210,9 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
             toolbarFloating={toolbarFloating}
             toolbarToggle={toolbarToggle}
             variant={variant}
+            view={activeView}
+            viewOptions={TABLE_VIEW_OPTIONS}
+            onViewChange={setActiveView}
           />
         </div>
 
