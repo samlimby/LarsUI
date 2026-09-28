@@ -24,6 +24,9 @@ import {
   type TableColumn,
   type TableVariant,
 } from './components/Table'
+import { Tooltip } from './components/Tooltip'
+import { TermLink, TermTooltipProvider } from './components/TermTooltip'
+import { TooltipDemo, tooltipDemoTerms } from './TooltipDemo'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -197,7 +200,7 @@ const columns: TableColumn<Member>[] = [
 />
 `
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table' | 'tooltip'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -208,6 +211,7 @@ function getRouteFromHash(): Route {
   if (window.location.hash === '#/components/chip') return 'chip'
   if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
   if (window.location.hash === '#/components/table') return 'table'
+  if (window.location.hash === '#/components/tooltip') return 'tooltip'
   return 'home'
 }
 
@@ -2469,6 +2473,19 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
   )
 }
 
+function TooltipStage() {
+  return (
+    <div className="lars-stage lars-tooltip-stage">
+      <div className="lars-tooltip-stage__copy">
+        <span>Export quality <Tooltip content="Higher quality creates a larger file." side="bottom"><button type="button" aria-label="About export quality">i</button></Tooltip></span>
+        <TermTooltipProvider terms={tooltipDemoTerms}>
+          <p>A good archive preserves its <TermLink term="provenance">provenance</TermLink> and makes the chain easy to inspect.</p>
+        </TermTooltipProvider>
+      </div>
+    </div>
+  )
+}
+
 function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   return (
     <div className="lars-shell">
@@ -2539,6 +2556,17 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
         </div>
       </section>
 
+      <section className="lars-showcase lars-showcase--tooltip" aria-labelledby="tooltip-title">
+        <TooltipStage />
+        <div className="lars-showcase__meta">
+          <div className="lars-showcase__copy">
+            <h2 id="tooltip-title">Tooltip</h2>
+            <p>A quick hint, or a deeper trail from inline text.</p>
+          </div>
+          <a className="lars-view" href="#/components/tooltip">View</a>
+        </div>
+      </section>
+
       <section className="lars-showcase lars-showcase--table" aria-labelledby="table-title">
         <TableStage />
 
@@ -2603,6 +2631,10 @@ function ComponentPage({
       description: 'Organise dense information into clear, selectable rows.',
       title: 'Table',
     },
+    tooltip: {
+      description: 'Short hints and nested explanations that begin with inline terms.',
+      title: 'Tooltip',
+    },
   }
   const { description, title } = details[component]
   const reduceMotion = useReducedMotion()
@@ -2657,6 +2689,7 @@ function ComponentPage({
         {component === 'chip' && <ChipConfigurator />}
         {component === 'segmented-control' && <SegmentedControlConfigurator />}
         {component === 'table' && <TableConfigurator />}
+        {component === 'tooltip' && <TooltipDemo />}
       </section>
     </div>
   )

@@ -1,0 +1,48 @@
+.lars-tooltip-demo { display: flex; flex-direction: column; gap: 24px; width: 100%; }
+.lars-tooltip-demo > section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid var(--lars-footer-divider);
+  border-radius: 8px;
+}
+.lars-tooltip-demo h2 { margin: 8px 0; color: var(--lars-text-primary); font-size: 20px; font-weight: 600; line-height: 28px; }
+.lars-tooltip-demo p { margin: 0; color: var(--lars-text-secondary); font-size: 14px; line-height: 22px; }
+.lars-tooltip-demo__eyebrow { color: var(--lars-low-emphasis); font-size: 11px; font-weight: 600; letter-spacing: .08em; line-height: 16px; }
+.lars-tooltip-demo__basic-stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 160px;
+  padding: 24px;
+  border-radius: 8px;
+  background: var(--lars-container-subtle);
+  color: var(--lars-text-primary);
+  font-size: 14px;
+}
+.lars-tooltip-demo__info {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--lars-text-secondary);
+  border-radius: 50%;
+  background: none;
+  color: var(--lars-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+.lars-tooltip-demo__info:focus-visible { outline: 2px solid var(--lars-text-primary); outline-offset: 3px; }
+.lars-tooltip-demo__adaptive { background: var(--lars-container-subtle); }
+.lars-tooltip-demo__examples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.lars-tooltip-demo__example { display: flex; flex-direction: column; gap: 16px; min-height: 154px; padding: 20px; border: 1px solid var(--lars-footer-divider); border-radius: 8px; background: var(--lars-container); }
+.lars-tooltip-demo__example p { color: var(--lars-text-primary); }
+.lars-tooltip-demo__example--wrap p { max-width: 160px; }
+.lars-tooltip-demo__example--edge { align-items: flex-end; text-align: right; }
+.lars-tooltip-demo__instruction { max-width: 660px; font-size: 12px !important; line-height: 19px !important; }
+@media (max-width: 700px) {
+  .lars-tooltip-demo__examples { grid-template-columns: 1fr; }
+  .lars-tooltip-demo > section { padding: 20px; }
+}

@@ -1,0 +1,22 @@
+.lars-tooltip-positioner { z-index: var(--lars-tooltip-z-index, 70); }
+.lars-tooltip {
+  max-width: 240px;
+  padding: 8px 10px;
+  border: 1px solid var(--lars-divider, #e0e0e0);
+  border-radius: var(--lars-tooltip-radius, 8px);
+  background: var(--lars-container, #fcfcfc);
+  box-shadow: var(--lars-tooltip-shadow, 0 8px 24px rgb(0 0 0 / 10%));
+  color: var(--lars-text-primary, #202020);
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+  font-size: 12px;
+  line-height: 18px;
+  animation: lars-tooltip-enter 150ms cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes lars-tooltip-enter {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lars-tooltip { animation: lars-tooltip-fade 150ms ease-out; }
+  @keyframes lars-tooltip-fade { from { opacity: 0; } to { opacity: 1; } }
+}

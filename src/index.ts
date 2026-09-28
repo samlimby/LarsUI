@@ -35,3 +35,16 @@ export {
   type TableProps,
   type TableVariant,
 } from './components/Table'
+
+export { Tooltip, type TooltipProps } from './components/Tooltip'
+export {
+  TermLink,
+  TermTooltip,
+  TermTooltipProvider,
+  type TermDefinition,
+  type TermLinkProps,
+  type TermLockMode,
+  type TermRegistry,
+  type TermTooltipProps,
+  type TermTooltipProviderProps,
+} from './components/TermTooltip'

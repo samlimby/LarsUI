@@ -13,7 +13,7 @@
   --lars-footer-divider: #e8e8e8;
   --lars-decorative: #aeaeae;
   --lars-low-emphasis: #8f8f8f;
-  --lars-accent: #1687d9;
+  --lars-accent: #0d74ce;
   --ruby-12: #64172b;
   --button-primary-bg: #202020;
   --button-primary-text: #fcfcfc;
@@ -327,6 +327,35 @@
   border-radius: 4px;
   background: var(--lars-container-subtle);
 }
+
+.lars-tooltip-stage__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  width: min(100%, 460px);
+  padding: 28px;
+  border: 1px solid var(--lars-line);
+  border-radius: 8px;
+  background: var(--lars-container);
+  color: var(--lars-text-primary);
+  font-size: 16px;
+  line-height: 26px;
+}
+.lars-tooltip-stage__copy p { margin: 0; }
+.lars-tooltip-stage__copy button {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--lars-text-secondary);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lars-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+.lars-tooltip-stage__copy button:focus-visible { outline: 2px solid var(--lars-text-primary); outline-offset: 3px; }
 
 .lars-slider-card { width: min(100%, 320px); }
 
