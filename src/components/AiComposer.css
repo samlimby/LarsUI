@@ -1,7 +1,7 @@
 .lars-ai-composer {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: min(100%, 664px);
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--lars-line, #d9d9d9);
@@ -12,14 +12,13 @@
 }
 
 .lars-ai-composer--unstructured {
-  width: min(100%, 664px);
   min-height: 148px;
   border: 0;
   border-radius: 20px;
   background: var(--lars-container-subtle, #f9f9f9);
   box-shadow: none;
 }
-.lars-ai-composer--structured { min-height: 240px; border-radius: 28px; }
+.lars-ai-composer--structured { min-height: 148px; border-radius: 28px; }
 
 .lars-ai-composer__sr-only {
   position: absolute;
@@ -43,7 +42,7 @@
 }
 
 .lars-ai-composer--unstructured .lars-ai-composer__body { min-height: 148px; padding: 24px 8px 8px; }
-.lars-ai-composer--structured .lars-ai-composer__body { padding: 22px 24px 24px; }
+.lars-ai-composer--structured .lars-ai-composer__body { min-height: 146px; padding: 20px 24px; }
 
 .lars-ai-composer__input {
   display: block;
@@ -62,7 +61,7 @@
   line-height: 26px;
 }
 
-.lars-ai-composer--structured .lars-ai-composer__input { line-height: 28px; }
+.lars-ai-composer--structured .lars-ai-composer__input { height: 0; min-height: 60px; line-height: 28px; }
 .lars-ai-composer--unstructured .lars-ai-composer__input {
   height: 0;
   min-height: 48px;

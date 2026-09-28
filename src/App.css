@@ -353,7 +353,6 @@
 }
 
 .lars-ai-example { display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
-.lars-ai-example__feedback { min-height: 16px; margin: 0; color: var(--lars-text-secondary); font-size: 12px; line-height: 16px; }
 .lars-ai-stage__switch { flex: 0 0 auto; }
 
 .lars-ai-detail { display: flex; flex-direction: column; gap: 40px; width: 100%; }

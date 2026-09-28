@@ -126,7 +126,7 @@ export function AiComposer({
           onChange={(event) => setMessage(event.currentTarget.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder ?? (variant === 'structured' ? 'Ask a question…' : 'How can I help you?')}
-          rows={3}
+          rows={variant === 'structured' ? 2 : 3}
           value={message}
         />
         {files.length > 0 && (

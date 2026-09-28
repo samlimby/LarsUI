@@ -3,7 +3,7 @@ import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { Atom, Blocks, Classic, Clock, Flip, Gather, Loading, Morph, Ring, Slide, Swirl, Trace } from 'loading-dev'
 import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AiComposer, type AiComposerAction, type AiComposerSubmission, type AiComposerVariant } from './components/AiComposer'
+import { AiComposer, type AiComposerVariant } from './components/AiComposer'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
 import {
   Chip,
@@ -2500,29 +2500,15 @@ const COMPOSER_ROLES = [
 ] as const
 
 function AiComposerExample({ variant }: { variant: AiComposerVariant }) {
-  const [feedback, setFeedback] = useState('')
-
-  const handleSubmit = ({ files, message, role, workspace }: AiComposerSubmission) => {
-    const scope = workspace && role ? ` from ${workspace} as ${role.replaceAll('-', ' ')}` : ''
-    setFeedback(`Ready to send${scope}: ${message || `${files.length} attachment${files.length === 1 ? '' : 's'}`}`)
-  }
-
-  const handleAction = (action: AiComposerAction) => {
-    if (action === 'more') setFeedback('More options action selected')
-  }
-
   return (
     <div className="lars-ai-example">
       <AiComposer
         defaultValue={variant === 'structured' ? 'Help me identify the customs programs relevant to goods movement' : ''}
         key={variant}
-        onAction={handleAction}
-        onSubmit={handleSubmit}
         roleOptions={COMPOSER_ROLES}
         variant={variant}
         workspaceOptions={COMPOSER_WORKSPACES}
       />
-      <p aria-live="polite" className="lars-ai-example__feedback" role="status">{feedback || 'Enter to send · Shift + Enter for a new line'}</p>
     </div>
   )
 }
