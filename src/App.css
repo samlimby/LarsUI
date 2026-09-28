@@ -14,6 +14,7 @@
   --lars-decorative: #aeaeae;
   --lars-low-emphasis: #8f8f8f;
   --lars-accent: #1687d9;
+  --ruby-12: #64172b;
   --button-primary-bg: #202020;
   --button-primary-text: #fcfcfc;
   --button-primary-hover: #646464;
@@ -25,7 +26,7 @@
   --button-danger-bg: #f8bfc8;
   --button-danger-text: #ca244d;
   --button-danger-hover: #efacb8;
-  --button-danger-hover-text: #64172b;
+  --button-danger-hover-text: var(--ruby-12);
   --slider-background: #e8e8e8;
   --slider-text: #171717;
   --slider-fill: rgb(23 23 23 / 15%);
@@ -52,6 +53,7 @@
 }
 
 .lars-page[data-theme='dark'] {
+  --ruby-dark-12: #fed2e1;
   --lars-page: #111;
   --lars-text-primary: #f2f2f2;
   --lars-text-secondary: #a0a0a0;
@@ -76,9 +78,9 @@
   --button-secondary-hover-text: #fff;
   --button-tertiary-hover: #2b2b2b;
   --button-danger-bg: #5a1c2c;
-  --button-danger-text: #ff9ab1;
+  --button-danger-text: var(--ruby-dark-12);
   --button-danger-hover: #74223a;
-  --button-danger-hover-text: #ffd1dc;
+  --button-danger-hover-text: var(--ruby-dark-12);
   --slider-background: #343434;
   --slider-text: #f2f2f2;
   --slider-fill: rgb(255 255 255 / 14%);
@@ -750,6 +752,119 @@
   gap: 12px;
 }
 
+.lars-button-loading-property {
+  --loading-property-row-height: 36px;
+  position: relative;
+  height: var(--loading-property-row-height);
+}
+
+.lars-button-loading-property:has(.lars-button-loading-property__popup) { z-index: 10; }
+
+.lars-button-loading-property__trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--loading-property-row-height);
+  padding: 0 8px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--lars-text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lars-button-loading-property__icon {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  right: 8px;
+  pointer-events: none;
+  color: var(--lars-text-secondary);
+}
+
+.lars-button-loading-property:not([data-open]) .lars-button-loading-property__popup {
+  pointer-events: none;
+}
+
+.lars-button-loading-property__trigger:focus-visible,
+.lars-button-loading-property__close:focus-visible {
+  outline: 1px solid var(--lars-text-primary);
+  outline-offset: 1px;
+}
+
+.lars-button-loading-property__popup {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--loading-property-popup-height, 208px);
+  isolation: isolate;
+}
+
+.lars-button-loading-property__popup::before {
+  position: absolute;
+  z-index: -1;
+  inset: -5px -13px 0;
+  border: 1px solid var(--lars-divider);
+  border-radius: 4px;
+  background: var(--lars-container);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 10%);
+  content: '';
+}
+
+.lars-page[data-theme='dark'] .lars-button-loading-property__popup::before {
+  box-shadow: 0 12px 32px rgb(0 0 0 / 32%);
+}
+
+.lars-button-loading-property__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--loading-property-row-height);
+  color: var(--lars-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.lars-button-loading-property__close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lars-text-secondary);
+  place-items: center;
+  cursor: pointer;
+}
+
+.lars-button-loading-property__options {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 12px;
+}
+
+.lars-button-loading-property__divider {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  left: 2px;
+  height: 1px;
+  background: var(--lars-divider);
+}
+
 .lars-property {
   color: var(--lars-text-primary);
   font-size: 12px;
@@ -1099,7 +1214,85 @@ html[data-theme='dark'] .lars-table-toolbar-property__popup::before {
 
 .lars-property-slider .inline-slider { height: 44px; }
 
-.lars-component-canvas .lars-button--with-icon { gap: 6px; }
+.lars-button-preview {
+  transition: width 300ms cubic-bezier(.25, 1, .5, 1), color 150ms ease, background-color 150ms ease, transform 150ms cubic-bezier(.25, .46, .45, .94);
+}
+
+.lars-button-preview__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.lars-button-preview > .lars-button-preview__content {
+  position: absolute;
+  inset: 0;
+}
+
+.lars-button-preview__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.lars-button-preview__measure {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.lars-button-preview__icon-measure {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.lars-button-preview__measure .lars-button-status__dots span {
+  animation: none;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lars-button-preview { transition: color 150ms ease, background-color 150ms ease; }
+  .lars-button-preview:active { transform: none; }
+}
+
+.lars-button-status { white-space: nowrap; }
+
+.lars-button-status__dots { display: inline-flex; }
+
+.lars-button-status__dots span {
+  animation: lars-button-status-dot 900ms cubic-bezier(.645, .045, .355, 1) infinite alternate;
+  opacity: .5;
+}
+
+.lars-button-status__dots span:nth-child(2) { animation-delay: 120ms; }
+.lars-button-status__dots span:nth-child(3) { animation-delay: 240ms; }
+
+@keyframes lars-button-status-dot {
+  to {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lars-button-status__dots span {
+    animation: none;
+    opacity: 1;
+  }
+}
 
 .lars-code-block {
   width: 100%;
@@ -1353,7 +1546,7 @@ html[data-theme='dark'] .lars-table-toolbar-property__popup::before {
   .lars-configurator { grid-template-columns: 1fr; }
   .lars-component-canvas,
   .lars-properties { height: min(400px, 58svh); }
-  .lars-properties:has(.lars-table-toolbar-property__popup) {
+  .lars-properties:has(.lars-table-toolbar-property__popup, .lars-button-loading-property__popup) {
     position: relative;
     z-index: 2;
     overflow: visible;

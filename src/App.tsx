@@ -1,7 +1,8 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Atom, Blocks, Classic, Clock, Flip, Gather, Loading, Morph, Ring, Slide, Swirl, Trace } from 'loading-dev'
+import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
 import {
   Chip,
@@ -733,12 +734,14 @@ const MemoizedCodeBlock = memo(CodeBlock)
 
 function SegmentedControl<T extends string>({
   className = '',
+  animateIndicator = true,
   label,
   onChange,
   options,
   value,
 }: {
   className?: string
+  animateIndicator?: boolean
   label: string
   onChange: (value: T) => void
   options: ReadonlyArray<{ label: string; value: T }>
@@ -763,7 +766,7 @@ function SegmentedControl<T extends string>({
                 onClick={() => onChange(option.value)}
                 type="button"
               >
-                {isActive && (
+                {isActive && (animateIndicator ? (
                   <motion.span
                     className="lars-segments__indicator"
                     initial={false}
@@ -773,7 +776,9 @@ function SegmentedControl<T extends string>({
                       ? { duration: 0 }
                       : { type: 'spring', duration: 0.32, bounce: 0 }}
                   />
-                )}
+                ) : (
+                  <span className="lars-segments__indicator" style={{ borderRadius: 999 }} />
+                ))}
                 <span className="lars-segments__label">{option.label}</span>
               </BaseButton>
             )
@@ -796,11 +801,13 @@ function PropertySelect<T extends string>({
   label,
   onChange,
   options,
+  popupClassName = '',
   value,
 }: {
   label: string
   onChange: (value: T) => void
   options: ReadonlyArray<{ label: string; value: T }>
+  popupClassName?: string
   value: T
 }) {
   const [open, setOpen] = useState(false)
@@ -835,7 +842,7 @@ function PropertySelect<T extends string>({
             className="lars-property-select__positioner"
             sideOffset={8}
           >
-            <Select.Popup className="lars-property-select__popup">
+            <Select.Popup className={`lars-property-select__popup${popupClassName ? ` ${popupClassName}` : ''}`}>
               <Select.List className="lars-property-select__list">
                 {options.map((option) => (
                   <Select.Item
@@ -1154,6 +1161,244 @@ function parseTableMembers(code: string) {
   return members
 }
 
+type ButtonLoadingMode = 'idle' | 'generating' | 'loading'
+
+const BUTTON_EFFECT_COMPONENTS = {
+  atom: Atom,
+  blocks: Blocks,
+  classic: Classic,
+  clock: Clock,
+  flip: Flip,
+  gather: Gather,
+  loading: Loading,
+  morph: Morph,
+  ring: Ring,
+  slide: Slide,
+  swirl: Swirl,
+  trace: Trace,
+}
+type ButtonLoadingEffect = keyof typeof BUTTON_EFFECT_COMPONENTS
+
+const BUTTON_EFFECT_OPTIONS: Record<
+  Exclude<ButtonLoadingMode, 'idle'>,
+  Record<ButtonShape, ReadonlyArray<{ label: string; value: ButtonLoadingEffect }>>
+> = {
+  generating: {
+    neat: [
+      { label: 'Gather', value: 'gather' },
+      { label: 'Blocks', value: 'blocks' },
+      { label: 'Slide', value: 'slide' },
+    ],
+    full: [
+      { label: 'Atom', value: 'atom' },
+      { label: 'Morph', value: 'morph' },
+    ],
+  },
+  loading: {
+    neat: [
+      { label: 'Flip', value: 'flip' },
+      { label: 'Trace', value: 'trace' },
+      { label: 'Swirl', value: 'swirl' },
+    ],
+    full: [
+      { label: 'Ring', value: 'ring' },
+      { label: 'Loading', value: 'loading' },
+      { label: 'Classic', value: 'classic' },
+      { label: 'Clock', value: 'clock' },
+    ],
+  },
+}
+
+function ButtonLoadingProperties({
+  generatingEffect,
+  loadingEffect,
+  mode,
+  onGeneratingEffectChange,
+  onLoadingEffectChange,
+  onModeChange,
+  shape,
+}: {
+  generatingEffect: ButtonLoadingEffect
+  loadingEffect: ButtonLoadingEffect
+  mode: ButtonLoadingMode
+  onGeneratingEffectChange: (value: ButtonLoadingEffect) => void
+  onLoadingEffectChange: (value: ButtonLoadingEffect) => void
+  onModeChange: (value: ButtonLoadingMode) => void
+  shape: ButtonShape
+}) {
+  const [open, setOpen] = useState(false)
+  const reduceMotion = useReducedMotion()
+  const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popupId = useId()
+  const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
+  const iconTransition = {
+    duration: reduceMotion ? 0 : open ? 0.35 : 0.2,
+    ease: [0.25, 0.1, 0.25, 1] as const,
+  }
+
+  useLayoutEffect(() => {
+    if (!open || !rootRef.current) return
+
+    const root = rootRef.current
+    const properties = root.closest<HTMLElement>('.lars-properties')
+    const fields = root.closest<HTMLElement>('.lars-properties__fields')
+    if (!properties || !fields) return
+
+    const updateHeight = () => {
+      const height = properties.getBoundingClientRect().bottom - root.getBoundingClientRect().top - 8
+      root.style.setProperty('--loading-property-popup-height', `${Math.max(0, height)}px`)
+    }
+
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(properties)
+    observer.observe(fields)
+    window.addEventListener('resize', updateHeight)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateHeight)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Element && target.closest('.lars-button-loading-property__effect-popup')) return
+      if (!rootRef.current?.contains(target as Node)) setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      triggerRef.current?.focus()
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  return (
+    <div className="lars-button-loading-property" data-open={open || undefined} ref={rootRef}>
+      <BaseButton
+        aria-controls={open ? popupId : undefined}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className="lars-button-loading-property__trigger"
+        onClick={() => setOpen((current) => !current)}
+        ref={triggerRef}
+        type="button"
+      >
+        <span>Loading states</span>
+      </BaseButton>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            aria-label="Loading state properties"
+            animate={{ opacity: 1 }}
+            className="lars-button-loading-property__popup"
+            exit={{
+              opacity: 0,
+              transition: { duration: reduceMotion ? 0 : 0.2, ease: [0.25, 0.1, 0.25, 1] },
+            }}
+            id={popupId}
+            initial={{ opacity: reduceMotion ? 1 : 0 }}
+            key="loading-state-properties"
+            role="dialog"
+            transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <div className="lars-button-loading-property__heading">
+              <span>Loading states</span>
+              <BaseButton
+                aria-label="Close loading state properties"
+                className="lars-button-loading-property__close"
+                onClick={() => {
+                  setOpen(false)
+                  triggerRef.current?.focus()
+                }}
+                type="button"
+              />
+            </div>
+            <div className="lars-button-loading-property__options">
+              <div className="lars-button-loading-property__divider" />
+              <SegmentedControl
+                label="Generating"
+                onChange={(next) => onModeChange(next === 'true' ? 'generating' : mode === 'generating' ? 'idle' : mode)}
+                options={booleanOptions}
+                value={mode === 'generating' ? 'true' : 'false'}
+              />
+              {mode === 'generating' && (
+                <PropertySelect<ButtonLoadingEffect>
+                  label="Generating effect"
+                  onChange={onGeneratingEffectChange}
+                  options={BUTTON_EFFECT_OPTIONS.generating[shape]}
+                  popupClassName="lars-button-loading-property__effect-popup"
+                  value={generatingEffect}
+                />
+              )}
+              <SegmentedControl
+                label="Loading"
+                onChange={(next) => onModeChange(next === 'true' ? 'loading' : mode === 'loading' ? 'idle' : mode)}
+                options={booleanOptions}
+                value={mode === 'loading' ? 'true' : 'false'}
+              />
+              {mode === 'loading' && (
+                <PropertySelect<ButtonLoadingEffect>
+                  label="Loading effect"
+                  onChange={onLoadingEffectChange}
+                  options={BUTTON_EFFECT_OPTIONS.loading[shape]}
+                  popupClassName="lars-button-loading-property__effect-popup"
+                  value={loadingEffect}
+                />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <svg
+        aria-hidden="true"
+        className="lars-button-loading-property__icon"
+        fill="none"
+        focusable="false"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+      >
+        <motion.path
+          animate={{ d: open ? 'M3.9 3.9L12.1 12.1' : 'M6.2 3.2L11 8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+        <motion.path
+          animate={{ d: open ? 'M12.1 3.9L3.9 12.1' : 'M11 8L6.2 12.8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+      </svg>
+    </div>
+  )
+}
+
+function ButtonStatusText({ mode }: { mode: Exclude<ButtonLoadingMode, 'idle'> }) {
+  return (
+    <span className="lars-button-status">
+      {mode === 'loading' ? 'Loading' : 'Generating'}
+      <span aria-hidden="true" className="lars-button-status__dots">
+        <span>.</span><span>.</span><span>.</span>
+      </span>
+    </span>
+  )
+}
+
 function ButtonConfigurator() {
   const [label, setLabel] = useState('View')
   const [variant, setVariant] = useState<ButtonVariant>('primary')
@@ -1161,10 +1406,61 @@ function ButtonConfigurator() {
   const [iconOnly, setIconOnly] = useState(false)
   const [shape, setShape] = useState<ButtonShape>('full')
   const [disabled, setDisabled] = useState(false)
+  const [loadingMode, setLoadingMode] = useState<ButtonLoadingMode>('idle')
+  const [previewActive, setPreviewActive] = useState(false)
+  const [previewWidths, setPreviewWidths] = useState<{ idle: number; status: number } | null>(null)
+  const idleMeasureRef = useRef<HTMLSpanElement>(null)
+  const statusMeasureRef = useRef<HTMLSpanElement>(null)
+  const [loadingEffects, setLoadingEffects] = useState<Record<ButtonShape, ButtonLoadingEffect>>({
+    full: 'ring',
+    neat: 'flip',
+  })
+  const [generatingEffects, setGeneratingEffects] = useState<Record<ButtonShape, ButtonLoadingEffect>>({
+    full: 'atom',
+    neat: 'gather',
+  })
   const reduceMotion = useReducedMotion()
-  const buttonLabel = label || 'Button'
+  useEffect(() => {
+    if (!previewActive) return
 
-  const code = `import { Button } from 'larsui'
+    const timeout = window.setTimeout(() => setPreviewActive(false), 3500)
+    return () => window.clearTimeout(timeout)
+  }, [previewActive])
+
+  const buttonLabel = label || 'Button'
+  const activeEffect = loadingMode === 'loading' ? loadingEffects[shape] : generatingEffects[shape]
+  const effectName = loadingMode === 'idle'
+    ? null
+    : BUTTON_EFFECT_OPTIONS[loadingMode][shape].find((option) => option.value === activeEffect)?.label
+  const Spinner = BUTTON_EFFECT_COMPONENTS[activeEffect]
+  const statusLabel = loadingMode === 'loading' ? 'Loading' : 'Generating'
+  const showStatus = loadingMode !== 'idle' && previewActive
+
+  useLayoutEffect(() => {
+    const idleMeasure = idleMeasureRef.current
+    const statusMeasure = statusMeasureRef.current
+    if (!idleMeasure || !statusMeasure) return
+
+    const updateWidths = () => {
+      const minWidth = shape === 'full' ? 77 : 53
+      const padding = shape === 'full' ? 48 : 24
+      const idle = iconOnly ? 32 : Math.max(minWidth, idleMeasure.getBoundingClientRect().width + padding)
+      const status = iconOnly ? 32 : Math.max(minWidth, statusMeasure.getBoundingClientRect().width + padding)
+      setPreviewWidths((current) => current?.idle === idle && current.status === status ? current : { idle, status })
+    }
+
+    updateWidths()
+    const observer = new ResizeObserver(updateWidths)
+    observer.observe(idleMeasure)
+    observer.observe(statusMeasure)
+    return () => observer.disconnect()
+  }, [buttonLabel, icon, iconOnly, shape, statusLabel])
+
+  const idleContent = iconOnly
+    ? '<span aria-hidden="true">→</span>'
+    : `${buttonLabel}${icon === 'true' ? '\n          <span aria-hidden="true">→</span>' : ''}`
+
+  const code = loadingMode === 'idle' ? `import { Button } from 'larsui'
 import 'larsui/style.css'
 
 <Button
@@ -1172,29 +1468,134 @@ ${iconOnly ? `  aria-label=${JSON.stringify(buttonLabel)}
 ` : ''}  variant="${variant}"
   shape="${shape}"${iconOnly ? '\n  iconOnly' : ''}${disabled ? '\n  disabled' : ''}
 >
-  ${iconOnly ? '<span aria-hidden="true">→</span>' : `${buttonLabel}${icon === 'true' ? '\n  <span aria-hidden="true">→</span>' : ''}`}
-</Button>`
+  ${idleContent}
+</Button>` : `import { useEffect, useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { Button } from 'larsui'
+import { ${effectName} } from 'loading-dev'
+import 'larsui/style.css'
+
+export function Example() {
+  const [active, setActive] = useState(false)
+  const reduceMotion = useReducedMotion()
+  useEffect(() => {
+    if (!active) return
+
+    const timeout = window.setTimeout(() => setActive(false), 3500)
+    return () => window.clearTimeout(timeout)
+  }, [active])
+
+  return (
+    <Button
+      aria-busy={active || undefined}
+      aria-label={active ? ${JSON.stringify(`${statusLabel} ${buttonLabel}`)} : ${JSON.stringify(buttonLabel)}}
+      variant="${variant}"
+      shape="${shape}"${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}
+      style={{ gap: active ? 6 : undefined }}
+      onClick={() => setActive((current) => !current)}
+    >
+      {active ? (
+        <>
+          <motion.span
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.22, delay: reduceMotion ? 0 : 0.06 }}
+          >
+            <${effectName} size={16} />
+          </motion.span>
+${iconOnly ? '' : `          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.08 }}
+          >
+            ${statusLabel}
+            <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+              {[0, 1, 2].map((index) => (
+                <motion.span
+                  key={index}
+                  animate={reduceMotion ? undefined : { opacity: [0.5, 1, 0.5], x: [0, 2, 0] }}
+                  style={{ display: 'inline-block' }}
+                  transition={{ duration: 1.8, repeat: Infinity, delay: index * 0.12 }}
+                >.</motion.span>
+              ))}
+            </span>
+          </motion.span>
+`}
+        </>
+      ) : (
+        <>
+          ${idleContent}
+        </>
+      )}
+    </Button>
+  )
+}`
 
   return (
     <>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas">
+          <span aria-hidden="true" className="lars-button-preview__measure" ref={idleMeasureRef}>
+            <span className="lars-button-preview__content">
+              {iconOnly ? <span>→</span> : buttonLabel}
+              {!iconOnly && icon === 'true' && <span>→</span>}
+            </span>
+          </span>
+          <span aria-hidden="true" className="lars-button-preview__measure" ref={statusMeasureRef}>
+            <span className="lars-button-preview__content">
+              <span className="lars-button-preview__icon-measure" />
+              <ButtonStatusText mode={loadingMode === 'idle' ? 'loading' : loadingMode} />
+            </span>
+          </span>
           <Button
-            aria-label={iconOnly ? buttonLabel : undefined}
-            className={!iconOnly && icon === 'true' ? 'lars-button--with-icon' : ''}
+            aria-busy={showStatus || undefined}
+            aria-label={showStatus ? `${statusLabel} ${buttonLabel}` : iconOnly ? buttonLabel : undefined}
+            className="lars-button-preview"
             disabled={disabled}
             iconOnly={iconOnly}
+            onClick={() => {
+              if (loadingMode !== 'idle') setPreviewActive((current) => !current)
+            }}
             shape={shape}
+            style={{ width: previewWidths ? (showStatus ? previewWidths.status : previewWidths.idle) : undefined }}
             variant={variant}
           >
-            {iconOnly ? (
-              <span aria-hidden="true">→</span>
-            ) : (
-              <>
-                {buttonLabel}
-                {icon === 'true' && <span aria-hidden="true">→</span>}
-              </>
-            )}
+            <AnimatePresence initial={false}>
+              {showStatus ? (
+                <motion.span
+                  animate={{ opacity: 1 }}
+                  className="lars-button-preview__content"
+                  exit={{ opacity: 0, transition: { duration: 0.08 } }}
+                  initial={{ opacity: 0 }}
+                  key="status"
+                  transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.08, ease: 'easeOut' }}
+                >
+                  <motion.span
+                    animate={{ opacity: 1 }}
+                    aria-hidden="true"
+                    className="lars-button-preview__glyph"
+                    initial={{ opacity: 0 }}
+                    transition={{ duration: reduceMotion ? 0.14 : 0.22, delay: reduceMotion ? 0 : 0.06, ease: 'easeOut' }}
+                  >
+                    <Spinner size={16} />
+                  </motion.span>
+                  {!iconOnly && <ButtonStatusText mode={loadingMode} />}
+                </motion.span>
+              ) : (
+                <motion.span
+                  animate={{ opacity: 1 }}
+                  className="lars-button-preview__content"
+                  exit={{ opacity: 0, transition: { duration: 0.08 } }}
+                  initial={{ opacity: 0 }}
+                  key="idle"
+                  transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.08, ease: 'easeOut' }}
+                >
+                  {iconOnly ? <span aria-hidden="true">→</span> : buttonLabel}
+                  {!iconOnly && icon === 'true' && <span aria-hidden="true">→</span>}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Button>
         </div>
 
@@ -1216,11 +1617,51 @@ ${iconOnly ? `  aria-label=${JSON.stringify(buttonLabel)}
               value={variant}
             />
 
-            <SegmentedControl
-              label="Icon Only"
-              onChange={(value) => setIconOnly(value === 'true')}
-              options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
-              value={iconOnly ? 'true' : 'false'}
+            <AnimatePresence initial={false} mode="popLayout">
+              {!iconOnly && (
+                <motion.div
+                  animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+                  className="lars-properties__conditional"
+                  exit={{
+                    opacity: 0,
+                    transform: reduceMotion ? 'translate3d(0, 0, 0)' : 'translate3d(0, -4px, 0)',
+                  }}
+                  initial={{
+                    opacity: 0,
+                    transform: reduceMotion ? 'translate3d(0, 0, 0)' : 'translate3d(0, -4px, 0)',
+                  }}
+                  key="button-label"
+                  transition={{ duration: reduceMotion ? 0.14 : 0.18, ease: [0.19, 1, 0.22, 1] }}
+                >
+                  <label className="lars-property lars-property--stacked">
+                    <span>Label</span>
+                    <input value={label} onChange={(event) => setLabel(event.currentTarget.value)} />
+                  </label>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
+              <SegmentedControl
+                animateIndicator={false}
+                label="Icon Only"
+                onChange={(value) => setIconOnly(value === 'true')}
+                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+                value={iconOnly ? 'true' : 'false'}
+              />
+            </motion.div>
+
+            <ButtonLoadingProperties
+              generatingEffect={generatingEffects[shape]}
+              loadingEffect={loadingEffects[shape]}
+              mode={loadingMode}
+              onGeneratingEffectChange={(value) => setGeneratingEffects((current) => ({ ...current, [shape]: value }))}
+              onLoadingEffectChange={(value) => setLoadingEffects((current) => ({ ...current, [shape]: value }))}
+              onModeChange={(nextMode) => {
+                setLoadingMode(nextMode)
+                setPreviewActive(false)
+              }}
+              shape={shape}
             />
 
             <AnimatePresence initial={false} mode="popLayout">
@@ -1236,14 +1677,9 @@ ${iconOnly ? `  aria-label=${JSON.stringify(buttonLabel)}
                     opacity: 0,
                     transform: reduceMotion ? 'translate3d(0, 0, 0)' : 'translate3d(0, -4px, 0)',
                   }}
-                  key="button-label-and-icon"
+                  key="button-icon"
                   transition={{ duration: reduceMotion ? 0.14 : 0.18, ease: [0.19, 1, 0.22, 1] }}
                 >
-                  <label className="lars-property lars-property--stacked">
-                    <span>Label</span>
-                    <input value={label} onChange={(event) => setLabel(event.currentTarget.value)} />
-                  </label>
-
                   <SegmentedControl
                     label="Icon"
                     onChange={setIcon}
@@ -1275,21 +1711,35 @@ ${iconOnly ? `  aria-label=${JSON.stringify(buttonLabel)}
         </aside>
       </div>
 
-      <CodeBlock
-        code={code}
-        fileName="Button.tsx"
-        label="Configured button usage code"
-        onChange={(nextCode) => {
-          const next = parseButtonCode(nextCode)
-          if (!next) return
-          if (next.variant) setVariant(next.variant)
-          if (next.shape) setShape(next.shape)
-          if (next.label !== null) setLabel(next.label)
-          setIconOnly(next.iconOnly)
-          setDisabled(next.disabled)
-          if (!next.iconOnly) setIcon(next.icon ? 'true' : 'false')
-        }}
-      />
+      <div className="lars-code-with-footnote">
+        <CodeBlock
+          code={code}
+          fileName="Button.tsx"
+          label="Configured button usage code"
+          onChange={(nextCode) => {
+            const next = parseButtonCode(nextCode)
+            if (!next) return
+            if (next.variant) setVariant(next.variant)
+            if (next.shape) setShape(next.shape)
+            if (next.label !== null) setLabel(next.label)
+            setIconOnly(next.iconOnly)
+            setDisabled(next.disabled)
+            if (!next.iconOnly) setIcon(next.icon ? 'true' : 'false')
+          }}
+        />
+
+        <aside className="lars-footnotes" aria-label="Notes">
+          <p>
+            <sup>1</sup>
+            <span>
+              The loading and generating states originate from{' '}
+              <a href="https://loading.dev/" target="_blank" rel="noreferrer">
+                loading.dev
+              </a>.
+            </span>
+          </p>
+        </aside>
+      </div>
     </>
   )
 }
