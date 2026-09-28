@@ -4,6 +4,7 @@
   --lars-text-secondary: #646464;
   --lars-container: #fcfcfc;
   --lars-container-subtle: #f9f9f9;
+  --lars-container-high-emphasis: #e8e8e8;
   --lars-divider: #e0e0e0;
   --lars-line: #d9d9d9;
   --lars-active: #e0e0e0;
@@ -59,6 +60,7 @@
   --lars-text-secondary: #a0a0a0;
   --lars-container: #242424;
   --lars-container-subtle: #181818;
+  --lars-container-high-emphasis: #2a2a2a;
   --lars-divider: #323232;
   --lars-line: #343434;
   --lars-active: #3a3a3a;
@@ -342,7 +344,8 @@
   padding: 16px 16px 52px;
 }
 
-.lars-stage--ai-composer { padding: 24px; background: var(--lars-page); }
+.lars-stage--ai-composer { padding: 24px; }
+.lars-stage--ai-composer[data-variant='unstructured'] { background: var(--lars-container-high-emphasis); }
 .lars-stage--ai-composer[data-variant='structured'] { background: var(--lars-container-subtle); }
 
 .lars-ai-stage__content {
