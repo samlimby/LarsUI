@@ -2503,11 +2503,19 @@ function AiComposerStage() {
 
 function AiComposerDetail() {
   const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
-  const code = `import { AiComposer } from 'larsui'
+  const code = variant === 'structured' ? `import { AiComposer } from 'larsui'
 import 'larsui/style.css'
 
 <AiComposer
-  variant="${variant}"
+  variant="structured"
+  onSubmit={({ message, files, workspace, role }) =>
+    runAnalysis({ message, files, workspace, role })
+  }
+/>` : `import { AiComposer } from 'larsui'
+import 'larsui/style.css'
+
+<AiComposer
+  variant="unstructured"
   onSubmit={({ message, files }) => sendMessage(message, files)}
 />`
 
