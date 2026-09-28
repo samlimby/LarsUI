@@ -2486,7 +2486,7 @@ function AiComposerStage() {
   const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
 
   return (
-    <div className="lars-stage lars-stage--ai-composer">
+    <div className="lars-stage lars-stage--ai-composer" data-variant={variant}>
       <div className="lars-ai-stage__content">
         <AiComposerExample key={variant} variant={variant} />
         <LarsSegmentedControl

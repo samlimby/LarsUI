@@ -343,6 +343,7 @@
 }
 
 .lars-stage--ai-composer { padding: 24px; background: var(--lars-page); }
+.lars-stage--ai-composer[data-variant='structured'] { background: var(--lars-container-subtle); }
 
 .lars-ai-stage__content {
   display: flex;
