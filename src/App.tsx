@@ -3,6 +3,7 @@ import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { Atom, Blocks, Classic, Clock, Flip, Gather, Loading, Morph, Ring, Slide, Swirl, Trace } from 'loading-dev'
 import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { AiComposer, type AiComposerAction, type AiComposerSubmission, type AiComposerVariant } from './components/AiComposer'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
 import {
   Chip,
@@ -118,6 +119,23 @@ export function Example() {
     />
   )
 }`
+const AI_COMPOSER_VIEW_CODE = `import { AiComposer } from 'larsui'
+import 'larsui/style.css'
+
+<AiComposer
+  variant="unstructured"
+  context={{ eyebrow: 'T-5', title: 'Brand Kit Order Tracking' }}
+  onSubmit={({ message, files }) => sendMessage(message, files)}
+/>
+
+<AiComposer
+  variant="structured"
+  defaultValue="Help me identify the customs programs relevant to goods movement"
+  workspaceOptions={[{ label: 'S4H', value: 's4h' }]}
+  roleOptions={[{ label: 'Functional Analyst', value: 'analyst' }]}
+  onSubmit={({ message, workspace, role, files }) =>
+    runAnalysis({ message, workspace, role, files })}
+/>`
 type TeamMember = {
   id: string
   name: string
@@ -197,7 +215,7 @@ const columns: TableColumn<Member>[] = [
 />
 `
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table' | 'ai-composer'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -208,6 +226,7 @@ function getRouteFromHash(): Route {
   if (window.location.hash === '#/components/chip') return 'chip'
   if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
   if (window.location.hash === '#/components/table') return 'table'
+  if (window.location.hash === '#/components/ai-composer') return 'ai-composer'
   return 'home'
 }
 
@@ -2469,6 +2488,90 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
   )
 }
 
+const COMPOSER_WORKSPACES = [
+  { label: 'S4H', value: 's4h' },
+  { label: 'Commerce', value: 'commerce' },
+  { label: 'Global Trade', value: 'global-trade' },
+] as const
+
+const COMPOSER_ROLES = [
+  { label: 'Functional Analyst', value: 'functional-analyst' },
+  { label: 'Researcher', value: 'researcher' },
+  { label: 'Operations Lead', value: 'operations-lead' },
+] as const
+
+function AiComposerExample({ variant }: { variant: AiComposerVariant }) {
+  const [feedback, setFeedback] = useState('')
+
+  const handleSubmit = ({ files, message, role, workspace }: AiComposerSubmission) => {
+    const scope = workspace && role ? ` from ${workspace} as ${role.replaceAll('-', ' ')}` : ''
+    setFeedback(`Ready to send${scope}: ${message || `${files.length} attachment${files.length === 1 ? '' : 's'}`}`)
+  }
+
+  const handleAction = (action: AiComposerAction) => {
+    const labels: Record<AiComposerAction, string> = {
+      help: 'Help',
+      more: 'More options',
+      edit: 'Edit',
+      history: 'History',
+    }
+    setFeedback(`${labels[action]} action selected`)
+  }
+
+  return (
+    <div className="lars-ai-example">
+      <AiComposer
+        context={{ eyebrow: 'T-5', title: 'Brand Kit Order Tracking' }}
+        defaultValue={variant === 'structured' ? 'Help me identify the customs programs relevant to goods movement' : ''}
+        key={variant}
+        onAction={handleAction}
+        onSubmit={handleSubmit}
+        roleOptions={COMPOSER_ROLES}
+        variant={variant}
+        workspaceOptions={COMPOSER_WORKSPACES}
+      />
+      <p aria-live="polite" className="lars-ai-example__feedback" role="status">{feedback || 'Enter to send · Shift + Enter for a new line'}</p>
+    </div>
+  )
+}
+
+function AiComposerStage() {
+  const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
+
+  return (
+    <div className="lars-stage lars-stage--ai-composer">
+      <div className="lars-ai-stage__content">
+        <AiComposerExample key={variant} variant={variant} />
+        <LarsSegmentedControl
+          className="lars-ai-stage__switch"
+          label="Composer variant"
+          onValueChange={(next) => setVariant(next as AiComposerVariant)}
+          options={[{ label: 'Unstructured', value: 'unstructured' }, { label: 'Structured', value: 'structured' }]}
+          value={variant}
+        />
+      </div>
+    </div>
+  )
+}
+
+function AiComposerDetail() {
+  return (
+    <div className="lars-ai-detail">
+      <div className="lars-ai-detail__variants">
+        <section className="lars-ai-detail__variant" aria-labelledby="ai-unstructured-title">
+          <div className="lars-ai-detail__heading"><span>01</span><h2 id="ai-unstructured-title">Unstructured</h2><p>Write freely with conversation context above the input.</p></div>
+          <AiComposerExample variant="unstructured" />
+        </section>
+        <section className="lars-ai-detail__variant" aria-labelledby="ai-structured-title">
+          <div className="lars-ai-detail__heading"><span>02</span><h2 id="ai-structured-title">Structured</h2><p>Set a workspace and role alongside a focused prompt.</p></div>
+          <AiComposerExample variant="structured" />
+        </section>
+      </div>
+      <MemoizedCodeBlock code={AI_COMPOSER_VIEW_CODE} fileName="AiComposer.tsx" label="AI Composer usage code" />
+    </div>
+  )
+}
+
 function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   return (
     <div className="lars-shell">
@@ -2551,6 +2654,18 @@ function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () =>
         </div>
       </section>
 
+      <section className="lars-showcase lars-showcase--ai-composer" aria-labelledby="ai-composer-title">
+        <AiComposerStage />
+
+        <div className="lars-showcase__meta">
+          <div className="lars-showcase__copy">
+            <h2 id="ai-composer-title">AI Composer</h2>
+            <p>Two ways to compose: open conversation or guided, contextual prompting.</p>
+          </div>
+          <a className="lars-view" href="#/components/ai-composer">View</a>
+        </div>
+      </section>
+
       <footer className="lars-footer">
         <span>
           Made by{' '}
@@ -2602,6 +2717,10 @@ function ComponentPage({
     table: {
       description: 'Organise dense information into clear, selectable rows.',
       title: 'Table',
+    },
+    'ai-composer': {
+      description: 'Compose with open conversation or a structured workspace and role.',
+      title: 'AI Composer',
     },
   }
   const { description, title } = details[component]
@@ -2657,6 +2776,7 @@ function ComponentPage({
         {component === 'chip' && <ChipConfigurator />}
         {component === 'segmented-control' && <SegmentedControlConfigurator />}
         {component === 'table' && <TableConfigurator />}
+        {component === 'ai-composer' && <AiComposerDetail />}
       </section>
     </div>
   )

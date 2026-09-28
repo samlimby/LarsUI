@@ -6,6 +6,15 @@ export {
 } from './components/Button'
 
 export {
+  AiComposer,
+  type AiComposerAction,
+  type AiComposerOption,
+  type AiComposerProps,
+  type AiComposerSubmission,
+  type AiComposerVariant,
+} from './components/AiComposer'
+
+export {
   Chip,
   type ChipIconPosition,
   type ChipProps,
