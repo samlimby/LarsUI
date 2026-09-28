@@ -19,11 +19,11 @@
   box-shadow: none;
 }
 .lars-ai-composer--structured {
-  min-height: 148px;
+  min-height: 150px;
   border-color: var(--lars-divider, #e0e0e0);
-  border-radius: 28px;
+  border-radius: 8px;
   background: var(--lars-container, #fcfcfc);
-  box-shadow: 0 12px 32px rgb(32 32 32 / 6%);
+  box-shadow: none;
 }
 
 .lars-ai-composer__sr-only {
@@ -49,30 +49,11 @@
 
 .lars-ai-composer--unstructured .lars-ai-composer__body { min-height: 148px; padding: 24px 8px 8px; }
 .lars-ai-composer--structured .lars-ai-composer__body {
-  min-height: 146px;
+  min-height: 148px;
   justify-content: space-between;
   gap: 4px;
-  padding: 20px;
+  padding: 24px 12px 12px;
 }
-
-.lars-ai-composer__prompt {
-  display: flex;
-  min-height: 56px;
-  align-items: flex-start;
-  gap: 16px;
-  width: 100%;
-}
-
-.lars-ai-composer__mark-frame {
-  display: flex;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  align-items: center;
-  justify-content: center;
-}
-
-.lars-ai-composer__mark { width: 24px; height: 24px; color: #000; }
 
 .lars-ai-composer__input {
   display: block;
@@ -92,11 +73,12 @@
 }
 
 .lars-ai-composer--structured .lars-ai-composer__input {
-  height: 56px;
-  min-height: 56px;
+  height: 0;
+  min-height: 48px;
+  padding-inline: 8px;
   font-size: 14px;
-  font-weight: 400;
-  line-height: 20px;
+  font-weight: 500;
+  line-height: 18px;
 }
 .lars-ai-composer--unstructured .lars-ai-composer__input {
   height: 0;
@@ -131,43 +113,6 @@
   min-height: 38px;
 }
 
-.lars-ai-composer--structured .lars-ai-composer__toolbar { min-height: 48px; }
-.lars-ai-composer__fields { display: flex; min-width: 0; align-items: center; gap: 10px; }
-.lars-ai-composer__selector.lars-button {
-  height: 44px;
-  min-width: 0;
-  justify-content: space-between;
-  gap: 8px;
-  padding-inline: 14px;
-  border: 1px solid var(--lars-copy-hover, #e8e8e8);
-  border-radius: 999px;
-  background: var(--lars-container, #fcfcfc);
-  box-shadow: 0 2px 5px rgb(32 32 32 / 4%);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 18px;
-  white-space: nowrap;
-}
-.lars-ai-composer__selector--workspace.lars-button { width: 109px; }
-.lars-ai-composer__selector--role.lars-button { width: 206px; }
-.lars-ai-composer__selector-icon { display: flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
-.lars-ai-composer__selector-icon--workspace { border-radius: 4px; background: #ffd19a; }
-.lars-ai-composer__selector-icon--role { border-radius: 5px; background: #e6f4fe; color: #0d74ce; font-size: 11px; line-height: 14px; }
-.lars-ai-composer__selector-value { overflow: hidden; text-overflow: ellipsis; }
-.lars-ai-composer__chevron { width: 14px; height: 14px; flex: 0 0 14px; color: var(--lars-low-emphasis, #838383); }
-.lars-ai-composer__sources.lars-button {
-  height: 44px;
-  min-width: 94px;
-  gap: 7px;
-  padding-inline: 10px;
-  border-radius: 999px;
-  color: var(--lars-text-secondary, #646464);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 18px;
-}
-.lars-ai-composer__sources span { font-size: 17px; font-weight: 400; }
-
 .lars-ai-composer__actions { display: flex; align-items: center; gap: 16px; }
 .lars-ai-composer__actions svg,
 .lars-ai-composer__send svg { display: block; width: 20px; height: 20px; }
@@ -195,8 +140,6 @@
   cursor: pointer;
 }
 .lars-ai-composer__attach-item[data-highlighted] { background: var(--lars-copy-hover, #f0f0f0); }
-.lars-ai-composer__select-item { justify-content: space-between; gap: 12px; }
-.lars-ai-composer__select-item[data-checked] { font-weight: 600; }
 .lars-ai-composer__icon-button.lars-button {
   width: 32px;
   min-width: 32px;
@@ -206,6 +149,7 @@
   color: var(--lars-text-primary, #202020);
 }
 .lars-ai-composer__icon-button svg { width: 16px; height: 16px; }
+.lars-ai-composer--structured .lars-ai-composer__icon-button.lars-button { background: var(--lars-container-subtle, #f9f9f9); }
 
 .lars-ai-composer__send.lars-button {
   width: 32px;
@@ -217,11 +161,3 @@
 
 .lars-ai-composer__send svg { width: 16px; height: 16px; }
 .lars-ai-composer__send.lars-button:disabled { opacity: 1; }
-.lars-ai-composer--structured .lars-ai-composer__send.lars-button { width: 46px; min-width: 46px; height: 46px; }
-.lars-ai-composer--structured .lars-ai-composer__send svg { width: 21px; height: 21px; }
-
-@media (max-width: 580px) {
-  .lars-ai-composer--structured .lars-ai-composer__body { gap: 16px; padding: 16px; }
-  .lars-ai-composer__fields { flex-wrap: wrap; }
-  .lars-ai-composer--structured .lars-ai-composer__toolbar { align-items: flex-end; }
-}
