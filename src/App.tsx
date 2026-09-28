@@ -2522,7 +2522,7 @@ import 'larsui/style.css'
   return (
     <>
       <div className="lars-configurator">
-        <div className="lars-stage lars-component-canvas">
+        <div className="lars-stage lars-component-canvas lars-component-canvas--ai-composer">
           <AiComposerExample key={variant} variant={variant} />
         </div>
         <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">

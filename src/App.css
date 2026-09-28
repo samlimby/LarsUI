@@ -735,6 +735,8 @@
   border-radius: 8px;
 }
 
+.lars-component-canvas--ai-composer { background: var(--lars-container); }
+
 .lars-properties {
   display: flex;
   flex-direction: column;
