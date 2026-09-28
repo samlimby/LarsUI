@@ -1,3 +1,4 @@
+import { Menu } from '@base-ui/react/menu'
 import { useId, useRef, useState } from 'react'
 import type { ComponentProps, KeyboardEvent } from 'react'
 import { Button } from './Button'
@@ -99,7 +100,11 @@ export function AiComposer({
     submit()
   }
 
-  const attach = () => fileInput.current?.click()
+  const attach = (accept = '') => {
+    if (!fileInput.current) return
+    fileInput.current.accept = accept
+    fileInput.current.click()
+  }
 
   return (
     <form
@@ -158,14 +163,24 @@ export function AiComposer({
                 </select>
                 <Icon name="chevron" />
               </label>
-              <Button className="lars-ai-composer__sources" onClick={attach} shape="neat" type="button" variant="tertiary">+ <span>Sources</span></Button>
+              <Button className="lars-ai-composer__sources" onClick={() => attach()} shape="neat" type="button" variant="tertiary">+ <span>Sources</span></Button>
             </div>
             <Button aria-label="Send message" className="lars-ai-composer__send" disabled={!canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send" /></Button>
           </div>
         ) : (
           <div className="lars-ai-composer__toolbar">
             <div className="lars-ai-composer__actions">
-              <Button aria-label="Attach files" className="lars-ai-composer__icon-button" iconOnly onClick={attach} shape="neat" title="Attach files" type="button" variant="tertiary"><Icon name="attach" /></Button>
+              <Menu.Root modal={false}>
+                <Menu.Trigger render={<Button aria-label="Attach files" className="lars-ai-composer__icon-button" iconOnly shape="neat" title="Attach files" type="button" variant="tertiary"><Icon name="attach" /></Button>} />
+                <Menu.Portal>
+                  <Menu.Positioner align="start" className="lars-ai-composer__attach-positioner" side="top" sideOffset={8}>
+                    <Menu.Popup aria-label="Attachment options" className="lars-ai-composer__attach-menu">
+                      <Menu.Item className="lars-ai-composer__attach-item" onClick={() => attach()}>Upload files</Menu.Item>
+                      <Menu.Item className="lars-ai-composer__attach-item" onClick={() => attach('image/*')}>Upload images</Menu.Item>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
             </div>
             <div className="lars-ai-composer__actions">
               <Button aria-label="More options" className="lars-ai-composer__icon-button" iconOnly onClick={() => onAction?.('more')} shape="neat" title="More options" type="button" variant="tertiary"><Icon name="more" /></Button>

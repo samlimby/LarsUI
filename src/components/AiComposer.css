@@ -99,6 +99,29 @@
 .lars-ai-composer__actions svg,
 .lars-ai-composer__send svg { display: block; width: 20px; height: 20px; }
 .lars-ai-composer__actions .lars-button--tertiary { color: var(--lars-text-secondary, #646464); }
+.lars-ai-composer__attach-positioner { z-index: 50; }
+.lars-ai-composer__attach-menu {
+  width: 168px;
+  padding: 6px;
+  border: 1px solid var(--lars-divider, #e0e0e0);
+  border-radius: 10px;
+  background: var(--lars-container, #fcfcfc);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 10%), 0 2px 8px rgb(0 0 0 / 5%);
+  color: var(--lars-text-primary, #202020);
+  font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+}
+.lars-ai-composer__attach-item {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+.lars-ai-composer__attach-item[data-highlighted] { background: var(--lars-copy-hover, #f0f0f0); }
 .lars-ai-composer--unstructured .lars-ai-composer__toolbar { min-height: 38px; }
 .lars-ai-composer--unstructured .lars-ai-composer__actions { gap: 16px; }
 .lars-ai-composer--unstructured .lars-ai-composer__icon-button.lars-button {
