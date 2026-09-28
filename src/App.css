@@ -353,7 +353,12 @@
 }
 
 .lars-ai-example { display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; }
-.lars-ai-stage__switch { flex: 0 0 auto; }
+.lars-ai-stage__switch {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
 
 .lars-ai-detail { display: flex; flex-direction: column; gap: 40px; width: 100%; }
 .lars-ai-detail__variants { display: flex; flex-direction: column; gap: 24px; }
@@ -365,7 +370,8 @@
 .lars-ai-detail__heading p { margin: 0; color: var(--lars-text-secondary); font-size: 13px; line-height: 19px; }
 
 @media (max-width: 600px) {
-  .lars-stage.lars-stage--ai-composer { height: auto; min-height: 400px; padding: 20px 12px; }
+  .lars-stage.lars-stage--ai-composer { height: auto; min-height: 400px; padding: 20px 12px 80px; }
+  .lars-ai-stage__switch { bottom: 20px; }
   .lars-ai-detail__variant { grid-template-columns: 1fr; gap: 18px; padding: 16px; }
 }
 
