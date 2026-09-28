@@ -216,7 +216,6 @@ export function Table<RowData>({
   const frameRef = useRef<HTMLDivElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
-  const afterTableRef = useRef<HTMLSpanElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -233,6 +232,7 @@ export function Table<RowData>({
   const [toolbarOccupied, setToolbarOccupied] = useState(44)
   const [chipsWrapped, setChipsWrapped] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [suppressSearchFocusRing, setSuppressSearchFocusRing] = useState(false)
   const [animateSearch, setAnimateSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchQueryClipped, setSearchQueryClipped] = useState(false)
@@ -548,10 +548,16 @@ export function Table<RowData>({
               aria-expanded={searchOpen}
               aria-label={searchOpen ? searchQuery ? 'Focus search' : 'Close search' : 'Search table'}
               className="lars-table__search-icon"
-              onClick={() => {
-                if (!searchOpen) setSearchOpen(true)
-                else if (!searchQuery.trim()) setSearchOpen(false)
-                else searchInputRef.current?.focus()
+              onClick={(event) => {
+                if (!searchOpen) {
+                  setSuppressSearchFocusRing(event.detail > 0)
+                  setSearchOpen(true)
+                } else if (!searchQuery.trim()) {
+                  setSearchOpen(false)
+                } else {
+                  setSuppressSearchFocusRing(event.detail > 0)
+                  searchInputRef.current?.focus()
+                }
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') setAnimateSearch(false)
@@ -565,7 +571,9 @@ export function Table<RowData>({
             <input
               aria-hidden={!searchOpen || undefined}
               aria-label="Search table"
+              data-suppress-focus-ring={suppressSearchFocusRing || undefined}
               disabled={!searchOpen}
+              onBlur={() => setSuppressSearchFocusRing(false)}
               onChange={(event) => {
                 const input = event.currentTarget
                 setSearchQuery(input.value)
@@ -582,6 +590,7 @@ export function Table<RowData>({
                 }
               }}
               onScroll={(event) => setSearchQueryClipped(event.currentTarget.scrollLeft > 0)}
+              onPointerDown={() => setSuppressSearchFocusRing(true)}
               placeholder="Search table"
               ref={searchInputRef}
               tabIndex={searchOpen ? 0 : -1}
@@ -592,9 +601,10 @@ export function Table<RowData>({
               <button
                 aria-label="Clear table search"
                 className="lars-table__search-clear"
-                onClick={() => {
+                onClick={(event) => {
                   setSearchQuery('')
                   setSearchQueryClipped(false)
+                  setSuppressSearchFocusRing(event.detail > 0)
                   searchInputRef.current?.focus()
                 }}
                 type="button"
@@ -636,9 +646,6 @@ export function Table<RowData>({
       style={{ '--lars-table-toolbar-occupied': `${toolbarOccupied}px` } as CSSProperties}
     >
       {!isFloating && toolbarElement}
-      <button className="lars-table__skip" onClick={() => afterTableRef.current?.focus()} type="button">
-        Skip table rows
-      </button>
       <span aria-hidden="true" className="lars-table__scroll-cue">Swipe for more →</span>
     <ScrollArea.Root
       className="lars-table-wrap"
@@ -801,7 +808,6 @@ export function Table<RowData>({
       <ScrollArea.Corner className="lars-table__scrollbar-corner" />
     </ScrollArea.Root>
     {isFloating && toolbarElement}
-    <span className="lars-table__after" ref={afterTableRef} tabIndex={-1} />
     </div>
   )
 }

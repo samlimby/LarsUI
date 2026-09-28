@@ -227,7 +227,10 @@ html[data-theme='dark'] .lars-table__action-menu {
   pointer-events: none;
 }
 .lars-table__search[data-open] input { opacity: 1; pointer-events: auto; }
-.lars-table__search input:focus-visible { outline: 2px solid var(--lars-focus-ring, #8da4ef); outline-offset: -2px; }
+.lars-table__search input:focus-visible:not([data-suppress-focus-ring]) {
+  outline: 2px solid var(--lars-focus-ring, #8da4ef);
+  outline-offset: -2px;
+}
 .lars-table__search-clear {
   position: absolute;
   z-index: 2;
@@ -527,24 +530,6 @@ html[data-theme='dark'] .lars-table__action-menu {
   white-space: nowrap;
   border: 0;
 }
-.lars-table__skip {
-  position: absolute;
-  z-index: 20;
-  top: 0;
-  left: 8px;
-  transform: translateY(-150%);
-  border: 0;
-  border-radius: 4px;
-  background: var(--lars-container, #fcfcfc);
-  color: var(--lars-text-primary, #202020);
-}
-.lars-table__skip:focus-visible {
-  transform: translateY(0);
-  outline: 2px solid var(--lars-focus-ring, #8da4ef);
-  outline-offset: 2px;
-}
-.lars-table__after { display: block; height: 0; outline: none; }
-
 .lars-table__scroll-content {
   position: relative;
   width: 100%;

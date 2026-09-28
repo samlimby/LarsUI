@@ -25,9 +25,9 @@
 }
 
 .lars-button__idle { opacity: 1; }
-.lars-button__status { opacity: 0; }
+.lars-button__status { position: absolute; inset: 0; opacity: 0; }
 .lars-button--loading .lars-button__idle { opacity: 0; }
-.lars-button--loading .lars-button__status { opacity: 1; }
+.lars-button--loading .lars-button__status { position: static; opacity: 1; }
 .lars-button__spinner { display: inline-flex; width: 16px; height: 16px; align-items: center; justify-content: center; flex: none; }
 .lars-button__spinner-static { display: none; width: 14px; height: 14px; flex: none; border: 2px solid currentColor; border-radius: 50%; }
 .lars-button__announcement {

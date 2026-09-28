@@ -1,7 +1,7 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
-import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, type ButtonShape, type ButtonSpinner, type ButtonVariant } from './components/Button'
 import './components/Focus.css'
 import {
@@ -775,43 +775,60 @@ function SegmentedControl<T extends string>({
   options: ReadonlyArray<{ label: string; value: T }>
   value: T
 }) {
-  const controlId = useId()
-  const prefersReducedMotion = useReducedMotion()
+  const segmentsRef = useRef<HTMLDivElement>(null)
+  const indicatorRef = useRef<HTMLSpanElement>(null)
+
+  useLayoutEffect(() => {
+    const segments = segmentsRef.current
+    const indicator = indicatorRef.current
+    if (!segments || !indicator) return
+
+    const positionIndicator = () => {
+      const active = segments.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
+      if (!active) return
+
+      // Keep the indicator in track coordinates when conditional rows move the control.
+      const left = active.getBoundingClientRect().left
+        - segments.getBoundingClientRect().left
+        - segments.clientLeft
+      indicator.style.width = `${active.offsetWidth}px`
+      indicator.style.transform = `translateX(${left}px)`
+      indicator.style.opacity = '1'
+    }
+
+    positionIndicator()
+    const observer = new ResizeObserver(positionIndicator)
+    observer.observe(segments)
+    segments.querySelectorAll('button').forEach((button) => observer.observe(button))
+    return () => observer.disconnect()
+  }, [options.length, value])
 
   return (
     <div className={`lars-property lars-property--segmented${className ? ` ${className}` : ''}`}>
       <span>{label}</span>
-      <div className="lars-segments" role="group" aria-label={label}>
-        <LayoutGroup id={controlId}>
-          {options.map((option) => {
-            const isActive = value === option.value
+      <div
+        aria-label={label}
+        className="lars-segments"
+        data-animate-indicator={animateIndicator || undefined}
+        ref={segmentsRef}
+        role="group"
+      >
+        <span aria-hidden="true" className="lars-segments__indicator" ref={indicatorRef} />
+        {options.map((option) => {
+          const isActive = value === option.value
 
-            return (
-              <BaseButton
-                aria-pressed={isActive}
-                className={isActive ? 'is-active' : ''}
-                key={option.value}
-                onClick={() => onChange(option.value)}
-                type="button"
-              >
-                {isActive && (animateIndicator ? (
-                  <motion.span
-                    className="lars-segments__indicator"
-                    initial={false}
-                    layoutId={`${controlId}-active-segment`}
-                    style={{ borderRadius: 999 }}
-                    transition={prefersReducedMotion
-                      ? { duration: 0 }
-                      : { type: 'spring', duration: 0.32, bounce: 0 }}
-                  />
-                ) : (
-                  <span className="lars-segments__indicator" style={{ borderRadius: 999 }} />
-                ))}
-                <span className="lars-segments__label">{option.label}</span>
-              </BaseButton>
-            )
-          })}
-        </LayoutGroup>
+          return (
+            <BaseButton
+              aria-pressed={isActive}
+              className={isActive ? 'is-active' : ''}
+              key={option.value}
+              onClick={() => onChange(option.value)}
+              type="button"
+            >
+              <span className="lars-segments__label">{option.label}</span>
+            </BaseButton>
+          )
+        })}
       </div>
     </div>
   )
@@ -830,12 +847,14 @@ function PropertySelect<T extends string>({
   onChange,
   options,
   popupClassName = '',
+  popupSide = 'bottom',
   value,
 }: {
   label: string
   onChange: (value: T) => void
   options: ReadonlyArray<{ label: string; value: T }>
   popupClassName?: string
+  popupSide?: 'top' | 'bottom'
   value: T
 }) {
   const [open, setOpen] = useState(false)
@@ -868,6 +887,7 @@ function PropertySelect<T extends string>({
             align="start"
             alignItemWithTrigger={false}
             className="lars-property-select__positioner"
+            side={popupSide}
             sideOffset={8}
           >
             <Select.Popup className={`lars-property-select__popup${popupClassName ? ` ${popupClassName}` : ''}`}>
@@ -1223,6 +1243,38 @@ const BUTTON_EFFECT_OPTIONS: Record<
   },
 }
 
+function usePropertyMenuFill(open: boolean) {
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (!open) return
+
+    const menu = menuRef.current
+    const panel = menu?.closest<HTMLElement>('.lars-properties')
+    const fields = menu?.parentElement
+    if (!menu || !panel || !fields) return
+
+    const updateHeight = () => {
+      const height = panel.getBoundingClientRect().bottom
+        - menu.getBoundingClientRect().top
+        - panel.scrollTop
+        - 4
+      const value = `${Math.max(36, height)}px`
+      if (menu.style.getPropertyValue('--property-menu-fill-height') !== value) {
+        menu.style.setProperty('--property-menu-fill-height', value)
+      }
+    }
+
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(panel)
+    observer.observe(fields)
+    return () => observer.disconnect()
+  }, [open])
+
+  return menuRef
+}
+
 function ButtonLoadingProperties({
   generatingEffect,
   loadingEffect,
@@ -1241,9 +1293,12 @@ function ButtonLoadingProperties({
   shape: ButtonShape
 }) {
   const [open, setOpen] = useState(false)
+  const [pointerFocus, setPointerFocus] = useState(false)
   const reduceMotion = useReducedMotion()
+  const menuRef = usePropertyMenuFill(open)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupId = useId()
+  const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
   const iconTransition = {
     duration: reduceMotion ? 0 : open ? 0.35 : 0.2,
     ease: [0.25, 0.1, 0.25, 1] as const,
@@ -1265,12 +1320,18 @@ function ButtonLoadingProperties({
   }, [open])
 
   return (
-    <div className="lars-button-loading-property" data-open={open || undefined}>
+    <div className="lars-button-loading-property" data-open={open || undefined} ref={menuRef}>
       <BaseButton
         aria-controls={open ? popupId : undefined}
         aria-expanded={open}
         className="lars-button-loading-property__trigger"
+        data-pointer-focus={pointerFocus || undefined}
+        onBlur={() => setPointerFocus(false)}
         onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') setPointerFocus(false)
+        }}
+        onPointerDown={() => setPointerFocus(true)}
         ref={triggerRef}
         type="button"
       >
@@ -1294,15 +1355,10 @@ function ButtonLoadingProperties({
           >
             <div className="lars-button-loading-property__options">
               <SegmentedControl
-                className="lars-property--loading-state"
-                label="State"
-                onChange={onModeChange}
-                options={[
-                  { label: 'Idle', value: 'idle' },
-                  { label: 'Loading', value: 'loading' },
-                  { label: 'Generating', value: 'generating' },
-                ]}
-                value={mode}
+                label="Generating"
+                onChange={(next) => onModeChange(next === 'true' ? 'generating' : mode === 'generating' ? 'idle' : mode)}
+                options={booleanOptions}
+                value={mode === 'generating' ? 'true' : 'false'}
               />
               {mode === 'generating' && (
                 <PropertySelect<ButtonLoadingEffect>
@@ -1310,15 +1366,23 @@ function ButtonLoadingProperties({
                   onChange={onGeneratingEffectChange}
                   options={BUTTON_EFFECT_OPTIONS.generating[shape]}
                   popupClassName="lars-button-loading-property__effect-popup"
+                  popupSide="top"
                   value={generatingEffect}
                 />
               )}
+              <SegmentedControl
+                label="Loading"
+                onChange={(next) => onModeChange(next === 'true' ? 'loading' : mode === 'loading' ? 'idle' : mode)}
+                options={booleanOptions}
+                value={mode === 'loading' ? 'true' : 'false'}
+              />
               {mode === 'loading' && (
                 <PropertySelect<ButtonLoadingEffect>
                   label="Loading effect"
                   onChange={onLoadingEffectChange}
                   options={BUTTON_EFFECT_OPTIONS.loading[shape]}
                   popupClassName="lars-button-loading-property__effect-popup"
+                  popupSide="top"
                   value={loadingEffect}
                 />
               )}
@@ -1361,6 +1425,7 @@ function ButtonConfigurator() {
   const [shape, setShape] = useState<ButtonShape>('full')
   const [disabled, setDisabled] = useState(false)
   const [loadingMode, setLoadingMode] = useState<ButtonLoadingMode>('idle')
+  const [previewLoading, setPreviewLoading] = useState(false)
   const [loadingEffects, setLoadingEffects] = useState<Record<ButtonShape, ButtonLoadingEffect>>({
     full: 'ring',
     neat: 'flip',
@@ -1369,6 +1434,13 @@ function ButtonConfigurator() {
     full: 'atom',
     neat: 'gather',
   })
+
+  useEffect(() => {
+    if (!previewLoading) return
+    const timeout = window.setTimeout(() => setPreviewLoading(false), 3500)
+    return () => window.clearTimeout(timeout)
+  }, [previewLoading])
+
   const reduceMotion = useReducedMotion()
   const buttonLabel = label || 'Button'
   const activeEffect = loadingMode === 'generating' ? generatingEffects[shape] : loadingEffects[shape]
@@ -1423,8 +1495,11 @@ export function Example() {
             className="lars-button-preview"
             disabled={disabled}
             iconOnly={iconOnly}
-            loading={loadingMode !== 'idle'}
+            loading={previewLoading}
             loadingText={statusLabel}
+            onClick={() => {
+              if (loadingMode !== 'idle') setPreviewLoading(true)
+            }}
             shape={shape}
             spinner={activeEffect}
             type="button"
@@ -1493,7 +1568,10 @@ export function Example() {
               mode={loadingMode}
               onGeneratingEffectChange={(value) => setGeneratingEffects((current) => ({ ...current, [shape]: value }))}
               onLoadingEffectChange={(value) => setLoadingEffects((current) => ({ ...current, [shape]: value }))}
-              onModeChange={setLoadingMode}
+              onModeChange={(nextMode) => {
+                setPreviewLoading(false)
+                setLoadingMode(nextMode)
+              }}
               shape={shape}
             />
 
@@ -1956,26 +2034,32 @@ ${codeOptions}
 }
 
 function TableToolbarProperties({
+  visible,
   floating,
   toggle,
   actions,
   counter,
+  onVisibleChange,
   onFloatingChange,
   onToggleChange,
   onActionsChange,
   onCounterChange,
 }: {
+  visible: boolean
   floating: boolean
   toggle: boolean
   actions: boolean
   counter: boolean
+  onVisibleChange: (value: boolean) => void
   onFloatingChange: (value: boolean) => void
   onToggleChange: (value: boolean) => void
   onActionsChange: (value: boolean) => void
   onCounterChange: (value: boolean) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [pointerFocus, setPointerFocus] = useState(false)
   const prefersReducedMotion = useReducedMotion()
+  const menuRef = usePropertyMenuFill(open)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupId = useId()
   const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
@@ -2000,12 +2084,18 @@ function TableToolbarProperties({
   }, [open])
 
   return (
-    <div className="lars-table-toolbar-property" data-open={open || undefined}>
+    <div className="lars-table-toolbar-property" data-open={open || undefined} ref={menuRef}>
       <BaseButton
         aria-controls={open ? popupId : undefined}
         aria-expanded={open}
         className="lars-table-toolbar-property__trigger"
+        data-pointer-focus={pointerFocus || undefined}
+        onBlur={() => setPointerFocus(false)}
         onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') setPointerFocus(false)
+        }}
+        onPointerDown={() => setPointerFocus(true)}
         ref={triggerRef}
         type="button"
       >
@@ -2028,10 +2118,15 @@ function TableToolbarProperties({
             transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           >
           <div className="lars-table-toolbar-property__options">
-            <SegmentedControl label="Floating" onChange={(next) => onFloatingChange(next === 'true')} options={booleanOptions} value={floating ? 'true' : 'false'} />
-            <SegmentedControl label="Toggle" onChange={(next) => onToggleChange(next === 'true')} options={booleanOptions} value={toggle ? 'true' : 'false'} />
-            <SegmentedControl label="Actions" onChange={(next) => onActionsChange(next === 'true')} options={booleanOptions} value={actions ? 'true' : 'false'} />
-            <SegmentedControl label="Counter" onChange={(next) => onCounterChange(next === 'true')} options={booleanOptions} value={counter ? 'true' : 'false'} />
+            <SegmentedControl label="Visible" onChange={(next) => onVisibleChange(next === 'true')} options={booleanOptions} value={visible ? 'true' : 'false'} />
+            {visible && (
+              <>
+                <SegmentedControl label="Floating" onChange={(next) => onFloatingChange(next === 'true')} options={booleanOptions} value={floating ? 'true' : 'false'} />
+                <SegmentedControl label="Toggle" onChange={(next) => onToggleChange(next === 'true')} options={booleanOptions} value={toggle ? 'true' : 'false'} />
+                <SegmentedControl label="Actions" onChange={(next) => onActionsChange(next === 'true')} options={booleanOptions} value={actions ? 'true' : 'false'} />
+                <SegmentedControl label="Counter" onChange={(next) => onCounterChange(next === 'true')} options={booleanOptions} value={counter ? 'true' : 'false'} />
+              </>
+            )}
           </div>
           </motion.div>
         )}
@@ -2065,6 +2160,7 @@ function TableToolbarProperties({
 
 function TableConfigurator() {
   const [striped, setStriped] = useState(true)
+  const [toolbarVisible, setToolbarVisible] = useState(true)
   const [toolbarFloating, setToolbarFloating] = useState(true)
   const [toolbarToggle, setToolbarToggle] = useState(false)
   const [toolbarActions, setToolbarActions] = useState(true)
@@ -2086,9 +2182,10 @@ function TableConfigurator() {
   })), [columnCount, columnHeaders])
   const configuredRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, renderedRowCount)
     .map((row) => memberValues[row.id] ?? row), [renderedRowCount, memberValues])
-  const viewRows = useMemo(() => activeView === 'active'
+  const viewEnabled = toolbarVisible && variant !== 'relaxed' && toolbarToggle
+  const viewRows = useMemo(() => viewEnabled && activeView === 'active'
     ? configuredRows.filter((row) => row.status === 'Active')
-    : configuredRows, [activeView, configuredRows])
+    : configuredRows, [activeView, configuredRows, viewEnabled])
   const codeRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, codeRowCount)
     .map((row) => memberValues[row.id] ?? row), [codeRowCount, memberValues])
   const codeColumns = useMemo(() => configuredColumns
@@ -2097,9 +2194,8 @@ function TableConfigurator() {
   const codeMembers = useMemo(() => codeRows.slice(0, 6)
     .map((row) => `  { id: ${quoteTableString(row.id)}, name: ${quoteTableString(row.name)}, role: ${quoteTableString(row.role)}, team: ${quoteTableString(row.team)}, status: ${quoteTableString(row.status)}, location: ${quoteTableString(row.location)}, updated: ${quoteTableString(row.updated)} },`)
     .join('\n'), [codeRows])
-  const viewEnabled = variant !== 'relaxed' && toolbarToggle
   const usesState = selectable || viewEnabled
-  const toolbarCode = variant === 'relaxed' ? '' : [
+  const toolbarCode = variant === 'relaxed' ? '' : !toolbarVisible ? '      toolbar={false}' : [
     '      toolbar',
     ...(toolbarFloating ? ['      toolbarFloating'] : []),
     ...(!toolbarToggle ? ['      toolbarToggle={false}'] : []),
@@ -2145,8 +2241,7 @@ ${selectable ? '  const [selectedRows, setSelectedRows] = useState<string[]>([])
     <Table
       ariaLabel="Team members"
       columns={columns}
-      filterableColumns={['status']}
-      getRowId={(row) => row.id}
+${toolbarVisible && toolbarActions ? "      filterableColumns={['status']}\n" : ''}      getRowId={(row) => row.id}
       getRowLabel={(row) => row.name}
       rows={${viewEnabled ? 'viewRows' : 'allMembers'}}
       stickyHeader${toolbarCode ? `
@@ -2204,7 +2299,7 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
             selectedRowIds={selectedRows}
             stickyHeader
             striped={striped}
-            toolbar
+            toolbar={toolbarVisible}
             toolbarActions={toolbarActions}
             toolbarCounter={toolbarCounter}
             toolbarFloating={toolbarFloating}
@@ -2258,10 +2353,15 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
                 actions={toolbarActions}
                 counter={toolbarCounter}
                 floating={toolbarFloating}
+                visible={toolbarVisible}
                 onActionsChange={setToolbarActions}
                 onCounterChange={setToolbarCounter}
                 onFloatingChange={setToolbarFloating}
                 onToggleChange={setToolbarToggle}
+                onVisibleChange={(nextVisible) => {
+                  setToolbarVisible(nextVisible)
+                  if (!nextVisible) setActiveView('all')
+                }}
                 toggle={toolbarToggle}
               />
             )}
