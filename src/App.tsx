@@ -1640,7 +1640,7 @@ export function Example() {
         />
 
         <aside className="lars-footnotes" aria-label="Notes">
-          <p>
+          <p id="button-footnote-1" tabIndex={-1}>
             <sup>1</sup>
             <span>
               The loading and generating states originate from{' '}
@@ -2548,7 +2548,13 @@ function ComponentPage({
   }
   const { description, title } = details[component]
   const reduceMotion = useReducedMotion()
-  const footnoteId = component === 'chip' ? 'chip-footnote-1' : component === 'table' ? 'table-footnote-1' : null
+  const footnoteId = component === 'buttons'
+    ? 'button-footnote-1'
+    : component === 'chip'
+      ? 'chip-footnote-1'
+      : component === 'table'
+        ? 'table-footnote-1'
+        : null
 
   const scrollToFootnote = () => {
     if (!footnoteId) return
