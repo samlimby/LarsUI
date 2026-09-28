@@ -4,6 +4,7 @@
   --lars-text-secondary: #646464;
   --lars-container: #fcfcfc;
   --lars-container-subtle: #f9f9f9;
+  --lars-container-mid-emphasis: #f0f0f0;
   --lars-container-high-emphasis: #e8e8e8;
   --lars-divider: #e0e0e0;
   --lars-line: #d9d9d9;
@@ -60,6 +61,7 @@
   --lars-text-secondary: #a0a0a0;
   --lars-container: #242424;
   --lars-container-subtle: #181818;
+  --lars-container-mid-emphasis: #222222;
   --lars-container-high-emphasis: #2a2a2a;
   --lars-divider: #323232;
   --lars-line: #343434;
