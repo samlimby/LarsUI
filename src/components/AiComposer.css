@@ -11,7 +11,14 @@
   font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
-.lars-ai-composer--unstructured { border-radius: 20px; }
+.lars-ai-composer--unstructured {
+  width: min(100%, 664px);
+  min-height: 148px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--lars-container-subtle, #f9f9f9);
+  box-shadow: none;
+}
 .lars-ai-composer--structured { min-height: 240px; border-radius: 28px; }
 
 .lars-ai-composer__sr-only {
@@ -27,32 +34,6 @@
 
 .lars-ai-composer__file-input { display: none; }
 
-.lars-ai-composer__context {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--lars-divider, #e0e0e0);
-  background: var(--lars-copy-hover, #f0f0f0);
-  white-space: nowrap;
-}
-
-.lars-ai-composer__context-icon {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  border-radius: 7px;
-  background: var(--lars-text-primary, #202020);
-  color: var(--lars-container, #fcfcfc);
-  place-items: center;
-}
-
-.lars-ai-composer__context-icon svg { width: 16px; height: 16px; }
-.lars-ai-composer__context-eyebrow { color: var(--lars-low-emphasis, #838383); font-size: 12px; }
-.lars-ai-composer__context-title { min-width: 0; overflow: hidden; color: var(--lars-text-primary, #202020); font-size: 14px; font-weight: 500; text-overflow: ellipsis; }
-
 .lars-ai-composer__body {
   display: flex;
   flex-direction: column;
@@ -61,7 +42,7 @@
   padding: 16px;
 }
 
-.lars-ai-composer--unstructured .lars-ai-composer__body { min-height: 216px; }
+.lars-ai-composer--unstructured .lars-ai-composer__body { min-height: 148px; padding: 24px 8px 8px; }
 .lars-ai-composer--structured .lars-ai-composer__body { padding: 22px 24px 24px; }
 
 .lars-ai-composer__input {
@@ -82,8 +63,18 @@
 }
 
 .lars-ai-composer--structured .lars-ai-composer__input { line-height: 28px; }
+.lars-ai-composer--unstructured .lars-ai-composer__input {
+  height: 0;
+  min-height: 48px;
+  padding-inline: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+}
 .lars-ai-composer__input::placeholder { color: var(--lars-low-emphasis, #838383); opacity: 1; }
+.lars-ai-composer--unstructured .lars-ai-composer__input::placeholder { color: var(--lars-text-secondary, #646464); }
 .lars-ai-composer:focus-within { border-color: var(--lars-text-secondary, #646464); }
+.lars-ai-composer--unstructured:focus-within { outline: 2px solid var(--lars-accent, #0d74ce); outline-offset: 2px; }
 
 .lars-ai-composer__attachments {
   display: flex;
@@ -108,7 +99,18 @@
 .lars-ai-composer__parameters { display: flex; align-items: center; gap: 6px; }
 .lars-ai-composer__actions svg,
 .lars-ai-composer__send svg { display: block; width: 20px; height: 20px; }
-.lars-ai-composer__actions .lars-button { color: var(--lars-text-secondary, #646464); }
+.lars-ai-composer__actions .lars-button--tertiary { color: var(--lars-text-secondary, #646464); }
+.lars-ai-composer--unstructured .lars-ai-composer__toolbar { min-height: 38px; }
+.lars-ai-composer--unstructured .lars-ai-composer__actions { gap: 16px; }
+.lars-ai-composer--unstructured .lars-ai-composer__icon-button.lars-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 8px;
+  border-radius: 999px;
+  color: var(--lars-text-primary, #202020);
+}
+.lars-ai-composer--unstructured .lars-ai-composer__icon-button svg { width: 16px; height: 16px; }
 .lars-ai-composer__toolbar--structured { min-height: 46px; }
 .lars-ai-composer__parameters { gap: 10px; min-width: 0; }
 
@@ -121,7 +123,10 @@
 }
 
 .lars-ai-composer--structured .lars-ai-composer__send.lars-button { width: 46px; min-width: 46px; height: 46px; border-radius: 999px; }
+.lars-ai-composer--unstructured .lars-ai-composer__send.lars-button { width: 32px; min-width: 32px; height: 32px; border-radius: 999px; }
+.lars-ai-composer--unstructured .lars-ai-composer__send svg { width: 16px; height: 16px; }
 .lars-ai-composer__send.lars-button:disabled { opacity: .48; }
+.lars-ai-composer--unstructured .lars-ai-composer__send.lars-button:disabled { opacity: 1; }
 
 .lars-ai-composer__select-wrap {
   position: relative;

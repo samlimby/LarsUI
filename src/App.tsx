@@ -124,7 +124,6 @@ import 'larsui/style.css'
 
 <AiComposer
   variant="unstructured"
-  context={{ eyebrow: 'T-5', title: 'Brand Kit Order Tracking' }}
   onSubmit={({ message, files }) => sendMessage(message, files)}
 />
 
@@ -2509,19 +2508,12 @@ function AiComposerExample({ variant }: { variant: AiComposerVariant }) {
   }
 
   const handleAction = (action: AiComposerAction) => {
-    const labels: Record<AiComposerAction, string> = {
-      help: 'Help',
-      more: 'More options',
-      edit: 'Edit',
-      history: 'History',
-    }
-    setFeedback(`${labels[action]} action selected`)
+    if (action === 'more') setFeedback('More options action selected')
   }
 
   return (
     <div className="lars-ai-example">
       <AiComposer
-        context={{ eyebrow: 'T-5', title: 'Brand Kit Order Tracking' }}
         defaultValue={variant === 'structured' ? 'Help me identify the customs programs relevant to goods movement' : ''}
         key={variant}
         onAction={handleAction}
@@ -2559,7 +2551,7 @@ function AiComposerDetail() {
     <div className="lars-ai-detail">
       <div className="lars-ai-detail__variants">
         <section className="lars-ai-detail__variant" aria-labelledby="ai-unstructured-title">
-          <div className="lars-ai-detail__heading"><span>01</span><h2 id="ai-unstructured-title">Unstructured</h2><p>Write freely with conversation context above the input.</p></div>
+          <div className="lars-ai-detail__heading"><span>01</span><h2 id="ai-unstructured-title">Unstructured</h2><p>A compact, open prompt with only the essential actions.</p></div>
           <AiComposerExample variant="unstructured" />
         </section>
         <section className="lars-ai-detail__variant" aria-labelledby="ai-structured-title">

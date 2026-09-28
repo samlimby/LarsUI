@@ -1,11 +1,11 @@
 import { useId, useRef, useState } from 'react'
-import type { ComponentProps, KeyboardEvent, ReactNode } from 'react'
+import type { ComponentProps, KeyboardEvent } from 'react'
 import { Button } from './Button'
 import { Chip } from './Chip'
 import './AiComposer.css'
 
 export type AiComposerVariant = 'structured' | 'unstructured'
-export type AiComposerAction = 'help' | 'more' | 'edit' | 'history'
+export type AiComposerAction = 'more'
 
 export type AiComposerOption = {
   label: string
@@ -27,7 +27,6 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
   onValueChange?: (value: string) => void
   onSubmit?: (submission: AiComposerSubmission) => void
   onAction?: (action: AiComposerAction) => void
-  context?: { eyebrow?: string; title: string; icon?: ReactNode }
   workspaceOptions?: readonly AiComposerOption[]
   roleOptions?: readonly AiComposerOption[]
   workspaceValue?: string
@@ -37,22 +36,19 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
   placeholder?: string
 }
 
-function Icon({ name }: { name: AiComposerAction | 'attach' | 'send' | 'chevron' | 'spark' }) {
+function Icon({ name }: { name: AiComposerAction | 'attach' | 'send' | 'send-up' | 'chevron' | 'spark' }) {
   const shared = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
 
   if (name === 'spark') return <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2Zm7 13 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" /></svg>
   if (name === 'chevron') return <svg aria-hidden="true" viewBox="0 0 24 24" {...shared}><path d="m6 9 6 6 6-6" /></svg>
-  if (name === 'attach') return <svg aria-hidden="true" viewBox="0 0 24 24" {...shared}><path d="M8 12.5v5a4 4 0 0 0 8 0v-9a2.5 2.5 0 0 0-5 0v8a1 1 0 0 0 2 0V9" /></svg>
-  if (name === 'help') return <svg aria-hidden="true" viewBox="0 0 24 24" {...shared}><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2.5-3 4.5" /><path d="M12 18h.01" /></svg>
-  if (name === 'more') return <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
-  if (name === 'edit') return <svg aria-hidden="true" viewBox="0 0 24 24" {...shared}><path d="M13 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-7" /><path d="m10 14 9-9 2 2-9 9-3 1z" /></svg>
-  if (name === 'history') return <svg aria-hidden="true" viewBox="0 0 24 24" {...shared}><path d="M20 11a8 8 0 1 0-2 6" /><path d="M20 5v6h-6" /><path d="M12 7v5l3 2" /></svg>
+  if (name === 'attach') return <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M7.215 1.92C8.62 0.515 10.9 0.515 12.305 1.92 13.709 3.325 13.709 5.605 12.305 7.009L8.205 11.109C7.345 11.969 5.952 11.969 5.092 11.109 4.232 10.249 4.232 8.857 5.092 7.997L8.912 4.183C9.225 3.869 9.732 3.869 10.045 4.183 10.357 4.495 10.357 5.003 10.045 5.315L6.225 9.132C5.989 9.368 5.989 9.748 6.225 9.98 6.46 10.212 6.84 10.215 7.072 9.98L11.172 5.88C11.952 5.1 11.952 3.832 11.172 3.052 10.392 2.272 9.125 2.272 8.345 3.052L4.245 7.152C2.917 8.48 2.917 10.632 4.245 11.96 5.572 13.288 7.725 13.288 9.052 11.96L12.308 8.708C12.62 8.395 13.128 8.395 13.44 8.708 13.752 9.02 13.752 9.528 13.44 9.84L10.185 13.089C8.232 15.043 5.068 15.043 3.115 13.089 1.163 11.137 1.163 7.972 3.115 6.02L7.215 1.92z" /></svg>
+  if (name === 'more') return <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M8 5.2C7.228 5.2 6.6 4.572 6.6 3.8 6.6 3.028 7.228 2.4 8 2.4 8.772 2.4 9.4 3.028 9.4 3.8 9.4 4.572 8.772 5.2 8 5.2zM8 10.8C8.772 10.8 9.4 11.428 9.4 12.2 9.4 12.972 8.772 13.6 8 13.6 7.228 13.6 6.6 12.972 6.6 12.2 6.6 11.428 7.228 10.8 8 10.8zM9.4 8C9.4 8.772 8.772 9.4 8 9.4 7.228 9.4 6.6 8.772 6.6 8 6.6 7.228 7.228 6.6 8 6.6 8.772 6.6 9.4 7.228 9.4 8z" /></svg>
+  if (name === 'send-up') return <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 14V2" /><path d="M3.5 6.5 8 2l4.5 4.5" /></svg>
   return <svg aria-hidden="true" viewBox="0 0 24 24" {...shared}><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
 }
 
 export function AiComposer({
   className = '',
-  context,
   defaultValue = '',
   onAction,
   onRoleValueChange,
@@ -122,13 +118,6 @@ export function AiComposer({
         ref={fileInput}
         type="file"
       />
-      {variant === 'unstructured' && context && (
-        <div className="lars-ai-composer__context">
-          <span aria-hidden="true" className="lars-ai-composer__context-icon">{context.icon ?? <Icon name="spark" />}</span>
-          {context.eyebrow && <span className="lars-ai-composer__context-eyebrow">{context.eyebrow}</span>}
-          <span className="lars-ai-composer__context-title">{context.title}</span>
-        </div>
-      )}
       <div className="lars-ai-composer__body">
         <label className="lars-ai-composer__sr-only" htmlFor={messageId}>Message</label>
         <textarea
@@ -136,8 +125,8 @@ export function AiComposer({
           id={messageId}
           onChange={(event) => setMessage(event.currentTarget.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder ?? (variant === 'structured' ? 'Ask a question…' : 'Type your message…')}
-          rows={variant === 'structured' ? 3 : 4}
+          placeholder={placeholder ?? (variant === 'structured' ? 'Ask a question…' : 'How can I help you?')}
+          rows={3}
           value={message}
         />
         {files.length > 0 && (
@@ -176,14 +165,11 @@ export function AiComposer({
         ) : (
           <div className="lars-ai-composer__toolbar">
             <div className="lars-ai-composer__actions">
-              <Button aria-label="Attach files" iconOnly onClick={attach} shape="neat" title="Attach files" type="button" variant="tertiary"><Icon name="attach" /></Button>
-              {onAction && <Button aria-label="Help" iconOnly onClick={() => onAction('help')} shape="neat" title="Help" type="button" variant="tertiary"><Icon name="help" /></Button>}
+              <Button aria-label="Attach files" className="lars-ai-composer__icon-button" iconOnly onClick={attach} shape="neat" title="Attach files" type="button" variant="tertiary"><Icon name="attach" /></Button>
             </div>
             <div className="lars-ai-composer__actions">
-              {onAction && (['more', 'edit', 'history'] as const).map((action) => (
-                <Button aria-label={action === 'more' ? 'More options' : action === 'edit' ? 'Edit' : 'History'} iconOnly key={action} onClick={() => onAction(action)} shape="neat" title={action === 'more' ? 'More options' : action === 'edit' ? 'Edit' : 'History'} type="button" variant="tertiary"><Icon name={action} /></Button>
-              ))}
-              <Button aria-label="Send message" className="lars-ai-composer__send" disabled={!canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send" /></Button>
+              <Button aria-label="More options" className="lars-ai-composer__icon-button" iconOnly onClick={() => onAction?.('more')} shape="neat" title="More options" type="button" variant="tertiary"><Icon name="more" /></Button>
+              <Button aria-label="Send message" className="lars-ai-composer__send" disabled={!canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send-up" /></Button>
             </div>
           </div>
         )}

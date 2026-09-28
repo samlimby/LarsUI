@@ -30,7 +30,6 @@ import 'larsui/style.css'
 
 <AiComposer
   variant="unstructured"
-  context={{ eyebrow: 'T-5', title: 'Brand Kit Order Tracking' }}
   onSubmit={({ message, files }) => sendMessage(message, files)}
 />
 
