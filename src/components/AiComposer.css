@@ -20,21 +20,12 @@
   gap: 20px;
 }
 .lars-ai-composer__suggestions { display: flex; width: 100%; flex-direction: column; gap: 4px; }
-.lars-ai-composer__suggestions-label {
-  display: flex;
-  height: 30px;
-  align-items: center;
-  margin: 0;
-  padding-left: 12px;
-  color: var(--lars-low-emphasis, #838383);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 16px;
-}
+.lars-ai-composer__suggestions[hidden] { display: none; }
 .lars-ai-composer__suggestion {
   display: flex;
-  width: 100%;
-  height: 40px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 40px;
   align-items: center;
   gap: 12px;
   padding: 0 12px;
@@ -49,8 +40,9 @@
   line-height: 18px;
   text-align: left;
 }
-.lars-ai-composer__suggestion:hover { background: var(--lars-container-subtle, #f9f9f9); }
+.lars-ai-composer__suggestion:hover { background: var(--lars-active, #e0e0e0); }
 .lars-ai-composer__suggestion:focus-visible { outline: 2px solid var(--lars-accent, #0d74ce); outline-offset: -2px; }
+.lars-ai-composer__suggestion-label { --digit-dur: 900ms; }
 .lars-ai-composer__suggestion--shuffle { color: var(--lars-text-secondary, #646464); }
 .lars-ai-composer__suggestion-icon {
   display: grid;
@@ -59,8 +51,6 @@
   flex: 0 0 20px;
   place-items: center;
 }
-.lars-ai-composer__suggestion-icon img { display: block; width: 20px; height: 20px; }
-html[data-theme='dark'] .lars-ai-composer__suggestion-icon img { filter: brightness(1.8); }
 .lars-ai-composer__shuffle-icon {
   display: block;
   width: 20px;
@@ -119,6 +109,15 @@ html[data-theme='dark'] .lars-ai-composer__suggestion-icon img { filter: brightn
   border-radius: 20px;
   background: var(--lars-container-subtle, #f9f9f9);
   box-shadow: 0 2px 3px var(--lars-divider, #e0e0e0);
+}
+.lars-ai-composer--unstructured.lars-ai-composer--attachment-exiting .lars-ai-composer__surface {
+  box-shadow: none;
+}
+.lars-ai-composer--structured.lars-ai-composer--attachment-exiting {
+  padding: 0;
+  border: 1px solid var(--lars-divider, #e0e0e0);
+  border-radius: 8px;
+  background: var(--lars-container, #fcfcfc);
 }
 
 .lars-ai-composer__sr-only {
@@ -255,6 +254,7 @@ html[data-theme='dark'] .lars-ai-composer__suggestion-icon img { filter: brightn
   background: var(--lars-container, #fcfcfc);
 }
 .lars-ai-composer__attachment-thumbnail {
+  position: relative;
   display: block;
   width: 38px;
   height: 38px;
@@ -281,8 +281,8 @@ html[data-theme='dark'] .lars-ai-composer__suggestion-icon img { filter: brightn
 }
 .lars-ai-composer__remove {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 50%;
+  left: 50%;
   display: grid;
   width: 22px;
   height: 22px;
@@ -293,9 +293,17 @@ html[data-theme='dark'] .lars-ai-composer__suggestion-icon img { filter: brightn
   background: rgb(32 32 32 / 80%);
   color: #fff;
   cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
   opacity: 0;
+  transform: translate(-50%, -50%);
+}
+.lars-ai-composer__remove-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url('../iconLibrary/IconPlus.svg') center / contain no-repeat;
+  mask: url('../iconLibrary/IconPlus.svg') center / contain no-repeat;
+  transform: rotate(45deg);
 }
 .lars-ai-composer__attachment:hover .lars-ai-composer__remove,
 .lars-ai-composer__attachment:focus-within .lars-ai-composer__remove { opacity: 1; }
@@ -312,15 +320,50 @@ html[data-theme='dark'] .lars-ai-composer__suggestion-icon img { filter: brightn
 
 .lars-ai-composer__actions { display: flex; align-items: center; gap: 16px; }
 .lars-ai-composer__actions--end { gap: 12px; }
+.lars-ai-composer__mode-motion,
+.lars-ai-composer__attachment-motion,
+.lars-ai-composer__model-motion,
+.lars-ai-composer__send-motion { display: flex; flex: none; align-items: center; }
 .lars-ai-composer__mode-selector { flex: none; }
 .lars-ai-composer__actions .lars-button--tertiary { color: var(--lars-text-secondary, #646464); }
+.lars-ai-composer__more-menu-trigger.lars-button { display: none; }
 
 @container composer-body (max-width: 520px) {
-  .lars-ai-composer__toolbar[data-model-selector] { flex-wrap: wrap; gap: 6px; }
-  .lars-ai-composer__toolbar[data-model-selector] .lars-ai-composer__actions--end {
-    width: 100%;
-    justify-content: flex-end;
+  .lars-ai-composer__attachment-trigger.lars-button,
+  .lars-ai-composer__more-standalone.lars-button { display: none; }
+  .lars-ai-composer__attachment-motion,
+  .lars-ai-composer__model-motion { display: none; }
+  .lars-ai-composer__more-menu-trigger.lars-button { display: flex; }
+  .lars-ai-composer--default .lars-ai-composer__model-inline { display: none; }
+  .lars-ai-composer__toolbar[data-model-selector] > .lars-ai-composer__actions:first-child {
+    flex: 0 1 auto;
+    min-width: 0;
   }
+  .lars-ai-composer__toolbar[data-model-selector] .lars-ai-composer__mode-motion {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .lars-ai-composer__toolbar[data-model-selector] .lars-ai-composer__mode-selector {
+    flex: 0 1 auto;
+  }
+  .lars-ai-composer__toolbar[data-model-selector] .lars-segmented-control__content {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .lars-ai-composer__toolbar[data-model-selector] .lars-segmented-control__content > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lars-ai-composer__toolbar[data-model-selector] .lars-ai-composer__actions--end {
+    flex: none;
+  }
+}
+.lars-ai-composer--small .lars-ai-composer__more-menu-trigger.lars-button { display: none; }
+@container composer-body (max-width: 420px) {
+  .lars-ai-composer--small .lars-ai-composer__more-menu-trigger.lars-button { display: flex; }
+  .lars-ai-composer--small .lars-ai-composer__model-inline { display: none; }
 }
 .lars-ai-composer__attach-positioner { z-index: 50; }
 .lars-ai-composer__attach-menu {
@@ -345,6 +388,18 @@ html[data-theme='dark'] .lars-ai-composer__suggestion-icon img { filter: brightn
   cursor: pointer;
 }
 .lars-ai-composer__attach-item[data-highlighted] { background: var(--lars-copy-hover, #f0f0f0); }
+.lars-ai-composer__model-submenu-trigger { gap: 8px; }
+.lars-ai-composer__model-submenu-chevron {
+  display: block;
+  width: 12px;
+  height: 12px;
+  flex: none;
+  margin-left: auto;
+  background: currentColor;
+  transform: rotate(-90deg);
+  -webkit-mask: url('../iconLibrary/IconChevronDown.svg') center / contain no-repeat;
+  mask: url('../iconLibrary/IconChevronDown.svg') center / contain no-repeat;
+}
 
 .lars-ai-composer__model-trigger {
   display: flex;
@@ -485,18 +540,18 @@ html[data-theme='dark'] .lars-ai-composer__model-trigger .lars-ai-composer__mode
 
 .lars-ai-composer__send.lars-button:disabled { opacity: 1; }
 
-.lars-ai-composer--small { min-height: 54px; }
+.lars-ai-composer--small { min-height: 48px; }
 .lars-ai-composer--small.lars-ai-composer--unstructured { border-radius: 999px; }
-.lars-ai-composer--small.lars-ai-composer--structured { min-height: 56px; }
+.lars-ai-composer--small.lars-ai-composer--structured { min-height: 50px; }
 .lars-ai-composer--small .lars-ai-composer__body {
-  min-height: 54px;
+  min-height: 48px;
   padding: 8px;
 }
 .lars-ai-composer--small.lars-ai-composer--structured .lars-ai-composer__body { padding-inline: 12px; }
 .lars-ai-composer__small-row {
   display: flex;
   width: 100%;
-  height: 38px;
+  height: 32px;
   align-items: center;
   gap: 8px;
 }
@@ -515,6 +570,18 @@ html[data-theme='dark'] .lars-ai-composer__model-trigger .lars-ai-composer__mode
   line-height: 18px;
 }
 .lars-ai-composer--small.lars-ai-composer--unstructured .lars-ai-composer__input { padding-left: 8px; }
+.lars-ai-composer--small .lars-ai-composer__placeholder {
+  top: 7px;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.lars-ai-composer--small.lars-ai-composer--unstructured .lars-ai-composer__placeholder {
+  left: 8px;
+  width: calc(100% - 8px);
+}
+.lars-ai-composer--small .lars-ai-composer__model-trigger { flex: none; }
 .lars-ai-composer--small .lars-ai-composer__send { flex: none; }
 .lars-ai-composer--small.lars-ai-composer--unstructured .lars-ai-composer__attachments {
   width: calc(100% - 48px);
@@ -526,11 +593,11 @@ html[data-theme='dark'] .lars-ai-composer__model-trigger .lars-ai-composer__mode
   outline-offset: 2px;
 }
 .lars-ai-composer--small.lars-ai-composer--unstructured.lars-ai-composer--has-attachments .lars-ai-composer__surface {
-  min-height: 54px;
+  min-height: 48px;
   border-radius: 999px;
 }
 .lars-ai-composer--small.lars-ai-composer--structured.lars-ai-composer--has-attachments .lars-ai-composer__surface {
-  min-height: 56px;
+  min-height: 50px;
 }
 
 @media (prefers-reduced-motion: reduce) {

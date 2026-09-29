@@ -13,9 +13,6 @@ import {
   type ChipVariant,
 } from './components/Chip'
 import { InlineSlider, type InlineSliderSize } from './components/InlineSlider'
-import suggestionCardIcon from './iconLibrary/IconSuggestionCard.svg'
-import suggestionInvoiceIcon from './iconLibrary/IconSuggestionInvoice.svg'
-import suggestionRunwayIcon from './iconLibrary/IconSuggestionRunway.svg'
 import {
   SegmentedControl as LarsSegmentedControl,
   type SegmentedControlContent,
@@ -2475,12 +2472,12 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
 }
 
 const aiComposerSuggestions: readonly AiComposerSuggestion[] = [
-  { id: 'card-limit', label: 'Raise the limit on the marketing card', icon: <img alt="" src={suggestionCardIcon} /> },
-  { id: 'invoices', label: 'What invoices are still outstanding?', icon: <img alt="" src={suggestionInvoiceIcon} /> },
-  { id: 'runway', label: 'How long is my cash runway?', icon: <img alt="" src={suggestionRunwayIcon} /> },
+  { id: 'card-limit', label: 'Raise the limit on the marketing card' },
+  { id: 'invoices', label: 'What invoices are still outstanding?' },
+  { id: 'runway', label: 'How long is my cash runway?' },
 ]
 
-function AiComposerExample({ variant, size = 'default', mode, onModeChange, rotatePlaceholder = true, showModelDropdown = true, showModelSelector = true, showSuggestions = true }: { variant: AiComposerVariant; size?: AiComposerSize; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
+function AiComposerExample({ variant, size = 'default', mode, onModeChange, rotatePlaceholder = true, showModelDropdown = true, showModelSelector = true, showSuggestions = false }: { variant: AiComposerVariant; size?: AiComposerSize; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
   return (
     <div className="lars-ai-example">
       <AiComposer
@@ -2505,7 +2502,7 @@ function AiComposerStage() {
   return (
     <div className="lars-stage lars-stage--ai-composer" data-variant={variant}>
       <div className="lars-ai-stage__content">
-        <AiComposerExample key={variant} showModelSelector={false} showSuggestions={false} variant={variant} />
+        <AiComposerExample key={variant} showModelDropdown={false} showSuggestions={false} variant={variant} />
         <LarsSegmentedControl
           className="lars-ai-stage__switch"
           label="Composer variant"
@@ -2521,13 +2518,15 @@ function AiComposerStage() {
 function AiComposerDetail() {
   const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
   const [size, setSize] = useState<AiComposerSize>('default')
-  const [showModelSelector, setShowModelSelector] = useState(true)
+  const [showMode, setShowMode] = useState(true)
   const [composerMode, setComposerMode] = useState<AiComposerMode>('plan')
-  const [showModelDropdown, setShowModelDropdown] = useState(true)
-  const [showSuggestions, setShowSuggestions] = useState(true)
+  const [showModelSelection, setShowModelSelection] = useState(true)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [rotatePlaceholder, setRotatePlaceholder] = useState(true)
   const submitExample = size === 'small'
-    ? 'onSubmit={({ message, files }) => sendMessage(message, files)}'
+    ? showModelSelection
+      ? 'onSubmit={({ message, files, model }) => sendMessage(message, files, model)}'
+      : 'onSubmit={({ message, files }) => sendMessage(message, files)}'
     : 'onSubmit={({ message, files, model, mode }) => sendMessage(message, files, model, mode)}'
   const code = `import { AiComposer } from 'larsui'
 import 'larsui/style.css'
@@ -2540,11 +2539,11 @@ ${size === 'default' ? `const suggestions = [
 
 <AiComposer
   variant="${variant}"
-  size="${size}"${size === 'default' ? `
-  showModelSelector={${showModelSelector}}${showModelSelector ? `
-  defaultMode="${composerMode}"` : ''}
+  size="${size}"
   rotatePlaceholder={${rotatePlaceholder}}
-  showModelDropdown={${showModelDropdown}}
+  showModelDropdown={${showModelSelection}}${size === 'default' ? `
+  showModelSelector={${showMode}}${showMode ? `
+  defaultMode="${composerMode}"` : ''}
   showSuggestions={${showSuggestions}}
   suggestions={suggestions}` : ''}
   ${submitExample}
@@ -2554,13 +2553,22 @@ ${size === 'default' ? `const suggestions = [
     <>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-component-canvas--ai-composer">
-          <AiComposerExample key={variant} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showModelDropdown={showModelDropdown} showModelSelector={showModelSelector} showSuggestions={showSuggestions} size={size} variant={variant} />
+          <AiComposerExample key={variant} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
         </div>
         <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">
           <header className="lars-properties__header">
             <h2 id="ai-composer-properties-title">Properties</h2>
           </header>
           <div className="lars-properties__fields">
+            <SegmentedControl
+              label="Size"
+              onChange={setSize}
+              options={[
+                { label: 'Default', value: 'default' },
+                { label: 'Small', value: 'small' },
+              ]}
+              value={size}
+            />
             <PropertySelect
               label="Variant"
               onChange={setVariant}
@@ -2571,39 +2579,18 @@ ${size === 'default' ? `const suggestions = [
               value={variant}
             />
             <SegmentedControl
-              label="Size"
-              onChange={setSize}
-              options={[
-                { label: 'Default', value: 'default' },
-                { label: 'Small', value: 'small' },
-              ]}
-              value={size}
+              label="Model selection"
+              onChange={(next) => setShowModelSelection(next === 'true')}
+              options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+              value={showModelSelection ? 'true' : 'false'}
             />
             {size === 'default' && (
               <>
                 <SegmentedControl
-                  label="Model selection"
-                  onChange={(next) => setShowModelSelector(next === 'true')}
+                  label="Mode toggle"
+                  onChange={(next) => setShowMode(next === 'true')}
                   options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
-                  value={showModelSelector ? 'true' : 'false'}
-                />
-                {showModelSelector && (
-                  <PropertySelect
-                    label="Selected mode"
-                    onChange={setComposerMode}
-                    options={[
-                      { label: 'Work', value: 'work' },
-                      { label: 'Plan', value: 'plan' },
-                      { label: 'Chat', value: 'chat' },
-                    ]}
-                    value={composerMode}
-                  />
-                )}
-                <SegmentedControl
-                  label="Model dropdown"
-                  onChange={(next) => setShowModelDropdown(next === 'true')}
-                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
-                  value={showModelDropdown ? 'true' : 'false'}
+                  value={showMode ? 'true' : 'false'}
                 />
                 <SegmentedControl
                   label="Suggestions"
@@ -2611,14 +2598,14 @@ ${size === 'default' ? `const suggestions = [
                   options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
                   value={showSuggestions ? 'true' : 'false'}
                 />
-                <SegmentedControl
-                  label="Rotate prompt"
-                  onChange={(next) => setRotatePlaceholder(next === 'true')}
-                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
-                  value={rotatePlaceholder ? 'true' : 'false'}
-                />
               </>
             )}
+            <SegmentedControl
+              label="Animating placeholder"
+              onChange={(next) => setRotatePlaceholder(next === 'true')}
+              options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+              value={rotatePlaceholder ? 'true' : 'false'}
+            />
           </div>
         </aside>
       </div>
