@@ -223,11 +223,18 @@
   color: var(--lars-text-primary, #202020);
 }
 .lars-ai-composer__icon-button svg { width: 16px; height: 16px; }
+.lars-ai-composer__attach-icon,
 .lars-ai-composer__more-icon {
   display: block;
   width: 16px;
   height: 16px;
   background: currentColor;
+}
+.lars-ai-composer__attach-icon {
+  -webkit-mask: url('../iconLibrary/IconPaperclip1.svg') center / contain no-repeat;
+  mask: url('../iconLibrary/IconPaperclip1.svg') center / contain no-repeat;
+}
+.lars-ai-composer__more-icon {
   -webkit-mask: url('../iconLibrary/IconDotGrid1x3VerticalTight.svg') center / contain no-repeat;
   mask: url('../iconLibrary/IconDotGrid1x3VerticalTight.svg') center / contain no-repeat;
 }
