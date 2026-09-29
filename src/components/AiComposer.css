@@ -188,8 +188,6 @@
 }
 
 .lars-ai-composer__actions { display: flex; align-items: center; gap: 16px; }
-.lars-ai-composer__actions svg,
-.lars-ai-composer__send svg { display: block; width: 20px; height: 20px; }
 .lars-ai-composer__actions .lars-button--tertiary { color: var(--lars-text-secondary, #646464); }
 .lars-ai-composer__attach-positioner { z-index: 50; }
 .lars-ai-composer__attach-menu {
@@ -222,9 +220,9 @@
   border-radius: 999px;
   color: var(--lars-text-primary, #202020);
 }
-.lars-ai-composer__icon-button svg { width: 16px; height: 16px; }
 .lars-ai-composer__attach-icon,
-.lars-ai-composer__more-icon {
+.lars-ai-composer__more-icon,
+.lars-ai-composer__send-icon {
   display: block;
   width: 16px;
   height: 16px;
@@ -238,6 +236,10 @@
   -webkit-mask: url('../iconLibrary/IconDotGrid1x3VerticalTight.svg') center / contain no-repeat;
   mask: url('../iconLibrary/IconDotGrid1x3VerticalTight.svg') center / contain no-repeat;
 }
+.lars-ai-composer__send-icon {
+  -webkit-mask: url('../iconLibrary/IconArrowUp.svg') center / contain no-repeat;
+  mask: url('../iconLibrary/IconArrowUp.svg') center / contain no-repeat;
+}
 .lars-ai-composer--structured .lars-ai-composer__icon-button.lars-button { background: var(--lars-container-subtle, #f9f9f9); }
 
 .lars-ai-composer__send.lars-button {
@@ -248,5 +250,4 @@
   border-radius: 999px;
 }
 
-.lars-ai-composer__send svg { width: 16px; height: 16px; }
 .lars-ai-composer__send.lars-button:disabled { opacity: 1; }

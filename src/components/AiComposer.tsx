@@ -26,7 +26,7 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
 function Icon({ name }: { name: AiComposerAction | 'attach' | 'send-up' }) {
   if (name === 'attach') return <span aria-hidden="true" className="lars-ai-composer__attach-icon" />
   if (name === 'more') return <span aria-hidden="true" className="lars-ai-composer__more-icon" />
-  return <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 14V2" /><path d="M3.5 6.5 8 2l4.5 4.5" /></svg>
+  return <span aria-hidden="true" className="lars-ai-composer__send-icon" />
 }
 
 function formatFileSize(bytes: number) {
