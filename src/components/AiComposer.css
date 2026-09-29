@@ -223,6 +223,14 @@
   color: var(--lars-text-primary, #202020);
 }
 .lars-ai-composer__icon-button svg { width: 16px; height: 16px; }
+.lars-ai-composer__more-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url('../iconLibrary/IconDotGrid1x3VerticalTight.svg') center / contain no-repeat;
+  mask: url('../iconLibrary/IconDotGrid1x3VerticalTight.svg') center / contain no-repeat;
+}
 .lars-ai-composer--structured .lars-ai-composer__icon-button.lars-button { background: var(--lars-container-subtle, #f9f9f9); }
 
 .lars-ai-composer__send.lars-button {
