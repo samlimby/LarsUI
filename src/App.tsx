@@ -2472,14 +2472,9 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
 }
 
 function AiComposerExample({ variant }: { variant: AiComposerVariant }) {
-  const exampleFiles = useMemo(() => variant === 'structured'
-    ? [new File([new Uint8Array(2_500_000)], 'example_file.pdf', { type: 'application/pdf' })]
-    : [], [variant])
-
   return (
     <div className="lars-ai-example">
       <AiComposer
-        defaultFiles={exampleFiles}
         key={variant}
         variant={variant}
       />
@@ -2513,7 +2508,7 @@ import 'larsui/style.css'
 
 <AiComposer
   variant="${variant}"
-${variant === 'structured' ? '  defaultFiles={initialFiles}\n' : ''}  onSubmit={({ message, files }) => sendMessage(message, files)}
+  onSubmit={({ message, files }) => sendMessage(message, files)}
 />`
 
   return (

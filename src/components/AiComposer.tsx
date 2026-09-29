@@ -17,7 +17,6 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
   variant?: AiComposerVariant
   value?: string
   defaultValue?: string
-  defaultFiles?: readonly File[]
   onValueChange?: (value: string) => void
   onSubmit?: (submission: AiComposerSubmission) => void
   onAction?: (action: AiComposerAction) => void
@@ -66,7 +65,6 @@ function AttachmentCard({ file, onRemove }: { file: File; onRemove: () => void }
 export function AiComposer({
   className = '',
   defaultValue = '',
-  defaultFiles = [],
   onAction,
   onSubmit,
   onValueChange,
@@ -78,7 +76,7 @@ export function AiComposer({
   const messageId = useId()
   const fileInput = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState(defaultValue)
-  const [files, setFiles] = useState<File[]>(() => [...defaultFiles])
+  const [files, setFiles] = useState<File[]>([])
   const message = value ?? draft
   const canSubmit = message.trim().length > 0 || files.length > 0
   const showStructuredAttachments = variant === 'structured' && files.length > 0
