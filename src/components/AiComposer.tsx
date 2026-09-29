@@ -25,8 +25,26 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
 
 function Icon({ name }: { name: AiComposerAction | 'attach' | 'send-up' }) {
   if (name === 'attach') return <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M7.215 1.92C8.62 0.515 10.9 0.515 12.305 1.92 13.709 3.325 13.709 5.605 12.305 7.009L8.205 11.109C7.345 11.969 5.952 11.969 5.092 11.109 4.232 10.249 4.232 8.857 5.092 7.997L8.912 4.183C9.225 3.869 9.732 3.869 10.045 4.183 10.357 4.495 10.357 5.003 10.045 5.315L6.225 9.132C5.989 9.368 5.989 9.748 6.225 9.98 6.46 10.212 6.84 10.215 7.072 9.98L11.172 5.88C11.952 5.1 11.952 3.832 11.172 3.052 10.392 2.272 9.125 2.272 8.345 3.052L4.245 7.152C2.917 8.48 2.917 10.632 4.245 11.96 5.572 13.288 7.725 13.288 9.052 11.96L12.308 8.708C12.62 8.395 13.128 8.395 13.44 8.708 13.752 9.02 13.752 9.528 13.44 9.84L10.185 13.089C8.232 15.043 5.068 15.043 3.115 13.089 1.163 11.137 1.163 7.972 3.115 6.02L7.215 1.92z" /></svg>
-  if (name === 'more') return <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="2" r="2" /><circle cx="8" cy="8" r="2" /><circle cx="8" cy="14" r="2" /></svg>
+  if (name === 'more') return <MoreIcon />
   return <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 14V2" /><path d="M3.5 6.5 8 2l4.5 4.5" /></svg>
+}
+
+function MoreIcon() {
+  const maskId = useId()
+
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <mask height="24" id={maskId} maskUnits="userSpaceOnUse" width="24" x="0" y="0">
+        <rect fill="#000" height="24" width="24" />
+        <g fill="none">
+          <rect fill="#fff" height="4" rx="2" width="4" x="10" y="3" />
+          <rect fill="#fff" height="4" rx="2" width="4" x="10" y="10" />
+          <rect fill="#fff" height="4" rx="2" width="4" x="10" y="17" />
+        </g>
+      </mask>
+      <rect fill="currentColor" height="24" mask={`url(#${maskId})`} width="24" />
+    </svg>
+  )
 }
 
 function formatFileSize(bytes: number) {
