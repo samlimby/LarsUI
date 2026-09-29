@@ -39,13 +39,26 @@ function AttachmentCard({ file, onRemove }: { file: File; onRemove: () => void }
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!file.type.startsWith('image/')) {
-      setPreviewUrl(null)
-      return
+    let active = true
+    setPreviewUrl(null)
+
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+      return () => {
+        active = false
+        URL.revokeObjectURL(url)
+      }
     }
-    const url = URL.createObjectURL(file)
-    setPreviewUrl(url)
-    return () => URL.revokeObjectURL(url)
+
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+      void import('./pdfThumbnail')
+        .then(({ renderPdfThumbnail }) => renderPdfThumbnail(file))
+        .then((url) => { if (active) setPreviewUrl(url) })
+        .catch(() => { /* Keep the neutral thumbnail for unreadable PDFs. */ })
+    }
+
+    return () => { active = false }
   }, [file])
 
   return (
