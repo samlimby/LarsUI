@@ -92,7 +92,7 @@ export function AiComposer({
   const [files, setFiles] = useState<File[]>([])
   const message = value ?? draft
   const canSubmit = message.trim().length > 0 || files.length > 0
-  const showStructuredAttachments = variant === 'structured' && files.length > 0
+  const hasAttachments = files.length > 0
 
   const setMessage = (next: string) => {
     if (value === undefined) setDraft(next)
@@ -152,7 +152,7 @@ export function AiComposer({
   return (
     <form
       {...formProps}
-      className={`lars-ai-composer lars-ai-composer--${variant}${showStructuredAttachments ? ' lars-ai-composer--has-attachments' : ''}${className ? ` ${className}` : ''}`}
+      className={`lars-ai-composer lars-ai-composer--${variant}${hasAttachments ? ' lars-ai-composer--has-attachments' : ''}${className ? ` ${className}` : ''}`}
       onSubmit={(event) => { event.preventDefault(); submit() }}
     >
       <input
@@ -166,7 +166,7 @@ export function AiComposer({
         ref={fileInput}
         type="file"
       />
-      {showStructuredAttachments && (
+      {hasAttachments && (
         <div aria-label="Attached files" className="lars-ai-composer__attachments">
           {files.map((file, index) => (
             <AttachmentCard file={file} key={`${file.name}-${index}`} onRemove={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))} />

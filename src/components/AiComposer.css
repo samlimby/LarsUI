@@ -18,6 +18,11 @@
   background: var(--lars-container-subtle, #f9f9f9);
   box-shadow: none;
 }
+.lars-ai-composer--unstructured.lars-ai-composer--has-attachments {
+  min-height: 0;
+  border-radius: 8px 8px 20px 20px;
+  background: transparent;
+}
 .lars-ai-composer--structured {
   min-height: 150px;
   border-color: var(--lars-divider, #e0e0e0);
@@ -35,12 +40,18 @@
 }
 
 .lars-ai-composer__surface { display: flex; flex: 1; flex-direction: column; min-width: 0; }
-.lars-ai-composer--has-attachments .lars-ai-composer__surface {
+.lars-ai-composer--structured.lars-ai-composer--has-attachments .lars-ai-composer__surface {
   min-height: 150px;
   border: 1px solid var(--lars-divider, #e0e0e0);
   border-radius: 8px;
   background: var(--lars-container, #fcfcfc);
   overflow: hidden;
+}
+.lars-ai-composer--unstructured.lars-ai-composer--has-attachments .lars-ai-composer__surface {
+  min-height: 148px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--lars-container-subtle, #f9f9f9);
 }
 
 .lars-ai-composer__sr-only {
@@ -115,6 +126,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.lars-ai-composer--unstructured .lars-ai-composer__attachments {
+  width: calc(100% - 32px);
+  align-self: center;
+  padding: 4px;
+  border: 1px solid var(--lars-container-mid-emphasis, #f0f0f0);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--lars-container, #fcfcfc);
 }
 
 .lars-ai-composer__attachment {
