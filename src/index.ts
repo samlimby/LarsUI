@@ -8,8 +8,13 @@ export {
 export {
   AiComposer,
   type AiComposerAction,
+  type AiComposerModelOption,
+  type AiComposerModelProvider,
+  type AiComposerMode,
   type AiComposerProps,
+  type AiComposerSize,
   type AiComposerSubmission,
+  type AiComposerSuggestion,
   type AiComposerVariant,
 } from './components/AiComposer'
 

@@ -3,7 +3,7 @@ import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { Atom, Blocks, Classic, Clock, Flip, Gather, Loading, Morph, Ring, Slide, Swirl, Trace } from 'loading-dev'
 import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AiComposer, type AiComposerVariant } from './components/AiComposer'
+import { AiComposer, type AiComposerMode, type AiComposerSize, type AiComposerSuggestion, type AiComposerVariant } from './components/AiComposer'
 import { Button, type ButtonShape, type ButtonVariant } from './components/Button'
 import {
   Chip,
@@ -13,6 +13,9 @@ import {
   type ChipVariant,
 } from './components/Chip'
 import { InlineSlider, type InlineSliderSize } from './components/InlineSlider'
+import suggestionCardIcon from './iconLibrary/IconSuggestionCard.svg'
+import suggestionInvoiceIcon from './iconLibrary/IconSuggestionInvoice.svg'
+import suggestionRunwayIcon from './iconLibrary/IconSuggestionRunway.svg'
 import {
   SegmentedControl as LarsSegmentedControl,
   type SegmentedControlContent,
@@ -2471,11 +2474,25 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
   )
 }
 
-function AiComposerExample({ variant }: { variant: AiComposerVariant }) {
+const aiComposerSuggestions: readonly AiComposerSuggestion[] = [
+  { id: 'card-limit', label: 'Raise the limit on the marketing card', icon: <img alt="" src={suggestionCardIcon} /> },
+  { id: 'invoices', label: 'What invoices are still outstanding?', icon: <img alt="" src={suggestionInvoiceIcon} /> },
+  { id: 'runway', label: 'How long is my cash runway?', icon: <img alt="" src={suggestionRunwayIcon} /> },
+]
+
+function AiComposerExample({ variant, size = 'default', mode, onModeChange, rotatePlaceholder = true, showModelDropdown = true, showModelSelector = true, showSuggestions = true }: { variant: AiComposerVariant; size?: AiComposerSize; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
   return (
     <div className="lars-ai-example">
       <AiComposer
         key={variant}
+        mode={mode}
+        onModeChange={onModeChange}
+        rotatePlaceholder={rotatePlaceholder}
+        size={size}
+        showModelDropdown={showModelDropdown}
+        showModelSelector={showModelSelector}
+        showSuggestions={showSuggestions}
+        suggestions={aiComposerSuggestions}
         variant={variant}
       />
     </div>
@@ -2488,7 +2505,7 @@ function AiComposerStage() {
   return (
     <div className="lars-stage lars-stage--ai-composer" data-variant={variant}>
       <div className="lars-ai-stage__content">
-        <AiComposerExample key={variant} variant={variant} />
+        <AiComposerExample key={variant} showModelSelector={false} showSuggestions={false} variant={variant} />
         <LarsSegmentedControl
           className="lars-ai-stage__switch"
           label="Composer variant"
@@ -2503,19 +2520,41 @@ function AiComposerStage() {
 
 function AiComposerDetail() {
   const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
+  const [size, setSize] = useState<AiComposerSize>('default')
+  const [showModelSelector, setShowModelSelector] = useState(true)
+  const [composerMode, setComposerMode] = useState<AiComposerMode>('plan')
+  const [showModelDropdown, setShowModelDropdown] = useState(true)
+  const [showSuggestions, setShowSuggestions] = useState(true)
+  const [rotatePlaceholder, setRotatePlaceholder] = useState(true)
+  const submitExample = size === 'small'
+    ? 'onSubmit={({ message, files }) => sendMessage(message, files)}'
+    : 'onSubmit={({ message, files, model, mode }) => sendMessage(message, files, model, mode)}'
   const code = `import { AiComposer } from 'larsui'
 import 'larsui/style.css'
 
+${size === 'default' ? `const suggestions = [
+  { id: 'card-limit', label: 'Raise the limit on the marketing card' },
+  { id: 'invoices', label: 'What invoices are still outstanding?' },
+  { id: 'runway', label: 'How long is my cash runway?' },
+]\n` : ''}
+
 <AiComposer
   variant="${variant}"
-  onSubmit={({ message, files }) => sendMessage(message, files)}
+  size="${size}"${size === 'default' ? `
+  showModelSelector={${showModelSelector}}${showModelSelector ? `
+  defaultMode="${composerMode}"` : ''}
+  rotatePlaceholder={${rotatePlaceholder}}
+  showModelDropdown={${showModelDropdown}}
+  showSuggestions={${showSuggestions}}
+  suggestions={suggestions}` : ''}
+  ${submitExample}
 />`
 
   return (
     <>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-component-canvas--ai-composer">
-          <AiComposerExample key={variant} variant={variant} />
+          <AiComposerExample key={variant} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showModelDropdown={showModelDropdown} showModelSelector={showModelSelector} showSuggestions={showSuggestions} size={size} variant={variant} />
         </div>
         <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">
           <header className="lars-properties__header">
@@ -2531,10 +2570,81 @@ import 'larsui/style.css'
               ]}
               value={variant}
             />
+            <SegmentedControl
+              label="Size"
+              onChange={setSize}
+              options={[
+                { label: 'Default', value: 'default' },
+                { label: 'Small', value: 'small' },
+              ]}
+              value={size}
+            />
+            {size === 'default' && (
+              <>
+                <SegmentedControl
+                  label="Model selection"
+                  onChange={(next) => setShowModelSelector(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showModelSelector ? 'true' : 'false'}
+                />
+                {showModelSelector && (
+                  <PropertySelect
+                    label="Selected mode"
+                    onChange={setComposerMode}
+                    options={[
+                      { label: 'Work', value: 'work' },
+                      { label: 'Plan', value: 'plan' },
+                      { label: 'Chat', value: 'chat' },
+                    ]}
+                    value={composerMode}
+                  />
+                )}
+                <SegmentedControl
+                  label="Model dropdown"
+                  onChange={(next) => setShowModelDropdown(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showModelDropdown ? 'true' : 'false'}
+                />
+                <SegmentedControl
+                  label="Suggestions"
+                  onChange={(next) => setShowSuggestions(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showSuggestions ? 'true' : 'false'}
+                />
+                <SegmentedControl
+                  label="Rotate prompt"
+                  onChange={(next) => setRotatePlaceholder(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={rotatePlaceholder ? 'true' : 'false'}
+                />
+              </>
+            )}
           </div>
         </aside>
       </div>
-      <MemoizedCodeBlock code={code} fileName="AiComposer.tsx" label="AI Composer usage code" />
+      <div className="lars-code-with-footnote">
+        <MemoizedCodeBlock code={code} fileName="AiComposer.tsx" label="AI Composer usage code" />
+        <aside className="lars-footnotes" aria-label="Notes">
+          <p id="ai-composer-footnote-1" tabIndex={-1}>
+            <sup>1</sup>
+            <span>
+              “Shuffle suggestions 🎲” — the suggestions feature was inspired by{' '}
+              <a href="https://x.com/timothymaarv/status/2104489312670867896" target="_blank" rel="noreferrer">
+                Timothy M. (@timothymaarv)’s post
+              </a>.
+            </span>
+          </p>
+          <p id="ai-composer-footnote-2" tabIndex={-1}>
+            <sup>2</sup>
+            <span>
+              “Here's how an AI input actually works, layer by layer.” The composer’s overall structure, features, and requirements were informed by{' '}
+              <a href="https://ibelick.com/anatomy-ai-input" target="_blank" rel="noreferrer">
+                Julien Thibeaut’s article, Anatomy of AI Input
+              </a>.
+            </span>
+          </p>
+        </aside>
+      </div>
     </>
   )
 }
@@ -2692,10 +2802,9 @@ function ComponentPage({
   }
   const { description, title } = details[component]
   const reduceMotion = useReducedMotion()
-  const footnoteId = component === 'chip' ? 'chip-footnote-1' : component === 'table' ? 'table-footnote-1' : null
+  const footnoteIds = component === 'chip' ? ['chip-footnote-1'] : component === 'table' ? ['table-footnote-1'] : component === 'ai-composer' ? ['ai-composer-footnote-1', 'ai-composer-footnote-2'] : []
 
-  const scrollToFootnote = () => {
-    if (!footnoteId) return
+  const scrollToFootnote = (footnoteId: string) => {
     const footnote = document.getElementById(footnoteId)
     if (!footnote) return
     footnote.scrollIntoView({
@@ -2720,18 +2829,21 @@ function ComponentPage({
         <header className="lars-detail__intro">
           <div className="lars-detail__title">
             <h1 id="component-detail-title">{title}</h1>
-            {footnoteId && (
+            {footnoteIds.length > 0 && (
               <sup>
-                <a
-                  aria-label="Read note 1"
-                  href={`#${footnoteId}`}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    scrollToFootnote()
-                  }}
-                >
-                  1
-                </a>
+                {footnoteIds.map((footnoteId, index) => (
+                  <a
+                    key={footnoteId}
+                    aria-label={`Read note ${index + 1}`}
+                    href={`#${footnoteId}`}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      scrollToFootnote(footnoteId)
+                    }}
+                  >
+                    {index > 0 ? ', ' : ''}{index + 1}
+                  </a>
+                ))}
               </sup>
             )}
           </div>

@@ -1,30 +1,93 @@
 import { Menu } from '@base-ui/react/menu'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useId, useRef, useState } from 'react'
-import type { ComponentProps, KeyboardEvent } from 'react'
+import type { ComponentProps, KeyboardEvent, ReactNode } from 'react'
 import { Button } from './Button'
+import { SegmentedControl } from './SegmentedControl'
 import './AiComposer.css'
 
 export type AiComposerVariant = 'structured' | 'unstructured'
+export type AiComposerSize = 'default' | 'small'
+export type AiComposerMode = 'work' | 'plan' | 'chat'
 export type AiComposerAction = 'more'
+export type AiComposerModelProvider = 'anthropic' | 'openai' | 'xai' | 'kimi'
+export type AiComposerModelOption = {
+  value: string
+  label: string
+  provider?: AiComposerModelProvider
+  icon?: ReactNode
+}
+export type AiComposerSuggestion = {
+  id: string
+  label: string
+  icon?: ReactNode
+}
 
 export type AiComposerSubmission = {
   files: File[]
   message: string
+  model?: string
+  mode?: AiComposerMode
   variant: AiComposerVariant
 }
 
 export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmit'> & {
   variant?: AiComposerVariant
+  size?: AiComposerSize
   value?: string
   defaultValue?: string
+  model?: string
+  defaultModel?: string
+  mode?: AiComposerMode
+  defaultMode?: AiComposerMode
+  modelOptions?: readonly AiComposerModelOption[]
+  onModelChange?: (model: string) => void
+  onModeChange?: (mode: AiComposerMode) => void
   onValueChange?: (value: string) => void
   onSubmit?: (submission: AiComposerSubmission) => void
   onAction?: (action: AiComposerAction) => void
   placeholder?: string
+  rotatePlaceholder?: boolean
+  showModelDropdown?: boolean
+  showModelSelector?: boolean
+  showSuggestions?: boolean
+  suggestions?: readonly AiComposerSuggestion[]
 }
 
-function Icon({ name }: { name: AiComposerAction | 'attach' | 'send-up' }) {
+type AttachedFile = { id: number; file: File }
+
+const attachmentEase = [0.25, 1, 0.5, 1] as const
+const placeholderMessages = [
+  'How can I help you today?',
+  "What's on your mind?",
+  "Ready to type? I'm here to help",
+  "Let's build something great today",
+  'Do something amazing',
+  'Type out your thoughts',
+] as const
+const defaultModelOptions: readonly AiComposerModelOption[] = [
+  { value: 'sonnet-5.5', label: 'Sonnet 5.5', provider: 'anthropic' },
+  { value: 'gpt-5.6', label: 'GPT-5.6', provider: 'openai' },
+  { value: 'grok-4', label: 'Grok 4', provider: 'xai' },
+  { value: 'kimi-k3', label: 'Kimi K3', provider: 'kimi' },
+]
+const modeOptions = [
+  { value: 'work', label: 'Work' },
+  { value: 'plan', label: 'Plan' },
+  { value: 'chat', label: 'Chat' },
+] as const
+
+function ModelMark({ option }: { option: AiComposerModelOption }) {
+  return (
+    <span aria-hidden="true" className="lars-ai-composer__model-mark">
+      {option.icon ?? (option.provider && <span className={`lars-ai-composer__model-brand lars-ai-composer__model-brand--${option.provider}`} />)}
+    </span>
+  )
+}
+
+function Icon({ name }: { name: AiComposerAction | 'attach' | 'plus' | 'send-up' }) {
   if (name === 'attach') return <span aria-hidden="true" className="lars-ai-composer__attach-icon" />
+  if (name === 'plus') return <span aria-hidden="true" className="lars-ai-composer__plus-icon" />
   if (name === 'more') return <span aria-hidden="true" className="lars-ai-composer__more-icon" />
   return <span aria-hidden="true" className="lars-ai-composer__send-icon" />
 }
@@ -35,7 +98,7 @@ function formatFileSize(bytes: number) {
   return `${bytes}b`
 }
 
-function AttachmentCard({ file, onRemove }: { file: File; onRemove: () => void }) {
+function AttachmentCard({ file, onRemove, reducedMotion }: { file: File; onRemove: () => void; reducedMotion: boolean }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -62,37 +125,118 @@ function AttachmentCard({ file, onRemove }: { file: File; onRemove: () => void }
   }, [file])
 
   return (
-    <div className="lars-ai-composer__attachment">
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      className="lars-ai-composer__attachment"
+      exit={{ opacity: 0, y: reducedMotion ? 0 : -4 }}
+      initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
+      layout={reducedMotion ? false : 'position'}
+      transition={{ duration: reducedMotion ? 0.12 : 0.2, ease: attachmentEase }}
+    >
       <span aria-hidden="true" className="lars-ai-composer__attachment-thumbnail">
-        {previewUrl && <img alt="" src={previewUrl} />}
+        {previewUrl && (
+          <motion.img
+            alt=""
+            animate={{ opacity: 1 }}
+            initial={{ opacity: reducedMotion ? 1 : 0 }}
+            src={previewUrl}
+            transition={{ duration: reducedMotion ? 0 : 0.18 }}
+          />
+        )}
       </span>
       <span className="lars-ai-composer__attachment-details">
         <span className="lars-ai-composer__attachment-name" title={file.name}>{file.name}</span>
         <span className="lars-ai-composer__attachment-size">{formatFileSize(file.size)}</span>
       </span>
       <button aria-label={`Remove ${file.name}`} className="lars-ai-composer__remove" onClick={onRemove} title={`Remove ${file.name}`} type="button">×</button>
-    </div>
+    </motion.div>
   )
 }
 
 export function AiComposer({
   className = '',
+  defaultMode = 'plan',
+  defaultModel,
   defaultValue = '',
+  model,
+  mode,
+  modelOptions = defaultModelOptions,
   onAction,
+  onModelChange,
+  onModeChange,
   onSubmit,
   onValueChange,
   placeholder,
+  rotatePlaceholder = true,
+  size = 'default',
+  showModelDropdown = true,
+  showModelSelector = false,
+  showSuggestions = true,
+  suggestions = [],
   value,
   variant = 'unstructured',
   ...formProps
 }: AiComposerProps) {
   const messageId = useId()
   const fileInput = useRef<HTMLInputElement>(null)
+  const messageInput = useRef<HTMLTextAreaElement>(null)
+  const nextAttachmentId = useRef(0)
+  const reducedMotion = useReducedMotion() ?? false
   const [draft, setDraft] = useState(defaultValue)
-  const [files, setFiles] = useState<File[]>([])
+  const [draftModel, setDraftModel] = useState(defaultModel ?? modelOptions[0]?.value ?? '')
+  const [draftMode, setDraftMode] = useState<AiComposerMode>(defaultMode)
+  const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [suggestionOrder, setSuggestionOrder] = useState<string[]>([])
+  const [files, setFiles] = useState<AttachedFile[]>([])
+  const [attachmentExiting, setAttachmentExiting] = useState(false)
+  const [keyboardFocus, setKeyboardFocus] = useState(false)
+  const isSmall = size === 'small'
   const message = value ?? draft
+  const hasRotatingPlaceholder = !isSmall && rotatePlaceholder && placeholder === undefined
+  const showRotatingPlaceholder = hasRotatingPlaceholder && message.length === 0
+  const selectedModel = modelOptions.find((option) => option.value === (model ?? draftModel)) ?? modelOptions[0]
+  const selectedMode = mode ?? draftMode
+  const hasModelDropdown = !isSmall && showModelDropdown && Boolean(selectedModel)
+  const hasModelSelector = !isSmall && showModelSelector
   const canSubmit = message.trim().length > 0 || files.length > 0
   const hasAttachments = files.length > 0
+  const showAttachmentChrome = hasAttachments || attachmentExiting
+  const orderedSuggestions = [
+    ...suggestionOrder.flatMap((id) => {
+      const suggestion = suggestions.find((item) => item.id === id)
+      return suggestion ? [suggestion] : []
+    }),
+    ...suggestions.filter((item) => !suggestionOrder.includes(item.id)),
+  ]
+
+  useEffect(() => {
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Shift' && event.key !== 'Control' && event.key !== 'Alt' && event.key !== 'Meta') {
+        setKeyboardFocus(true)
+      }
+    }
+    const handlePointerDown = () => setKeyboardFocus(false)
+
+    document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('pointerdown', handlePointerDown, true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasModelDropdown) setModelMenuOpen(false)
+  }, [hasModelDropdown])
+
+  useEffect(() => {
+    if (!showRotatingPlaceholder) return
+    const interval = window.setInterval(() => {
+      setPlaceholderIndex((current) => (current + 1) % placeholderMessages.length)
+    }, 7_500)
+    return () => window.clearInterval(interval)
+  }, [showRotatingPlaceholder])
 
   const setMessage = (next: string) => {
     if (value === undefined) setDraft(next)
@@ -102,11 +246,14 @@ export function AiComposer({
   const submit = () => {
     if (!canSubmit) return
     onSubmit?.({
-      files,
+      files: files.map(({ file }) => file),
       message: message.trim(),
+      model: hasModelDropdown ? selectedModel?.value : undefined,
+      mode: hasModelSelector ? selectedMode : undefined,
       variant,
     })
     setMessage('')
+    if (hasAttachments) setAttachmentExiting(true)
     setFiles([])
     if (fileInput.current) fileInput.current.value = ''
   }
@@ -123,21 +270,50 @@ export function AiComposer({
     fileInput.current.click()
   }
 
+  const removeAttachment = (id: number) => {
+    if (files.length === 1) setAttachmentExiting(true)
+    setFiles((current) => current.filter((attachment) => attachment.id !== id))
+  }
+
+  const shuffleSuggestions = () => {
+    const shuffled = [...orderedSuggestions]
+    for (let index = shuffled.length - 1; index > 0; index--) {
+      const other = Math.floor(Math.random() * (index + 1))
+      const item = shuffled[index]
+      shuffled[index] = shuffled[other]
+      shuffled[other] = item
+    }
+    if (shuffled.length > 1 && shuffled.every((item, index) => item.id === orderedSuggestions[index].id)) {
+      const first = shuffled[0]
+      shuffled[0] = shuffled[1]
+      shuffled[1] = first
+    }
+    setSuggestionOrder(shuffled.map((item) => item.id))
+  }
+
   const input = (
-    <textarea
-      className="lars-ai-composer__input"
-      id={messageId}
-      onChange={(event) => setMessage(event.currentTarget.value)}
-      onKeyDown={handleKeyDown}
-      placeholder={placeholder ?? 'How can I help you?'}
-      rows={3}
-      value={message}
-    />
+    <div className="lars-ai-composer__input-wrap" data-rotating-placeholder={hasRotatingPlaceholder || undefined}>
+      <textarea
+        className="lars-ai-composer__input"
+        id={messageId}
+        onChange={(event) => setMessage(event.currentTarget.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder ?? (isSmall ? 'How can I help you?' : placeholderMessages[0])}
+        ref={messageInput}
+        rows={isSmall ? 1 : 3}
+        value={message}
+      />
+      {showRotatingPlaceholder && (
+        <span aria-hidden="true" className="lars-ai-composer__placeholder t-digit-group is-animating">
+          <span className="t-digit" key={placeholderIndex}>{placeholderMessages[placeholderIndex]}</span>
+        </span>
+      )}
+    </div>
   )
 
   const attachmentMenu = (
     <Menu.Root modal={false}>
-      <Menu.Trigger render={<Button aria-label="Attach files" className="lars-ai-composer__icon-button" iconOnly shape="neat" title="Attach files" type="button" variant="tertiary"><Icon name="attach" /></Button>} />
+      <Menu.Trigger render={<Button aria-label="Attach files" className="lars-ai-composer__icon-button" iconOnly shape="neat" title="Attach files" type="button" variant={isSmall ? 'secondary' : 'tertiary'}><Icon name={isSmall ? 'plus' : 'attach'} /></Button>} />
       <Menu.Portal>
         <Menu.Positioner align="start" className="lars-ai-composer__attach-positioner" side="top" sideOffset={8}>
           <Menu.Popup aria-label="Attachment options" className="lars-ai-composer__attach-menu">
@@ -149,10 +325,64 @@ export function AiComposer({
     </Menu.Root>
   )
 
-  return (
+  const modelMenu = hasModelDropdown && selectedModel && (
+    <Menu.Root modal={false} onOpenChange={setModelMenuOpen} open={modelMenuOpen}>
+      <Menu.Trigger
+        render={(
+          <button aria-label={`Model: ${selectedModel.label}`} className="lars-ai-composer__model-trigger" type="button">
+            <ModelMark option={selectedModel} />
+            <span className="lars-ai-composer__model-label">{selectedModel.label}</span>
+            <span aria-hidden="true" className="lars-ai-composer__model-chevron" />
+          </button>
+        )}
+      />
+      <Menu.Portal>
+        <Menu.Positioner align="end" className="lars-ai-composer__model-positioner" side="top" sideOffset={8}>
+          <Menu.Popup aria-label="Choose model" className="lars-ai-composer__model-menu">
+            <Menu.RadioGroup
+              onValueChange={(nextModel) => {
+                const nextValue = String(nextModel)
+                if (model === undefined) setDraftModel(nextValue)
+                onModelChange?.(nextValue)
+                setModelMenuOpen(false)
+              }}
+              value={selectedModel.value}
+            >
+              {modelOptions.map((option) => (
+                <Menu.RadioItem className="lars-ai-composer__model-item" key={option.value} value={option.value}>
+                  <ModelMark option={option} />
+                  <span>{option.label}</span>
+                  <span aria-hidden="true" className="lars-ai-composer__model-check-slot">
+                    <Menu.RadioItemIndicator><span className="lars-ai-composer__model-check-icon" /></Menu.RadioItemIndicator>
+                  </span>
+                </Menu.RadioItem>
+              ))}
+            </Menu.RadioGroup>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  )
+
+  const modeSelector = hasModelSelector && (
+    <SegmentedControl
+      className="lars-ai-composer__mode-selector"
+      label="Composer mode"
+      onValueChange={(nextMode) => {
+        const next = nextMode as AiComposerMode
+        if (mode === undefined) setDraftMode(next)
+        onModeChange?.(next)
+      }}
+      options={modeOptions}
+      type={variant === 'structured' ? 'square' : 'cornered'}
+      value={selectedMode}
+    />
+  )
+
+  const composer = (
     <form
       {...formProps}
-      className={`lars-ai-composer lars-ai-composer--${variant}${hasAttachments ? ' lars-ai-composer--has-attachments' : ''}${className ? ` ${className}` : ''}`}
+      className={`lars-ai-composer lars-ai-composer--${variant} lars-ai-composer--${size}${keyboardFocus ? ' lars-ai-composer--keyboard-focus' : ''}${hasModelSelector ? ' lars-ai-composer--with-model-selector' : ''}${showAttachmentChrome ? ' lars-ai-composer--has-attachments' : ''}${className ? ` ${className}` : ''}`}
       onSubmit={(event) => { event.preventDefault(); submit() }}
     >
       <input
@@ -160,32 +390,95 @@ export function AiComposer({
         className="lars-ai-composer__file-input"
         multiple
         onChange={(event) => {
-          setFiles((current) => [...current, ...Array.from(event.currentTarget.files ?? [])])
+          const selectedFiles = Array.from(event.currentTarget.files ?? [])
+          if (selectedFiles.length === 0) return
+          setAttachmentExiting(false)
+          setFiles((current) => [
+            ...current,
+            ...selectedFiles.map((file) => ({ id: nextAttachmentId.current++, file })),
+          ])
           event.currentTarget.value = ''
         }}
         ref={fileInput}
         type="file"
       />
-      {hasAttachments && (
-        <div aria-label="Attached files" className="lars-ai-composer__attachments">
-          {files.map((file, index) => (
-            <AttachmentCard file={file} key={`${file.name}-${index}`} onRemove={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))} />
-          ))}
-        </div>
-      )}
+      <AnimatePresence initial={false} onExitComplete={() => setAttachmentExiting(false)}>
+        {hasAttachments && (
+          <motion.div
+            animate={{ height: 'auto', opacity: 1 }}
+            className="lars-ai-composer__attachments-reveal"
+            exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            key="attachments"
+            layout={reducedMotion ? false : 'size'}
+            transition={reducedMotion
+              ? { duration: 0.12 }
+              : { height: { duration: 0.26, ease: attachmentEase }, layout: { duration: 0.26, ease: attachmentEase }, opacity: { duration: 0.18, ease: attachmentEase } }}
+          >
+            <div aria-label="Attached files" className="lars-ai-composer__attachments">
+              <AnimatePresence initial={false}>
+                {files.map(({ id, file }) => (
+                  <AttachmentCard file={file} key={id} onRemove={() => removeAttachment(id)} reducedMotion={reducedMotion} />
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="lars-ai-composer__surface">
         <div className="lars-ai-composer__body">
           <label className="lars-ai-composer__sr-only" htmlFor={messageId}>Message</label>
-          {input}
-          <div className="lars-ai-composer__toolbar">
-            <div className="lars-ai-composer__actions">{attachmentMenu}</div>
-            <div className="lars-ai-composer__actions">
-              <Button aria-label="More options" className="lars-ai-composer__icon-button" iconOnly onClick={() => onAction?.('more')} shape="neat" title="More options" type="button" variant="tertiary"><Icon name="more" /></Button>
+          {isSmall ? (
+            <div className="lars-ai-composer__small-row">
+              {attachmentMenu}
+              {input}
               <Button aria-label="Send message" className="lars-ai-composer__send" disabled={!canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send-up" /></Button>
             </div>
-          </div>
+          ) : (
+            <>
+              {input}
+              <div className="lars-ai-composer__toolbar" data-model-selector={hasModelSelector || undefined}>
+                <div className="lars-ai-composer__actions">{hasModelSelector ? modeSelector : attachmentMenu}</div>
+                <div className="lars-ai-composer__actions lars-ai-composer__actions--end">
+                  <Button aria-label="More options" className="lars-ai-composer__icon-button" iconOnly onClick={() => onAction?.('more')} shape="neat" title="More options" type="button" variant="tertiary"><Icon name="more" /></Button>
+                  {hasModelSelector && attachmentMenu}
+                  {modelMenu}
+                  <Button aria-label="Send message" className="lars-ai-composer__send" disabled={!canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send-up" /></Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </form>
+  )
+
+  if (isSmall || !showSuggestions || suggestions.length === 0) return composer
+
+  return (
+    <div className="lars-ai-composer__layout">
+      <section aria-label="Suggested prompts" className="lars-ai-composer__suggestions">
+        <p className="lars-ai-composer__suggestions-label">Or try a suggestion</p>
+        {orderedSuggestions.map((suggestion) => (
+          <button
+            className="lars-ai-composer__suggestion"
+            key={suggestion.id}
+            onClick={() => {
+              setMessage(suggestion.label)
+              messageInput.current?.focus()
+            }}
+            type="button"
+          >
+            <span aria-hidden="true" className="lars-ai-composer__suggestion-icon">{suggestion.icon}</span>
+            <span>{suggestion.label}</span>
+          </button>
+        ))}
+        <button className="lars-ai-composer__suggestion lars-ai-composer__suggestion--shuffle" onClick={shuffleSuggestions} type="button">
+          <span aria-hidden="true" className="lars-ai-composer__suggestion-icon"><span className="lars-ai-composer__shuffle-icon" /></span>
+          <span>Shuffle suggestions</span>
+        </button>
+      </section>
+      {composer}
+    </div>
   )
 }
