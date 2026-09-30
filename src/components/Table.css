@@ -114,7 +114,7 @@
   border: 1px solid var(--lars-divider, #e0e0e0);
   border-radius: 10px;
   background: var(--lars-container, #fcfcfc);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 10%), 0 2px 8px rgb(0 0 0 / 5%);
+  box-shadow: var(--shadow-high_emphasis, 0 4px 6px rgb(32 32 32 / 56%));
   color: var(--lars-text-primary, #202020);
   font-family: var(--font-sans, Inter, system-ui, sans-serif);
   font-size: 12px;

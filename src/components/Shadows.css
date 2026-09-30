@@ -1,0 +1,5 @@
+:root {
+  --shadow-low_emphasis: 0 2px 5px color-mix(in srgb, var(--color-high_emphasis, #202020) 24%, transparent);
+  --shadow-mid_emphasis: 0 3px 4px color-mix(in srgb, var(--color-high_emphasis, #202020) 40%, transparent);
+  --shadow-high_emphasis: 0 4px 6px color-mix(in srgb, var(--color-high_emphasis, #202020) 56%, transparent);
+}

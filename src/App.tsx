@@ -4,6 +4,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, type ButtonShape, type ButtonSpinner, type ButtonVariant } from './components/Button'
 import './components/Focus.css'
+import './components/ColorTokens.css'
+import './components/Shadows.css'
 import {
   Chip,
   type ChipIconPosition,
@@ -24,6 +26,7 @@ import {
   type TableColumn,
   type TableVariant,
 } from './components/Table'
+import { Tooltip as LarsTooltip } from './components/Tooltip'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -222,8 +225,20 @@ export function Example() {
     />
   )
 }`
+const TOOLTIP_VIEW_CODE = `import { Tooltip } from 'larsui'
+import 'larsui/style.css'
+
+export function Example() {
+  return (
+    <p>
+      Choose your <Tooltip anchor label="Export quality" description="Higher quality creates a larger file.">
+        <button className="lars-tooltip-inline" type="button">export settings</button>
+      </Tooltip> before downloading.
+    </p>
+  )
+}`
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table' | 'tooltip'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -234,6 +249,7 @@ function getRouteFromHash(): Route {
   if (window.location.hash === '#/components/chip') return 'chip'
   if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
   if (window.location.hash === '#/components/table') return 'table'
+  if (window.location.hash === '#/components/tooltip') return 'tooltip'
   return 'home'
 }
 
@@ -249,26 +265,21 @@ function getInitialTheme(): Theme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function LarsMark() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
-      <path d="M13.2 2.4c-.769 0-1.504.304-2.048.847l-7.905 7.905A2.89 2.89 0 0 0 2.4 13.2c0 .457.109.904.307 1.301L14.501 2.707A2.89 2.89 0 0 0 13.2 2.4Zm-2.4 19.2c.769 0 1.504-.304 2.047-.848l7.905-7.905A2.89 2.89 0 0 0 21.6 10.8c0-.458-.109-.904-.308-1.301L9.499 21.292c.401.203.847.308 1.301.308Zm8.722-12.878a3 3 0 0 0-4.241-4.241l-10.8 10.8a3 3 0 1 0 4.241 4.241l10.8-10.8Z" />
-    </svg>
-  )
-}
+const APPEARANCE_LIGHT_PATH = 'M10 6.667C8.159 6.667 6.667 8.159 6.667 10 6.667 11.841 8.159 13.333 10 13.333V17.5C5.858 17.5 2.5 14.142 2.5 10 2.5 5.857 5.858 2.5 10 2.5V6.667ZM10 6.667C11.841 6.667 13.333 8.159 13.333 10 13.333 11.841 11.841 13.333 10 13.333V6.667Z'
+const APPEARANCE_DARK_PATH = 'M10 6.667C11.841 6.667 13.333 8.159 13.333 10 13.333 11.841 11.841 13.333 10 13.333V17.5C14.143 17.5 17.5 14.142 17.5 10 17.5 5.857 14.143 2.5 10 2.5V6.667ZM10 6.667C8.159 6.667 6.667 8.159 6.667 10 6.667 11.841 8.159 13.333 10 13.333V6.667Z'
 
-function GitHubIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
-      <path d="M12 2.4c.883 0 1.6.717 1.6 1.6v8c0 .883-.717 1.6-1.6 1.6H4A1.6 1.6 0 0 1 2.4 12V4A1.6 1.6 0 0 1 4 2.4h8ZM7.993 4C5.783 4 4 5.805 4 8.015c0 1.735 1.103 3.172 2.585 3.71.21.078.415-.062.415-.272v-.626a.96.96 0 0 1-.375.078c-.515 0-.82-.28-1.04-.805-.085-.21-.18-.335-.36-.36-.092-.007-.125-.047-.125-.095 0-.092.155-.165.313-.165.227 0 .422.14.624.43.156.227.32.327.516.327.194 0 .32-.07.5-.25.132-.132.234-.25.327-.327-1.033-.125-1.757-.867-1.757-1.827 0-.39.14-.813.374-1.096-.102-.257-.084-.804.03-1.03.313-.04.736.126.986.353.297-.093.61-.14.992-.14.382 0 .695.047.978.133.242-.22.672-.383.984-.346.11.21.126.758.023 1.023.25.297.383.695.383 1.103 0 .96-.728 1.687-1.773 1.82.265.172.445.547.445.977v.813c0 .234.195.367.43.272 1.415-.54 2.522-1.952 2.522-3.702 0-2.21-1.797-4.016-4.007-4.016L7.993 4Z" />
-    </svg>
-  )
-}
+function ThemeIcon({ theme }: { theme: Theme }) {
+  const reduceMotion = useReducedMotion()
 
-function ThemeIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
-      <path d="M12.8 8A4.8 4.8 0 0 0 8 3.2v9.6A4.8 4.8 0 0 0 12.8 8ZM1.6 8A6.4 6.4 0 1 1 8 14.4 6.4 6.4 0 0 1 1.6 8Z" />
+    <svg aria-hidden="true" className="lars-theme__appearance" viewBox="0 0 20 20" width="20" height="20">
+      <circle cx="10" cy="10" r="7.708" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <motion.path
+        animate={{ d: theme === 'dark' ? APPEARANCE_DARK_PATH : APPEARANCE_LIGHT_PATH }}
+        fill="currentColor"
+        initial={false}
+        transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.645, 0.045, 0.355, 1] }}
+      />
     </svg>
   )
 }
@@ -283,15 +294,16 @@ function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       type="button"
     >
-      <ThemeIcon />
+      <ThemeIcon theme={theme} />
     </BaseButton>
   )
 }
 
 function CopyIcon({ size = 12 }: { size?: number }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width={size} height={size}>
-      <path d="M8.8 12.8H3.2V7.2h1.2V5.6H3.2a1.6 1.6 0 0 0-1.6 1.6v5.6a1.6 1.6 0 0 0 1.6 1.6h5.6a1.6 1.6 0 0 0 1.6-1.6v-1.2H8.8v1.2Zm-1.6-2.4h5.6a1.6 1.6 0 0 0 1.6-1.6V3.2a1.6 1.6 0 0 0-1.6-1.6H7.2a1.6 1.6 0 0 0-1.6 1.6v5.6a1.6 1.6 0 0 0 1.6 1.6Z" />
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none">
+      <path d="M7 9H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="9" y="3" width="12" height="12" rx="2" fill="currentColor" />
     </svg>
   )
 }
@@ -684,6 +696,67 @@ function TableStage() {
   )
 }
 
+function TooltipExample({
+  anchor = false,
+  description,
+  highContrast = false,
+  label,
+  shortcut,
+  shortcutStyle,
+  side,
+}: {
+  anchor?: boolean
+  description?: string
+  highContrast?: boolean
+  label: string
+  shortcut?: string
+  shortcutStyle?: 'plain' | 'keycap'
+  side?: 'top' | 'right' | 'bottom' | 'left'
+}) {
+  return (
+    <p className="lars-tooltip-example">
+      Choose your{' '}
+      <LarsTooltip
+        anchor={anchor}
+        description={description}
+        highContrast={highContrast}
+        label={label}
+        shortcut={shortcut}
+        shortcutStyle={shortcutStyle}
+        side={side}
+      >
+        <button className="lars-tooltip-inline" type="button">export settings</button>
+      </LarsTooltip>{' '}
+      before downloading.
+    </p>
+  )
+}
+
+function TooltipStage() {
+  const [copied, setCopied] = useState(false)
+
+  async function copyComponentCode() {
+    try {
+      await navigator.clipboard.writeText(TOOLTIP_VIEW_CODE)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="lars-stage lars-stage--tooltip">
+      <BaseButton className="lars-copy" type="button" onClick={copyComponentCode} aria-label="Copy basic Tooltip code">
+        {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
+      </BaseButton>
+      <div className="lars-tooltip-stage-content">
+        <TooltipExample anchor label="Export quality" description="Higher quality creates a larger file." />
+      </div>
+    </div>
+  )
+}
+
 function CodeBlock({
   code,
   fileName,
@@ -762,74 +835,31 @@ const MemoizedCodeBlock = memo(CodeBlock)
 
 function SegmentedControl<T extends string>({
   className = '',
-  animateIndicator = true,
   label,
   onChange,
   options,
   value,
 }: {
   className?: string
-  animateIndicator?: boolean
   label: string
   onChange: (value: T) => void
   options: ReadonlyArray<{ label: string; value: T }>
   value: T
 }) {
-  const segmentsRef = useRef<HTMLDivElement>(null)
-  const indicatorRef = useRef<HTMLSpanElement>(null)
-
-  useLayoutEffect(() => {
-    const segments = segmentsRef.current
-    const indicator = indicatorRef.current
-    if (!segments || !indicator) return
-
-    const positionIndicator = () => {
-      const active = segments.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
-      if (!active) return
-
-      // Keep the indicator in track coordinates when conditional rows move the control.
-      const left = active.getBoundingClientRect().left
-        - segments.getBoundingClientRect().left
-        - segments.clientLeft
-      indicator.style.width = `${active.offsetWidth}px`
-      indicator.style.transform = `translateX(${left}px)`
-      indicator.style.opacity = '1'
-    }
-
-    positionIndicator()
-    const observer = new ResizeObserver(positionIndicator)
-    observer.observe(segments)
-    segments.querySelectorAll('button').forEach((button) => observer.observe(button))
-    return () => observer.disconnect()
-  }, [options.length, value])
-
   return (
     <div className={`lars-property lars-property--segmented${className ? ` ${className}` : ''}`}>
       <span>{label}</span>
-      <div
-        aria-label={label}
-        className="lars-segments"
-        data-animate-indicator={animateIndicator || undefined}
-        ref={segmentsRef}
-        role="group"
-      >
-        <span aria-hidden="true" className="lars-segments__indicator" ref={indicatorRef} />
-        {options.map((option) => {
-          const isActive = value === option.value
-
-          return (
-            <BaseButton
-              aria-pressed={isActive}
-              className={isActive ? 'is-active' : ''}
-              key={option.value}
-              onClick={() => onChange(option.value)}
-              type="button"
-            >
-              <span className="lars-segments__label">{option.label}</span>
-            </BaseButton>
-          )
-        })}
-      </div>
+      <LarsSegmentedControl
+        animateSelection={true}
+        className="lars-property__segmented-control"
+        label={label}
+        onValueChange={(nextValue) => {
+          const nextOption = options.find((option) => option.value === nextValue)
+          if (nextOption) onChange(nextOption.value)
+        }}
+        options={options}
+        value={value}
+      />
     </div>
   )
 }
@@ -842,21 +872,39 @@ function SelectChevron() {
   )
 }
 
-function PropertySelect<T extends string>({
-  label,
-  onChange,
-  options,
-  popupClassName = '',
-  popupSide = 'bottom',
-  value,
-}: {
+type PropertySelectProps<T extends string> = {
   label: string
   onChange: (value: T) => void
   options: ReadonlyArray<{ label: string; value: T }>
   popupClassName?: string
   popupSide?: 'top' | 'bottom'
   value: T
-}) {
+}
+
+function PropertySelect<T extends string>(props: PropertySelectProps<T>) {
+  if (props.options.length === 2) {
+    return (
+      <SegmentedControl
+        className="lars-property--two-choice"
+        label={props.label}
+        onChange={props.onChange}
+        options={props.options}
+        value={props.value}
+      />
+    )
+  }
+
+  return <PropertyDropdown {...props} />
+}
+
+function PropertyDropdown<T extends string>({
+  label,
+  onChange,
+  options,
+  popupClassName = '',
+  popupSide = 'bottom',
+  value,
+}: PropertySelectProps<T>) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -1554,7 +1602,6 @@ export function Example() {
 
             <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
               <SegmentedControl
-                animateIndicator={false}
                 label="Icon Only"
                 onChange={(value) => setIconOnly(value === 'true')}
                 options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
@@ -2411,87 +2458,399 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
   )
 }
 
-function HomePage({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+function TooltipShortcutProperties({
+  onShortcutChange,
+  onShortcutStyleChange,
+  onShowShortcutChange,
+  shortcut,
+  shortcutStyle,
+  showShortcut,
+}: {
+  onShortcutChange: (value: string) => void
+  onShortcutStyleChange: (value: 'plain' | 'keycap') => void
+  onShowShortcutChange: (value: boolean) => void
+  shortcut: string
+  shortcutStyle: 'plain' | 'keycap'
+  showShortcut: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [pointerFocus, setPointerFocus] = useState(false)
+  const reduceMotion = useReducedMotion()
+  const menuRef = usePropertyMenuFill(open)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popupId = useId()
+  const iconTransition = {
+    duration: reduceMotion ? 0 : open ? 0.35 : 0.2,
+    ease: [0.25, 0.1, 0.25, 1] as const,
+  }
+
+  useEffect(() => {
+    if (!open) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      triggerRef.current?.focus()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open])
+
   return (
-    <div className="lars-shell">
+    <div className="lars-tooltip-shortcut-property" data-open={open || undefined} ref={menuRef}>
+      <BaseButton
+        aria-controls={open ? popupId : undefined}
+        aria-expanded={open}
+        className="lars-tooltip-shortcut-property__trigger"
+        data-pointer-focus={pointerFocus || undefined}
+        onBlur={() => setPointerFocus(false)}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') setPointerFocus(false)
+        }}
+        onPointerDown={() => setPointerFocus(true)}
+        ref={triggerRef}
+        type="button"
+      >
+        <span>Shortcut</span>
+      </BaseButton>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            aria-label="Shortcut properties"
+            animate={{ opacity: 1 }}
+            className="lars-tooltip-shortcut-property__popup"
+            exit={{
+              opacity: 0,
+              transition: { duration: reduceMotion ? 0 : 0.2, ease: [0.25, 0.1, 0.25, 1] },
+            }}
+            id={popupId}
+            initial={{ opacity: reduceMotion ? 1 : 0 }}
+            key="tooltip-shortcut-properties"
+            role="group"
+            transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <div className="lars-tooltip-shortcut-property__options">
+              <PropertySelect
+                label="Show shortcut"
+                onChange={(next) => onShowShortcutChange(next === 'on')}
+                options={[{ label: 'Off', value: 'off' }, { label: 'On', value: 'on' }]}
+                value={showShortcut ? 'on' : 'off'}
+              />
+              {showShortcut && (
+                <>
+                  <label className="lars-property lars-property--stacked">
+                    <span>Shortcut</span>
+                    <input value={shortcut} onChange={(event) => onShortcutChange(event.currentTarget.value)} />
+                  </label>
+                  <PropertySelect
+                    label="Shortcut style"
+                    onChange={onShortcutStyleChange}
+                    options={[{ label: 'Plain', value: 'plain' }, { label: 'Keycap', value: 'keycap' }]}
+                    value={shortcutStyle}
+                  />
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <svg
+        aria-hidden="true"
+        className="lars-tooltip-shortcut-property__icon"
+        fill="none"
+        focusable="false"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+      >
+        <motion.path
+          animate={{ d: open ? 'M3.9 3.9L12.1 12.1' : 'M6.2 3.2L11 8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+        <motion.path
+          animate={{ d: open ? 'M12.1 3.9L3.9 12.1' : 'M11 8L6.2 12.8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+      </svg>
+    </div>
+  )
+}
+
+function TooltipConfigurator() {
+  const [anchor, setAnchor] = useState<'triangle' | 'none'>('triangle')
+  const [highContrast, setHighContrast] = useState(false)
+  const [label, setLabel] = useState('Export quality')
+  const [description, setDescription] = useState('Higher quality creates a larger file.')
+  const [content, setContent] = useState<'description' | 'compact'>('description')
+  const [showShortcut, setShowShortcut] = useState(true)
+  const [shortcut, setShortcut] = useState('⌘ E')
+  const [shortcutStyle, setShortcutStyle] = useState<'plain' | 'keycap'>('plain')
+  const [side, setSide] = useState<'top' | 'right' | 'bottom' | 'left'>('top')
+  const code = `import { Tooltip } from 'larsui'
+import 'larsui/style.css'
+
+export function Example() {
+  return (
+    <p>
+      Choose your <Tooltip${anchor === 'triangle' ? ' anchor' : ''}${highContrast ? ' highContrast' : ''} label=${JSON.stringify(label || 'Tooltip label')}${content === 'description'
+        ? ` description=${JSON.stringify(description)}`
+        : showShortcut ? ` shortcut=${JSON.stringify(shortcut)} shortcutStyle="${shortcutStyle}"` : ''}${side !== 'top' ? ` side="${side}"` : ''}>
+        <button className="lars-tooltip-inline" type="button">export settings</button>
+      </Tooltip> before downloading.
+    </p>
+  )
+}`
+
+  return (
+    <>
+      <div className="lars-configurator">
+        <div className="lars-stage lars-component-canvas lars-stage--tooltip">
+          <TooltipExample
+            anchor={anchor === 'triangle'}
+            description={content === 'description' ? description : undefined}
+            highContrast={highContrast}
+            label={label || 'Tooltip label'}
+            shortcut={content === 'compact' && showShortcut ? shortcut : undefined}
+            shortcutStyle={shortcutStyle}
+            side={side}
+          />
+        </div>
+
+        <aside className="lars-properties" aria-labelledby="tooltip-properties-title">
+          <header className="lars-properties__header">
+            <h2 id="tooltip-properties-title">Properties</h2>
+          </header>
+          <div className="lars-properties__fields">
+            <PropertySelect
+              label="Content"
+              onChange={setContent}
+              options={[{ label: 'Descriptive', value: 'description' }, { label: 'Compact', value: 'compact' }]}
+              value={content}
+            />
+            <label className="lars-property lars-property--stacked">
+              <span>Label</span>
+              <input value={label} onChange={(event) => setLabel(event.currentTarget.value)} />
+            </label>
+            {content === 'description' ? (
+              <label className="lars-property lars-property--stacked">
+                <span>Description</span>
+                <input value={description} onChange={(event) => setDescription(event.currentTarget.value)} />
+              </label>
+            ) : (
+              <TooltipShortcutProperties
+                onShortcutChange={setShortcut}
+                onShortcutStyleChange={setShortcutStyle}
+                onShowShortcutChange={setShowShortcut}
+                shortcut={shortcut}
+                shortcutStyle={shortcutStyle}
+                showShortcut={showShortcut}
+              />
+            )}
+            <PropertySelect
+              label="Side"
+              onChange={setSide}
+              options={[
+                { label: 'Top', value: 'top' },
+                { label: 'Right', value: 'right' },
+                { label: 'Bottom', value: 'bottom' },
+                { label: 'Left', value: 'left' },
+              ]}
+              value={side}
+            />
+            <PropertySelect
+              label="Anchor"
+              onChange={setAnchor}
+              options={[{ label: 'True', value: 'triangle' }, { label: 'False', value: 'none' }]}
+              value={anchor}
+            />
+            <PropertySelect
+              label="High Contrast"
+              onChange={(next) => setHighContrast(next === 'on')}
+              options={[{ label: 'Off', value: 'off' }, { label: 'On', value: 'on' }]}
+              value={highContrast ? 'on' : 'off'}
+            />
+          </div>
+        </aside>
+      </div>
+      <div className="lars-code-with-footnote">
+        <CodeBlock code={code} fileName="Tooltip.tsx" label="Configured tooltip usage code" />
+        <aside className="lars-footnotes" aria-label="Notes">
+          <p id="tooltip-footnote-1" tabIndex={-1}>
+            <sup>1</sup>
+            <span>
+              The keypad styling for tooltip shortcuts was inspired by{' '}
+              <a href="https://x.com/eyexayuh/status/2103948734094520340" target="_blank" rel="noreferrer">
+                this post by Isaiah (@eyexayuh)
+              </a>.
+            </span>
+          </p>
+        </aside>
+      </div>
+    </>
+  )
+}
+
+const HOME_COMPONENTS = [
+  { route: 'inline-slider', title: 'Inline Slider', description: 'Adjust values directly in context without interrupting the workflow.', keywords: 'range slider drag values input', Stage: SliderStage },
+  { route: 'buttons', title: 'Buttons', description: 'A foundational element for interacting with any interface.', keywords: 'button click action', Stage: ButtonStage },
+  { route: 'chip', title: 'Chip', description: 'A compact label for statuses, categories, and concise metadata.', keywords: 'chips tag status badge', Stage: ChipStage },
+  { route: 'segmented-control', title: 'Segmented Control', description: 'Choose one view from a compact set of related options.', keywords: 'segments tabs toggle options', Stage: SegmentedControlStage },
+  { route: 'tooltip', title: 'Tooltip', description: 'A quiet hint that appears from an inline action.', keywords: 'tooltips hover hint shortcut', Stage: TooltipStage },
+  { route: 'table', title: 'Table', description: 'Organise dense information into clear, selectable rows.', keywords: 'data columns filters selection', Stage: TableStage },
+] as const
+
+function HomePage({
+  theme,
+  onToggleTheme,
+  searchFocusRequest,
+}: {
+  theme: Theme
+  onToggleTheme: () => void
+  searchFocusRequest: number
+}) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showSearchFocusRing, setShowSearchFocusRing] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchFocusViaKeyboardRef = useRef(false)
+  const searchShortcut = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? '⌘ K' : 'Ctrl K'
+  const searchTerms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const isSearching = searchTerms.length > 0
+  const visibleComponents = isSearching
+    ? HOME_COMPONENTS.filter(({ title, description, keywords }) => {
+        const searchable = `${title} ${description} ${keywords}`.toLowerCase()
+        return searchTerms.every((term) => searchable.includes(term))
+      })
+    : HOME_COMPONENTS
+
+  useEffect(() => {
+    const trackTabNavigation = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') searchFocusViaKeyboardRef.current = true
+    }
+    window.addEventListener('keydown', trackTabNavigation, true)
+    return () => window.removeEventListener('keydown', trackTabNavigation, true)
+  }, [])
+
+  useEffect(() => {
+    if (searchFocusRequest === 0) return
+    searchFocusViaKeyboardRef.current = true
+    setShowSearchFocusRing(true)
+    searchInputRef.current?.focus()
+    searchInputRef.current?.select()
+  }, [searchFocusRequest])
+
+  return (
+    <div className="lars-shell" data-searching={isSearching || undefined} id="top">
       <header className="lars-header">
-        <a className="lars-logo" href="#top" aria-label="LarsUI home"><LarsMark /></a>
-        <nav className="lars-header__actions" aria-label="Project links">
-          <a className="lars-github" href="https://github.com/samlimby/LarsUI" target="_blank" rel="noreferrer">
-            <GitHubIcon />
-            <span>Github</span>
+        <a className="lars-logo" href="#top" aria-label="LarsUI home">
+          <span aria-hidden="true" className="lars-nav-icon lars-nav-icon--mark" />
+        </a>
+        <nav className="lars-header__actions" aria-label="Primary navigation">
+          <form
+            className="lars-header__search"
+            data-has-query={searchQuery.length > 0 || undefined}
+            data-keyboard-focus={showSearchFocusRing || undefined}
+            onPointerDownCapture={() => {
+              searchFocusViaKeyboardRef.current = false
+              setShowSearchFocusRing(false)
+            }}
+            role="search"
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (isSearching && visibleComponents[0]) window.location.hash = `#/components/${visibleComponents[0].route}`
+            }}
+          >
+            <span aria-hidden="true" className="lars-nav-icon lars-nav-icon--search" />
+            <input
+              aria-keyshortcuts="Meta+K Control+K"
+              aria-label="Search components"
+              onChange={(event) => setSearchQuery(event.currentTarget.value)}
+              onBlur={() => setShowSearchFocusRing(false)}
+              onFocus={() => setShowSearchFocusRing(searchFocusViaKeyboardRef.current)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Escape') return
+                event.preventDefault()
+                if (searchQuery) setSearchQuery('')
+                else event.currentTarget.blur()
+              }}
+              placeholder="Search library"
+              ref={searchInputRef}
+              type="search"
+              value={searchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <button
+                aria-label="Clear search"
+                className="lars-header__clear"
+                onClick={() => {
+                  setSearchQuery('')
+                  searchInputRef.current?.focus()
+                }}
+                type="button"
+              >
+                <svg aria-hidden="true" viewBox="0 0 12 12" width="12" height="12" fill="none">
+                  <path d="M2.75 2.75 9.25 9.25M9.25 2.75 2.75 9.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+            <kbd aria-hidden="true">{searchShortcut}</kbd>
+          </form>
+          <span aria-hidden="true" className="lars-header__divider" />
+          <a className="lars-github" href="https://github.com/samlimby/LarsUI" target="_blank" rel="noreferrer" aria-label="GitHub">
+            <span aria-hidden="true" className="lars-nav-icon lars-nav-icon--github" />
           </a>
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         </nav>
       </header>
 
-      <section className="lars-hero" id="top">
-        <div className="lars-hero__content">
-          <h1>LarsUI is a thoughtfully crafted library of React components, originally built as a personal collection and now open for everyone to use.</h1>
-          <InstallCommand />
-        </div>
-        <div className="lars-divider" />
-      </section>
-
-      <section className="lars-showcase" aria-labelledby="inline-slider-title">
-        <SliderStage />
-
-        <div className="lars-showcase__meta">
-          <div className="lars-showcase__copy">
-            <h2 id="inline-slider-title">Inline Slider</h2>
-            <p>Adjust values directly in context without interrupting the workflow.</p>
+      {isSearching ? (
+        <section className="lars-search-results" aria-labelledby="search-results-title">
+          <div className="lars-search-results__intro">
+            <h1 id="search-results-title">Search results</h1>
+            <p>
+              {visibleComponents.length} {visibleComponents.length === 1 ? 'component' : 'components'} for “{searchQuery.trim()}”
+            </p>
+            <span className="visually-hidden" role="status">
+              {visibleComponents.length} matching {visibleComponents.length === 1 ? 'component' : 'components'}
+            </span>
           </div>
-          <a className="lars-view" href="#/components/inline-slider">View</a>
-        </div>
-      </section>
-
-      <section className="lars-showcase lars-showcase--buttons" aria-labelledby="buttons-title">
-        <ButtonStage />
-
-        <div className="lars-showcase__meta">
-          <div className="lars-showcase__copy">
-            <h2 id="buttons-title">Buttons</h2>
-            <p>A foundational element for interacting with any interface.</p>
+          <div className="lars-divider" />
+          {visibleComponents.length === 0 && (
+            <p className="lars-search-results__empty">No matching components. Try a different name or keyword.</p>
+          )}
+        </section>
+      ) : (
+        <section className="lars-hero">
+          <div className="lars-hero__content">
+            <h1>LarsUI is a thoughtfully crafted library of React components, originally built as a personal collection and now open for everyone to use.</h1>
+            <InstallCommand />
           </div>
-          <a className="lars-view" href="#/components/buttons">View</a>
-        </div>
-      </section>
+          <div className="lars-divider" />
+        </section>
+      )}
 
-      <section className="lars-showcase lars-showcase--chip" aria-labelledby="chip-title">
-        <ChipStage />
-
-        <div className="lars-showcase__meta">
-          <div className="lars-showcase__copy">
-            <h2 id="chip-title">Chip</h2>
-            <p>A compact label for statuses, categories, and concise metadata.</p>
+      {visibleComponents.map(({ route, title, description, Stage }) => (
+        <section
+          className={`lars-showcase${route === 'inline-slider' ? '' : ` lars-showcase--${route}`}`}
+          aria-labelledby={`${route}-title`}
+          key={route}
+        >
+          <Stage />
+          <div className="lars-showcase__meta">
+            <div className="lars-showcase__copy">
+              <h2 id={`${route}-title`}>{title}</h2>
+              <p>{description}</p>
+            </div>
+            <a className="lars-view" href={`#/components/${route}`}>View</a>
           </div>
-          <a className="lars-view" href="#/components/chip">View</a>
-        </div>
-      </section>
-
-      <section className="lars-showcase lars-showcase--segmented-control" aria-labelledby="segmented-control-title">
-        <SegmentedControlStage />
-
-        <div className="lars-showcase__meta">
-          <div className="lars-showcase__copy">
-            <h2 id="segmented-control-title">Segmented Control</h2>
-            <p>Choose one view from a compact set of related options.</p>
-          </div>
-          <a className="lars-view" href="#/components/segmented-control">View</a>
-        </div>
-      </section>
-
-      <section className="lars-showcase lars-showcase--table" aria-labelledby="table-title">
-        <TableStage />
-
-        <div className="lars-showcase__meta">
-          <div className="lars-showcase__copy">
-            <h2 id="table-title">Table</h2>
-            <p>Organise dense information into clear, selectable rows.</p>
-          </div>
-          <a className="lars-view" href="#/components/table">View</a>
-        </div>
-      </section>
+        </section>
+      ))}
 
       <footer className="lars-footer">
         <span>
@@ -2545,6 +2904,10 @@ function ComponentPage({
       description: 'Organise dense information into clear, selectable rows.',
       title: 'Table',
     },
+    tooltip: {
+      description: 'A quiet hint that appears from an inline action.',
+      title: 'Tooltip',
+    },
   }
   const { description, title } = details[component]
   const reduceMotion = useReducedMotion()
@@ -2554,7 +2917,9 @@ function ComponentPage({
       ? 'chip-footnote-1'
       : component === 'table'
         ? 'table-footnote-1'
-        : null
+        : component === 'tooltip'
+          ? 'tooltip-footnote-1'
+          : null
 
   const scrollToFootnote = () => {
     if (!footnoteId) return
@@ -2605,6 +2970,7 @@ function ComponentPage({
         {component === 'chip' && <ChipConfigurator />}
         {component === 'segmented-control' && <SegmentedControlConfigurator />}
         {component === 'table' && <TableConfigurator />}
+        {component === 'tooltip' && <TooltipConfigurator />}
       </section>
     </div>
   )
@@ -2612,12 +2978,25 @@ function ComponentPage({
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const [searchFocusRequest, setSearchFocusRequest] = useState(0)
   const [navigation, setNavigation] = useState<{ direction: NavigationDirection; route: Route }>(() => ({
     direction: 0,
     route: getRouteFromHash(),
   }))
   const reduceMotion = useReducedMotion()
   const { direction, route } = navigation
+
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.altKey || event.shiftKey) return
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return
+      event.preventDefault()
+      setSearchFocusRequest((current) => current + 1)
+      if (getRouteFromHash() !== 'home') window.location.hash = '#top'
+    }
+    window.addEventListener('keydown', focusSearch)
+    return () => window.removeEventListener('keydown', focusSearch)
+  }, [])
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -2690,7 +3069,7 @@ export default function App() {
           variants={routeVariants}
         >
           {route === 'home' ? (
-            <HomePage theme={theme} onToggleTheme={toggleTheme} />
+            <HomePage theme={theme} onToggleTheme={toggleTheme} searchFocusRequest={searchFocusRequest} />
           ) : (
             <ComponentPage component={route} theme={theme} onToggleTheme={toggleTheme} />
           )}

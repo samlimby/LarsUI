@@ -7,7 +7,7 @@
   --segment-divider: var(--segment-border);
   display: inline-flex;
   align-items: center;
-  width: max-content;
+  width: fit-content;
   max-width: 100%;
   min-width: 0;
   margin: 0;
@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
+  box-sizing: border-box;
   height: 32px;
   padding: 8px 16px;
   border-radius: 999px;
@@ -59,7 +59,7 @@
 }
 
 .lars-segmented-control--square .lars-segmented-control__segment {
-  padding-inline: 12px;
+  padding-inline: 16px;
   border-radius: 6px;
 }
 
@@ -88,7 +88,7 @@
 
 .lars-segmented-control--square .lars-segmented-control__indicator {
   border-color: var(--segment-border);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  box-shadow: var(--shadow-low_emphasis, 0 2px 5px rgb(32 32 32 / 24%));
 }
 
 .lars-segmented-control__content {

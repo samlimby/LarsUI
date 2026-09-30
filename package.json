@@ -42,14 +42,13 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run build:lib && npm run build:site",
-    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/strip-declaration-css-imports.mjs",
     "build:site": "tsc -b && vite build",
     "preview": "vite preview --outDir site-dist",
     "prepack": "npm run build:lib"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
-    "@vercel/analytics": "^2.0.1",
     "framer-motion": "^13.4.0",
     "loading-dev": "^0.3.4"
   },
@@ -64,6 +63,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "@vercel/analytics": "^2.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "~6.0.2",

@@ -27,6 +27,8 @@ export type SegmentedControlProps = {
   content?: SegmentedControlContent
   name?: string
   disabled?: boolean
+  /** Disable the selected indicator's layout animation. */
+  animateSelection?: boolean
   className?: string
 }
 
@@ -41,6 +43,7 @@ export function SegmentedControl({
   content = 'text-only',
   name,
   disabled = false,
+  animateSelection = true,
   className = '',
 }: SegmentedControlProps) {
   const id = useId()
@@ -82,7 +85,7 @@ export function SegmentedControl({
                 type="radio"
                 value={option.value}
               />
-              {selected && (prefersReducedMotion ? (
+              {selected && (!animateSelection || prefersReducedMotion ? (
                 <span aria-hidden="true" className="lars-segmented-control__indicator" />
               ) : (
                 <motion.span

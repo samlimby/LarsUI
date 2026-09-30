@@ -1,4 +1,6 @@
 import './components/Focus.css'
+import './components/ColorTokens.css'
+import './components/Shadows.css'
 
 export {
   Button,
@@ -6,7 +8,7 @@ export {
   type ButtonShape,
   type ButtonSpinner,
   type ButtonVariant,
-} from './components/Button'
+} from './components/Button.js'
 
 export {
   Chip,
@@ -15,13 +17,13 @@ export {
   type ChipSize,
   type ChipTypeface,
   type ChipVariant,
-} from './components/Chip'
+} from './components/Chip.js'
 
 export {
   InlineSlider,
   type InlineSliderProps,
   type InlineSliderSize,
-} from './components/InlineSlider'
+} from './components/InlineSlider.js'
 
 export {
   SegmentedControl,
@@ -30,11 +32,19 @@ export {
   type SegmentedControlProps,
   type SegmentedControlSize,
   type SegmentedControlType,
-} from './components/SegmentedControl'
+} from './components/SegmentedControl.js'
 
 export {
   Table,
   type TableColumn,
   type TableProps,
   type TableVariant,
-} from './components/Table'
+} from './components/Table.js'
+
+export { Tooltip, type TooltipProps } from './components/Tooltip.js'
+
+export {
+  AdaptiveTooltip,
+  type AdaptiveTooltipProps,
+  type AdaptiveTooltipStep,
+} from './components/AdaptiveTooltip.js'
