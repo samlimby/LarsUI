@@ -42,6 +42,8 @@ When a custom `icon` is provided without an `iconPosition`, the Chip renders it 
 
 The components can be themed with the CSS custom properties included in the generated stylesheet.
 
+The light square SegmentedControl border uses `--divider-mid_emphasis`, based on `--radix-gray-5` (`#e0e0e0`).
+
 Three shadow tokens are available in `larsui/style.css`:
 
 | Token | Value |

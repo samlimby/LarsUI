@@ -3,7 +3,7 @@
   --segment-selected-bg: var(--lars-container, #fcfcfc);
   --segment-text: var(--lars-text-secondary, #646464);
   --segment-selected-text: var(--lars-text-primary, #202020);
-  --segment-border: var(--lars-divider, #e0e0e0);
+  --segment-border: var(--divider-mid_emphasis, var(--radix-gray-5, #e0e0e0));
   --segment-divider: var(--segment-border);
   display: inline-flex;
   align-items: center;
@@ -88,7 +88,6 @@
 
 .lars-segmented-control--square .lars-segmented-control__indicator {
   border-color: var(--segment-border);
-  box-shadow: var(--shadow-low_emphasis, 0 2px 5px rgb(32 32 32 / 24%));
 }
 
 .lars-segmented-control__content {
