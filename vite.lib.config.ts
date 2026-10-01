@@ -11,13 +11,7 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: [
-        'react',
-        'react/jsx-runtime',
-        '@base-ui/react/button',
-        '@base-ui/react/slider',
-        'framer-motion',
-      ],
+      external: (id) => /^(react|react-dom|@base-ui\/react|framer-motion|loading-dev)(\/|$)/.test(id),
     },
   },
 })

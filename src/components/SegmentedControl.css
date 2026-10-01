@@ -3,11 +3,11 @@
   --segment-selected-bg: var(--lars-container, #fcfcfc);
   --segment-text: var(--lars-text-secondary, #646464);
   --segment-selected-text: var(--lars-text-primary, #202020);
-  --segment-border: var(--lars-divider, #e0e0e0);
+  --segment-border: var(--divider-mid_emphasis, var(--radix-gray-5, #e0e0e0));
   --segment-divider: var(--segment-border);
   display: inline-flex;
   align-items: center;
-  width: max-content;
+  width: fit-content;
   max-width: 100%;
   min-width: 0;
   margin: 0;
@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
+  box-sizing: border-box;
   height: 32px;
   padding: 8px 16px;
   border-radius: 999px;
@@ -59,7 +59,7 @@
 }
 
 .lars-segmented-control--square .lars-segmented-control__segment {
-  padding-inline: 12px;
+  padding-inline: 16px;
   border-radius: 6px;
 }
 
@@ -88,7 +88,6 @@
 
 .lars-segmented-control--square .lars-segmented-control__indicator {
   border-color: var(--segment-border);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
 }
 
 .lars-segmented-control__content {
@@ -131,7 +130,7 @@
 
 .lars-segmented-control--square .lars-segmented-control__segment:not(:last-child) > .lars-segmented-control__divider { opacity: 1; }
 .lars-segmented-control--square.lars-segmented-control--large .lars-segmented-control__divider { height: 20px; }
-.lars-segmented-control__segment:has(input:focus-visible) { outline: 2px solid var(--segment-selected-text); outline-offset: 2px; }
+.lars-segmented-control__segment:has(input:focus-visible) { outline: 2px solid var(--lars-focus-ring, #8da4ef); outline-offset: 2px; }
 
 .lars-page[data-theme='dark'] .lars-segmented-control {
   --segment-bg: #313131; /* Radix Gray Dark 5 */

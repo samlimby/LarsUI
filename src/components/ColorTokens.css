@@ -1,0 +1,9 @@
+:root {
+  --divider-mid_emphasis: var(--radix-gray-5, #e0e0e0);
+  --color-high_emphasis: var(--radix-gray-12, #202020);
+  --color-mid_emphasis: var(--radix-gray-11, #646464);
+  --color-low_emphasis: var(--radix-gray-10, #838383);
+  --high_contrast-high_emphasis: var(--radix-gray-1, #fcfcfc);
+  --high_contrast-mid_emphasis: var(--radix-gray-dark-11, #b4b4b4);
+  --high_contrast-low_emphasis: var(--radix-gray-10, #838383);
+}
