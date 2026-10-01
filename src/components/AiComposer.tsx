@@ -1,8 +1,13 @@
 import { Menu } from '@base-ui/react/menu'
+import { IconArrowRedoDown } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconArrowRedoDown'
+import { IconCheckCircle2 } from '@central-icons-react/round-filled-radius-2-stroke-1.5/IconCheckCircle2'
+import { IconCrossMedium } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconCrossMedium'
+import { IconMicrophone } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconMicrophone'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ComponentProps, KeyboardEvent, ReactNode } from 'react'
 import { Button } from './Button'
+import { AiComposerWaveform } from './AiComposerWaveform'
 import { SegmentedControl } from './SegmentedControl'
 import './AiComposer.css'
 
@@ -43,6 +48,8 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
   onModelChange?: (model: string) => void
   onModeChange?: (mode: AiComposerMode) => void
   onValueChange?: (value: string) => void
+  /** Called with the recognized words when the user accepts a dictation. */
+  onDictationComplete?: (transcript: string) => void
   onSubmit?: (submission: AiComposerSubmission) => void
   onAction?: (action: AiComposerAction) => void
   placeholder?: string
@@ -54,6 +61,55 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
 }
 
 type AttachedFile = { id: number; file: File }
+type DictationState = 'idle' | 'starting' | 'active' | 'ready' | 'accepting'
+type DictationFeedback = { message: string; tone: 'error' | 'info' }
+type SpeechResult = { isFinal: boolean; [index: number]: { transcript: string } }
+type SpeechResultEvent = { results: ArrayLike<SpeechResult> }
+type SpeechErrorEvent = { error: string }
+type SpeechRecognitionInstance = {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onstart: (() => void) | null
+  onresult: ((event: SpeechResultEvent) => void) | null
+  onerror: ((event: SpeechErrorEvent) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+  abort: () => void
+}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance
+
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | undefined {
+  const browser = window as Window & {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition
+}
+
+function appendSpokenText(message: string, transcript: string) {
+  const spoken = transcript.trim()
+  if (!spoken) return message
+  return `${message}${message && !/\s$/.test(message) ? ' ' : ''}${spoken}`
+}
+
+function getDictationFeedback(error: string): DictationFeedback {
+  if (error === 'not-allowed' || error === 'service-not-allowed') return { message: 'Microphone access was denied or voice dictation is unavailable here.', tone: 'error' }
+  if (error === 'audio-capture') return { message: 'No microphone was found. Check your audio input and try again.', tone: 'error' }
+  if (error === 'no-speech') return { message: 'No speech was detected. Try again.', tone: 'error' }
+  if (error === 'language-not-supported') return { message: 'Speech recognition is not available for your browser language.', tone: 'error' }
+  if (error === 'network') return { message: 'Voice dictation could not connect in this browser. Use your system dictation shortcut in the message field, or open this page in Chrome.', tone: 'info' }
+  return { message: 'Voice dictation stopped unexpectedly. Try again.', tone: 'error' }
+}
+
+function abortRecognition(recognition: SpeechRecognitionInstance) {
+  recognition.onstart = null
+  recognition.onresult = null
+  recognition.onerror = null
+  recognition.onend = null
+  try { recognition.abort() } catch { /* The session may already have ended. */ }
+}
 
 const attachmentEase = [0.25, 1, 0.5, 1] as const
 const placeholderMessages = [
@@ -163,6 +219,7 @@ export function AiComposer({
   mode,
   modelOptions = defaultModelOptions,
   onAction,
+  onDictationComplete,
   onModelChange,
   onModeChange,
   onSubmit,
@@ -182,6 +239,17 @@ export function AiComposer({
   const fileInput = useRef<HTMLInputElement>(null)
   const messageInput = useRef<HTMLTextAreaElement>(null)
   const nextAttachmentId = useRef(0)
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const stopTimeoutRef = useRef<number | null>(null)
+  const processedSpeechResults = useRef(new Set<number>())
+  const dictationTranscriptRef = useRef('')
+  const dictationInterimRef = useRef('')
+  const acceptingDictationRef = useRef(false)
+  const dictationViewRef = useRef<HTMLDivElement>(null)
+  const messageRef = useRef(value ?? defaultValue)
+  const onValueChangeRef = useRef(onValueChange)
+  const onDictationCompleteRef = useRef(onDictationComplete)
+  const isControlledRef = useRef(value !== undefined)
   const reducedMotion = useReducedMotion() ?? false
   const [draft, setDraft] = useState(defaultValue)
   const [draftModel, setDraftModel] = useState(defaultModel ?? modelOptions[0]?.value ?? '')
@@ -194,8 +262,13 @@ export function AiComposer({
   const [files, setFiles] = useState<AttachedFile[]>([])
   const [attachmentExiting, setAttachmentExiting] = useState(false)
   const [keyboardFocus, setKeyboardFocus] = useState(false)
+  const [dictationState, setDictationState] = useState<DictationState>('idle')
+  const [dictationFeedback, setDictationFeedback] = useState<DictationFeedback | null>(null)
   const isSmall = size === 'small'
   const message = value ?? draft
+  onValueChangeRef.current = onValueChange
+  onDictationCompleteRef.current = onDictationComplete
+  isControlledRef.current = value !== undefined
   const hasRotatingPlaceholder = rotatePlaceholder && placeholder === undefined
   const showRotatingPlaceholder = hasRotatingPlaceholder && message.length === 0
   const selectedModel = modelOptions.find((option) => option.value === (model ?? draftModel)) ?? modelOptions[0]
@@ -233,8 +306,8 @@ export function AiComposer({
   }, [])
 
   useEffect(() => {
-    if (!hasModelDropdown) setModelMenuOpen(false)
-  }, [hasModelDropdown])
+    if (!hasModelDropdown || isSmall) setModelMenuOpen(false)
+  }, [hasModelDropdown, isSmall])
 
   useEffect(() => {
     if (!showRotatingPlaceholder) return
@@ -244,13 +317,200 @@ export function AiComposer({
     return () => window.clearInterval(interval)
   }, [showRotatingPlaceholder])
 
+  useEffect(() => () => {
+    if (stopTimeoutRef.current !== null) window.clearTimeout(stopTimeoutRef.current)
+    if (recognitionRef.current) abortRecognition(recognitionRef.current)
+    recognitionRef.current = null
+  }, [])
+
+  useEffect(() => {
+    if (value !== undefined) messageRef.current = value
+  }, [value])
+
+  useEffect(() => {
+    if (dictationState !== 'starting') return
+    const frame = window.requestAnimationFrame(() => {
+      dictationViewRef.current?.querySelector<HTMLButtonElement>('[data-dictation-accept]')?.focus({ preventScroll: true })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [dictationState])
+
   const setMessage = (next: string) => {
+    messageRef.current = next
+    setDictationFeedback(null)
     if (value === undefined) setDraft(next)
     onValueChange?.(next)
   }
 
+  const clearStopTimeout = () => {
+    if (stopTimeoutRef.current !== null) window.clearTimeout(stopTimeoutRef.current)
+    stopTimeoutRef.current = null
+  }
+
+  const focusMessage = () => {
+    window.requestAnimationFrame(() => messageInput.current?.focus({ preventScroll: true }))
+  }
+
+  const capturedTranscript = () => appendSpokenText(dictationTranscriptRef.current, dictationInterimRef.current).trim()
+
+  const commitDictation = () => {
+    const transcript = capturedTranscript()
+    acceptingDictationRef.current = false
+    dictationTranscriptRef.current = ''
+    dictationInterimRef.current = ''
+    if (transcript) {
+      const next = appendSpokenText(messageRef.current, transcript)
+      messageRef.current = next
+      if (!isControlledRef.current) setDraft(next)
+      onValueChangeRef.current?.(next)
+      onDictationCompleteRef.current?.(transcript)
+    }
+    setDictationFeedback(transcript ? null : getDictationFeedback('no-speech'))
+    setDictationState('idle')
+    focusMessage()
+  }
+
+  const cancelDictation = () => {
+    clearStopTimeout()
+    acceptingDictationRef.current = false
+    dictationTranscriptRef.current = ''
+    dictationInterimRef.current = ''
+    if (recognitionRef.current) abortRecognition(recognitionRef.current)
+    recognitionRef.current = null
+    setDictationFeedback(null)
+    setDictationState('idle')
+    focusMessage()
+  }
+
+  const acceptDictation = () => {
+    if (dictationState === 'accepting') return
+    const recognition = recognitionRef.current
+    if (!recognition) {
+      commitDictation()
+      return
+    }
+    acceptingDictationRef.current = true
+    setDictationState('accepting')
+    stopTimeoutRef.current = window.setTimeout(() => {
+      if (recognitionRef.current === recognition) {
+        abortRecognition(recognition)
+        recognitionRef.current = null
+        commitDictation()
+      }
+      stopTimeoutRef.current = null
+    }, 3_000)
+    try {
+      recognition.stop()
+    } catch {
+      clearStopTimeout()
+      abortRecognition(recognition)
+      recognitionRef.current = null
+      commitDictation()
+    }
+  }
+
+  const startDictation = () => {
+    if (dictationState !== 'idle') return
+    const Recognition = getSpeechRecognitionConstructor()
+    if (!Recognition) {
+      setDictationFeedback({ message: 'Voice dictation is not available in this browser. Use your system dictation shortcut in the message field.', tone: 'info' })
+      messageInput.current?.focus({ preventScroll: true })
+      return
+    }
+
+    let recognition: SpeechRecognitionInstance
+    try {
+      recognition = new Recognition()
+    } catch {
+      setDictationFeedback({ message: 'Voice dictation could not start. Try again.', tone: 'error' })
+      return
+    }
+
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = navigator.language || 'en-US'
+    processedSpeechResults.current.clear()
+    dictationTranscriptRef.current = ''
+    dictationInterimRef.current = ''
+    acceptingDictationRef.current = false
+    recognition.onstart = () => {
+      if (recognitionRef.current === recognition) {
+        setDictationState((current) => current === 'starting' ? 'active' : current)
+      }
+    }
+    recognition.onresult = (event) => {
+      if (recognitionRef.current !== recognition) return
+      const finalSegments: string[] = []
+      const interimSegments: string[] = []
+      for (let index = 0; index < event.results.length; index++) {
+        const result = event.results[index]
+        if (!result) continue
+        const spoken = result[0]?.transcript ?? ''
+        if (result.isFinal) {
+          if (processedSpeechResults.current.has(index)) continue
+          processedSpeechResults.current.add(index)
+          finalSegments.push(spoken)
+        } else {
+          interimSegments.push(spoken)
+        }
+      }
+      if (finalSegments.length) dictationTranscriptRef.current = appendSpokenText(dictationTranscriptRef.current, finalSegments.join(' '))
+      dictationInterimRef.current = interimSegments.join(' ').trim()
+    }
+    recognition.onerror = (event) => {
+      if (recognitionRef.current !== recognition) return
+      clearStopTimeout()
+      recognitionRef.current = null
+      abortRecognition(recognition)
+      if (acceptingDictationRef.current && capturedTranscript()) {
+        commitDictation()
+        return
+      }
+      acceptingDictationRef.current = false
+      setDictationFeedback(getDictationFeedback(event.error))
+      if (capturedTranscript()) {
+        setDictationState('ready')
+      } else {
+        setDictationState('idle')
+        focusMessage()
+      }
+    }
+    recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return
+      clearStopTimeout()
+      recognitionRef.current = null
+      if (acceptingDictationRef.current) {
+        commitDictation()
+      } else if (capturedTranscript()) {
+        setDictationState('ready')
+      } else {
+        setDictationState('idle')
+        setDictationFeedback(getDictationFeedback('no-speech'))
+        focusMessage()
+      }
+    }
+
+    recognitionRef.current = recognition
+    setDictationFeedback(null)
+    setDictationState('starting')
+    try {
+      recognition.start()
+    } catch {
+      recognitionRef.current = null
+      abortRecognition(recognition)
+      setDictationState('idle')
+      setDictationFeedback({ message: 'Voice dictation could not start. Check microphone access and try again.', tone: 'error' })
+    }
+  }
+
   const submit = () => {
-    if (!canSubmit) return
+    if (dictationState !== 'idle' || !canSubmit) return
+    if (recognitionRef.current) {
+      clearStopTimeout()
+      abortRecognition(recognitionRef.current)
+      recognitionRef.current = null
+      setDictationState('idle')
+    }
     setHasSubmitted(true)
     onSubmit?.({
       files: files.map(({ file }) => file),
@@ -326,19 +586,6 @@ export function AiComposer({
     </>
   )
 
-  const attachmentMenu = (
-    <Menu.Root modal={false}>
-      <Menu.Trigger render={<Button aria-label="Attach files" className={`lars-ai-composer__icon-button${isSmall ? '' : ' lars-ai-composer__attachment-trigger'}`} iconOnly shape="neat" title="Attach files" type="button" variant={isSmall ? 'secondary' : 'tertiary'}><Icon name={isSmall ? 'plus' : 'attach'} /></Button>} />
-      <Menu.Portal>
-        <Menu.Positioner align="start" className="lars-ai-composer__attach-positioner" side="top" sideOffset={8}>
-          <Menu.Popup aria-label="Attachment options" className="lars-ai-composer__attach-menu">
-            {attachmentOptions()}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
-  )
-
   const selectModel = (nextModel: string) => {
     const nextValue = String(nextModel)
     if (model === undefined) setDraftModel(nextValue)
@@ -383,6 +630,36 @@ export function AiComposer({
     </Menu.SubmenuRoot>
   )
 
+  const attachmentMenu = (
+    <Menu.Root modal={false}>
+      <Menu.Trigger render={<Button aria-label={isSmall ? 'More options' : 'Attach files'} className={`lars-ai-composer__icon-button${isSmall ? '' : ' lars-ai-composer__attachment-trigger'}`} iconOnly shape="neat" title={isSmall ? 'More options' : 'Attach files'} type="button" variant={isSmall ? 'secondary' : 'tertiary'}><Icon name={isSmall ? 'plus' : 'attach'} /></Button>} />
+      <Menu.Portal>
+        <Menu.Positioner align="start" className="lars-ai-composer__attach-positioner" side="top" sideOffset={8}>
+          <Menu.Popup aria-label={isSmall ? 'More options' : 'Attachment options'} className="lars-ai-composer__attach-menu">
+            {attachmentOptions()}
+            {isSmall && modelSubmenu}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  )
+
+  const isDictating = dictationState !== 'idle'
+  const dictationButton = (
+    <Button
+      aria-label="Start voice dictation"
+      className="lars-ai-composer__icon-button lars-ai-composer__dictation"
+      iconOnly
+      onClick={startDictation}
+      shape="neat"
+      title="Start voice dictation"
+      type="button"
+      variant="tertiary"
+    >
+      <IconMicrophone size={16} />
+    </Button>
+  )
+
   const compactMoreMenu = (
     <Menu.Root modal={false}>
       <Menu.Trigger render={<Button aria-label="More options" className="lars-ai-composer__icon-button lars-ai-composer__more-menu-trigger" iconOnly onClick={() => onAction?.('more')} shape="neat" title="More options" type="button" variant="tertiary"><Icon name="more" /></Button>} />
@@ -390,6 +667,10 @@ export function AiComposer({
         <Menu.Positioner align="start" className="lars-ai-composer__attach-positioner" collisionAvoidance={{ side: 'flip', align: 'shift' }} side="top" sideOffset={8}>
           <Menu.Popup aria-label="More options" className="lars-ai-composer__attach-menu">
             {attachmentOptions()}
+            <Menu.Item className="lars-ai-composer__attach-item lars-ai-composer__dictation-menu-item" onClick={startDictation}>
+              <IconMicrophone aria-hidden="true" size={16} />
+              <span>Voice dictation</span>
+            </Menu.Item>
             {modelSubmenu}
           </Menu.Popup>
         </Menu.Positioner>
@@ -433,10 +714,156 @@ export function AiComposer({
     />
   )
 
+  const attachments = (
+    <AnimatePresence initial={false} onExitComplete={() => setAttachmentExiting(false)}>
+      {hasAttachments && (
+        <motion.div
+          animate={{ height: 'auto', opacity: 1 }}
+          className="lars-ai-composer__attachments-reveal"
+          exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          key="attachments"
+          layout={reducedMotion ? false : 'size'}
+          transition={reducedMotion
+            ? { duration: 0.12 }
+            : { height: { duration: 0.26, ease: attachmentEase }, layout: { duration: 0.26, ease: attachmentEase }, opacity: { duration: 0.18, ease: attachmentEase } }}
+        >
+          <div aria-label="Attached files" className="lars-ai-composer__attachments">
+            <AnimatePresence initial={false}>
+              {files.map(({ id, file }) => (
+                <AttachmentCard file={file} key={id} onRemove={() => removeAttachment(id)} reducedMotion={reducedMotion} />
+              ))}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+
+  const dictationStatus = dictationState === 'starting'
+    ? 'Connecting microphone'
+    : dictationState === 'accepting'
+      ? 'Finishing dictation'
+      : dictationState === 'ready'
+        ? dictationFeedback ? 'Dictation paused — use captured text' : 'Dictation ready'
+        : 'Listening for speech'
+
+  const dictationView = (
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="lars-ai-composer__dictation-view"
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      key="dictation"
+      ref={dictationViewRef}
+      transition={{ duration: reducedMotion ? 0.12 : 0.2, ease: attachmentEase }}
+    >
+      <div className="lars-ai-composer__dictation-row">
+        <Button
+          aria-label="Cancel voice dictation"
+          className="lars-ai-composer__icon-button lars-ai-composer__voice-control"
+          data-dictation-cancel
+          iconOnly
+          onClick={cancelDictation}
+          shape="neat"
+          title="Cancel voice dictation"
+          type="button"
+          variant="tertiary"
+        >
+          <IconCrossMedium size={16} />
+        </Button>
+        <div className="lars-ai-composer__waveform-wrap">
+          <AiComposerWaveform active={dictationState === 'active'} reducedMotion={reducedMotion} />
+          {(dictationState !== 'active' || reducedMotion) && <span className="lars-ai-composer__waveform-status" title={dictationFeedback?.message}>{dictationStatus}</span>}
+        </div>
+        <motion.div layoutId={reducedMotion ? undefined : `${messageId}-dictation-action`} transition={modeMotion}>
+          <Button
+            aria-busy={dictationState === 'accepting'}
+            aria-disabled={dictationState === 'accepting'}
+            aria-label="Use dictated text"
+            className="lars-ai-composer__icon-button lars-ai-composer__voice-control"
+            data-dictation-accept
+            iconOnly
+            onClick={acceptDictation}
+            shape="neat"
+            title="Use dictated text"
+            type="button"
+            variant="secondary"
+          >
+            <IconCheckCircle2 size={16} />
+          </Button>
+        </motion.div>
+      </div>
+    </motion.div>
+  )
+
+  const normalSmallControls = (
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="lars-ai-composer__small-actions"
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      key="controls"
+      transition={{ duration: reducedMotion ? 0.12 : 0.2, ease: attachmentEase }}
+    >
+      {compactMoreMenu}
+      <motion.div layoutId={reducedMotion ? undefined : `${messageId}-dictation-action`} transition={modeMotion}>{dictationButton}</motion.div>
+    </motion.div>
+  )
+
+  const normalToolbarControls = (
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="lars-ai-composer__toolbar-content"
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      key="controls"
+      transition={{ duration: reducedMotion ? 0.12 : 0.2, ease: attachmentEase }}
+    >
+      <motion.div className="lars-ai-composer__actions" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
+        <AnimatePresence initial={false} mode="popLayout">
+          {hasModelSelector && (
+            <motion.div
+              animate={{ opacity: 1, x: 0 }}
+              className="lars-ai-composer__mode-motion"
+              exit={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
+              initial={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
+              key="mode"
+              layout={reducedMotion ? false : 'position'}
+              transition={modeMotion}
+            >
+              {modeSelector}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+      <motion.div className="lars-ai-composer__actions lars-ai-composer__actions--end" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
+        <Button aria-label="More options" className="lars-ai-composer__icon-button lars-ai-composer__more-standalone" iconOnly onClick={() => onAction?.('more')} shape="neat" title="More options" type="button" variant="tertiary"><Icon name="more" /></Button>
+        {compactMoreMenu}
+        <motion.div className="lars-ai-composer__attachment-motion" layout={reducedMotion ? false : 'position'} transition={modeMotion}>{attachmentMenu}</motion.div>
+        <motion.div className="lars-ai-composer__dictation-motion" layout={reducedMotion ? false : 'position'} layoutId={reducedMotion ? undefined : `${messageId}-dictation-action`} transition={modeMotion}>{dictationButton}</motion.div>
+        <motion.div className="lars-ai-composer__model-motion" layout={reducedMotion ? false : 'position'} transition={modeMotion}>{modelMenu}</motion.div>
+      </motion.div>
+    </motion.div>
+  )
+
+  const sendButton = (
+    <motion.div className="lars-ai-composer__send-motion" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
+      <Button aria-label="Send message" className="lars-ai-composer__send" disabled={isDictating || !canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send-up" /></Button>
+    </motion.div>
+  )
+
   const composer = (
     <form
       {...formProps}
-      className={`lars-ai-composer lars-ai-composer--${variant} lars-ai-composer--${size}${keyboardFocus ? ' lars-ai-composer--keyboard-focus' : ''}${hasModelSelector ? ' lars-ai-composer--with-model-selector' : ''}${showAttachmentChrome ? ' lars-ai-composer--has-attachments' : ''}${attachmentExiting ? ' lars-ai-composer--attachment-exiting' : ''}${className ? ` ${className}` : ''}`}
+      className={`lars-ai-composer lars-ai-composer--${variant} lars-ai-composer--${size}${isDictating ? ' lars-ai-composer--dictating' : ''}${keyboardFocus ? ' lars-ai-composer--keyboard-focus' : ''}${hasModelSelector ? ' lars-ai-composer--with-model-selector' : ''}${showAttachmentChrome ? ' lars-ai-composer--has-attachments' : ''}${attachmentExiting ? ' lars-ai-composer--attachment-exiting' : ''}${className ? ` ${className}` : ''}`}
+      onKeyDown={(event) => {
+        if (isDictating && event.key === 'Escape') {
+          event.preventDefault()
+          cancelDictation()
+        }
+        formProps.onKeyDown?.(event)
+      }}
       onSubmit={(event) => { event.preventDefault(); submit() }}
     >
       <input
@@ -456,96 +883,29 @@ export function AiComposer({
         ref={fileInput}
         type="file"
       />
-      <AnimatePresence initial={false} onExitComplete={() => setAttachmentExiting(false)}>
-        {hasAttachments && (
-          <motion.div
-            animate={{ height: 'auto', opacity: 1 }}
-            className="lars-ai-composer__attachments-reveal"
-            exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            key="attachments"
-            layout={reducedMotion ? false : 'size'}
-            transition={reducedMotion
-              ? { duration: 0.12 }
-              : { height: { duration: 0.26, ease: attachmentEase }, layout: { duration: 0.26, ease: attachmentEase }, opacity: { duration: 0.18, ease: attachmentEase } }}
-          >
-            <div aria-label="Attached files" className="lars-ai-composer__attachments">
-              <AnimatePresence initial={false}>
-                {files.map(({ id, file }) => (
-                  <AttachmentCard file={file} key={id} onRemove={() => removeAttachment(id)} reducedMotion={reducedMotion} />
-                ))}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {variant === 'structured' && attachments}
       <div className="lars-ai-composer__surface">
         <div className="lars-ai-composer__body">
           <label className="lars-ai-composer__sr-only" htmlFor={messageId}>Message</label>
+          <span className="lars-ai-composer__sr-only" role="status">{isDictating ? dictationFeedback?.message ?? dictationStatus : ''}</span>
+          {variant === 'unstructured' && attachments}
           {isSmall ? (
-            <div className="lars-ai-composer__small-row">
-              {attachmentMenu}
-              {input}
-              {compactMoreMenu}
-              {modelMenu}
-              <Button aria-label="Send message" className="lars-ai-composer__send" disabled={!canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send-up" /></Button>
-            </div>
+            <>
+              <div className="lars-ai-composer__small-row">
+                {!isDictating && <div className="lars-ai-composer__small-attachment">{attachmentMenu}</div>}
+                {input}
+                <AnimatePresence initial={false} mode="popLayout">{isDictating ? dictationView : normalSmallControls}</AnimatePresence>
+                {sendButton}
+              </div>
+              {!isDictating && dictationFeedback && <p className={`lars-ai-composer__dictation-error${dictationFeedback.tone === 'info' ? ' lars-ai-composer__dictation-error--info' : ''}`} role={dictationFeedback.tone === 'info' ? 'status' : 'alert'}>{dictationFeedback.message}</p>}
+            </>
           ) : (
             <>
               {input}
+              {!isDictating && dictationFeedback && <p className={`lars-ai-composer__dictation-error${dictationFeedback.tone === 'info' ? ' lars-ai-composer__dictation-error--info' : ''}`} role={dictationFeedback.tone === 'info' ? 'status' : 'alert'}>{dictationFeedback.message}</p>}
               <motion.div className="lars-ai-composer__toolbar" data-model-selector={hasModelSelector || undefined} layout={!reducedMotion} transition={modeMotion}>
-                <motion.div className="lars-ai-composer__actions" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
-                  <AnimatePresence initial={false} mode="popLayout">
-                    {hasModelSelector ? (
-                      <motion.div
-                        animate={{ opacity: 1, x: 0 }}
-                        className="lars-ai-composer__mode-motion"
-                        exit={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
-                        initial={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
-                        key="mode"
-                        layout={reducedMotion ? false : 'position'}
-                        transition={modeMotion}
-                      >
-                        {modeSelector}
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        animate={{ opacity: 1 }}
-                        className="lars-ai-composer__attachment-motion"
-                        exit={{ opacity: 0 }}
-                        initial={{ opacity: 0 }}
-                        key="attachment-left"
-                        layoutId={reducedMotion ? undefined : `${messageId}-attachment`}
-                        transition={modeMotion}
-                      >
-                        {attachmentMenu}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-                <motion.div className="lars-ai-composer__actions lars-ai-composer__actions--end" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
-                  <Button aria-label="More options" className="lars-ai-composer__icon-button lars-ai-composer__more-standalone" iconOnly onClick={() => onAction?.('more')} shape="neat" title="More options" type="button" variant="tertiary"><Icon name="more" /></Button>
-                  {compactMoreMenu}
-                  <AnimatePresence initial={false} mode="popLayout">
-                    {hasModelSelector && (
-                      <motion.div
-                        animate={{ opacity: 1 }}
-                        className="lars-ai-composer__attachment-motion"
-                        exit={{ opacity: 0 }}
-                        initial={{ opacity: 0 }}
-                        key="attachment-right"
-                        layoutId={reducedMotion ? undefined : `${messageId}-attachment`}
-                        transition={modeMotion}
-                      >
-                        {attachmentMenu}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <motion.div className="lars-ai-composer__model-motion" layout={reducedMotion ? false : 'position'} transition={modeMotion}>{modelMenu}</motion.div>
-                  <motion.div className="lars-ai-composer__send-motion" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
-                    <Button aria-label="Send message" className="lars-ai-composer__send" disabled={!canSubmit} iconOnly shape="neat" type="submit" variant="primary"><Icon name="send-up" /></Button>
-                  </motion.div>
-                </motion.div>
+                <AnimatePresence initial={false} mode="popLayout">{isDictating ? dictationView : normalToolbarControls}</AnimatePresence>
+                {sendButton}
               </motion.div>
             </>
           )}
@@ -558,7 +918,7 @@ export function AiComposer({
 
   return (
     <div className="lars-ai-composer__layout">
-      <section aria-label="Suggested prompts" className="lars-ai-composer__suggestions" hidden={canSubmit || hasSubmitted}>
+      <section aria-label="Suggested prompts" className="lars-ai-composer__suggestions" hidden={isDictating || canSubmit || hasSubmitted}>
         {orderedSuggestions.map((suggestion, index) => (
           <button
             className="lars-ai-composer__suggestion"
@@ -569,8 +929,11 @@ export function AiComposer({
             }}
             type="button"
           >
-            <span className={`lars-ai-composer__suggestion-label t-digit-group${shuffleRound > 0 ? ' is-animating' : ''}`}>
-              <span className="t-digit" key={shuffleRound} style={shuffleRound > 0 ? { animationDelay: `${index * 100}ms` } : undefined}>{suggestion.label}</span>
+            <span className={`lars-ai-composer__suggestion-content t-digit-group${shuffleRound > 0 ? ' is-animating' : ''}`}>
+              <span className="t-digit" key={shuffleRound} style={shuffleRound > 0 ? { animationDelay: `${index * 100}ms` } : undefined}>
+                <span aria-hidden="true" className="lars-ai-composer__suggestion-icon"><IconArrowRedoDown size={20} /></span>
+                <span className="lars-ai-composer__suggestion-label">{suggestion.label}</span>
+              </span>
             </span>
           </button>
         ))}

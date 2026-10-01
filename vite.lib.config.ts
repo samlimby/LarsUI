@@ -11,7 +11,7 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: (id) => /^(react|react-dom|@base-ui\/react|framer-motion|loading-dev)(\/|$)/.test(id),
+      external: (id) => /^(react|react-dom|@base-ui\/react|@central-icons-react|framer-motion|loading-dev)(\/|$)/.test(id),
     },
   },
 })

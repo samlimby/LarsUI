@@ -55,9 +55,3 @@ export {
 } from './components/Table.js'
 
 export { Tooltip, type TooltipProps } from './components/Tooltip.js'
-
-export {
-  AdaptiveTooltip,
-  type AdaptiveTooltipProps,
-  type AdaptiveTooltipStep,
-} from './components/AdaptiveTooltip.js'

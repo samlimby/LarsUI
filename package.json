@@ -49,6 +49,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@central-icons-react/round-filled-radius-2-stroke-1.5": "^1.2.1",
+    "@central-icons-react/round-outlined-radius-2-stroke-1.5": "^1.2.1",
     "framer-motion": "^13.4.0",
     "loading-dev": "^0.3.4",
     "pdfjs-dist": "^6.3.289"
@@ -63,8 +65,8 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
     "@vercel/analytics": "^2.0.1",
+    "@vitejs/plugin-react": "^6.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "~6.0.2",

@@ -8,10 +8,12 @@ Thoughtfully crafted, accessible React UI components built on Base UI.
 npm install larsui
 ```
 
+AI Composer uses Central Icons. Installing LarsUI requires a Central Icons license key in the `CENTRAL_LICENSE_KEY` environment variable. Keep the key in your local environment or deployment secret store, outside the repository.
+
 ## Use
 
 ```tsx
-import { AdaptiveTooltip, AiComposer, Button, Chip, InlineSlider, SegmentedControl, Tooltip } from 'larsui'
+import { AiComposer, Button, Chip, InlineSlider, SegmentedControl, Tooltip } from 'larsui'
 import 'larsui/style.css'
 ```
 
@@ -40,15 +42,11 @@ import 'larsui/style.css'
 <Tooltip anchor label="Export quality" description="Higher quality creates a larger file.">
   <button className="lars-tooltip-inline" type="button">export settings</button>
 </Tooltip>
-<AdaptiveTooltip steps={[
-  { title: 'Provenance', description: 'Where an item came from and how it changed.' },
-  { title: 'Chain of custody', description: 'Who handled the item.' },
-]}>
-  <button type="button">provenance</button>
-</AdaptiveTooltip>
 ```
 
 The AI Composer accepts controlled or default message values and file attachments. Press Enter to submit or Shift + Enter for a new line. Its send and utility controls use LarsUI buttons, and attached file labels use LarsUI chips.
+
+Voice dictation uses the browser's SpeechRecognition service. While listening, the composer shows a live microphone waveform. The check button adds the recognized words, including any words still marked as interim, to the prompt; the close button discards them without changing the existing draft or attachments. The updated prompt is available through `onValueChange`, and the optional `onDictationComplete` prop receives only the accepted transcript. Some embedded browsers expose the API but cannot connect to its speech service; in that case, the composer keeps the message intact and focuses the text field so the user can use their system dictation shortcut or continue typing.
 
 When a custom `icon` is provided without an `iconPosition`, the Chip renders it at the start rather than silently dropping it.
 

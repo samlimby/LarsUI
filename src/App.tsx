@@ -2706,18 +2706,22 @@ const aiComposerSuggestions: readonly AiComposerSuggestion[] = [
 ]
 
 function AiComposerExample({ variant, size = 'default', mode, onModeChange, rotatePlaceholder = true, showModelDropdown = true, showModelSelector = true, showSuggestions = false }: { variant: AiComposerVariant; size?: AiComposerSize; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
+  const [message, setMessage] = useState('')
+
   return (
     <div className="lars-ai-example">
       <AiComposer
         key={variant}
         mode={mode}
         onModeChange={onModeChange}
+        onValueChange={setMessage}
         rotatePlaceholder={rotatePlaceholder}
         size={size}
         showModelDropdown={showModelDropdown}
         showModelSelector={showModelSelector}
         showSuggestions={showSuggestions}
         suggestions={aiComposerSuggestions}
+        value={message}
         variant={variant}
       />
     </div>
