@@ -2,7 +2,7 @@ import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Button, type ButtonShape, type ButtonSpinner, type ButtonVariant } from './components/Button'
+import { Button, type ButtonShape, type ButtonSize, type ButtonSpinner, type ButtonVariant } from './components/Button'
 import './components/Focus.css'
 import './components/ColorTokens.css'
 import './components/Shadows.css'
@@ -56,6 +56,32 @@ const SEGMENT_OPTIONS: readonly SegmentedControlOption[] = SEGMENT_LABELS.map((l
   value: label.toLowerCase(),
   icon: <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.6 14.4 8 8 14.4 1.6 8 8 1.6Z" fill="currentColor" /></svg>,
 }))
+const SEGMENT_ICON_PATHS: Record<string, string> = {
+  overview: 'M2.7 2H5.8a.7.7 0 0 1 .7.7V5.8a.7.7 0 0 1-.7.7H2.7a.7.7 0 0 1-.7-.7V2.7a.7.7 0 0 1 .7-.7ZM10.2 2H13.3a.7.7 0 0 1 .7.7V5.8a.7.7 0 0 1-.7.7H10.2a.7.7 0 0 1-.7-.7V2.7a.7.7 0 0 1 .7-.7ZM2.7 9.5H5.8a.7.7 0 0 1 .7.7V13.3a.7.7 0 0 1-.7.7H2.7a.7.7 0 0 1-.7-.7V10.2a.7.7 0 0 1 .7-.7ZM10.2 9.5H13.3a.7.7 0 0 1 .7.7V13.3a.7.7 0 0 1-.7.7H10.2a.7.7 0 0 1-.7-.7V10.2a.7.7 0 0 1 .7-.7Z',
+  details: 'M5 3H14M5 8H14M5 13H14M2 3H2.1M2 8H2.1M2 13H2.1',
+  activity: 'M1 8H4L6 3L9 13L11 8H15',
+  files: 'M2 3.5H6L7.5 5H14V12.5H2Z',
+  history: 'M14 8a6 6 0 1 1-12 0a6 6 0 1 1 12 0ZM8 4.5V8L10.5 9.5',
+}
+
+function ViewIcon({ value }: { value: string }) {
+  return <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d={SEGMENT_ICON_PATHS[value]} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
+const SEGMENT_ICON_ONLY_OPTIONS: readonly SegmentedControlOption[] = SEGMENT_OPTIONS.map((option) => ({
+  ...option,
+  icon: <ViewIcon value={option.value} />,
+}))
+
+function ArrowIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8H13M8 3L13 8L8 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+
+const BUTTON_ARROW_ICON_CODE = `
+function ArrowIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8H13M8 3L13 8L8 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+`
 const INLINE_SLIDER_VIEW_CODE = `import { useState } from 'react'
 import { InlineSlider } from 'larsui'
 import 'larsui/style.css'
@@ -82,7 +108,7 @@ import 'larsui/style.css'
 
 export function Example() {
   return (
-    <Button variant="primary" shape="full">
+    <Button variant="primary" shape="full" size="medium">
       View
     </Button>
   )
@@ -1139,17 +1165,19 @@ function parseButtonCode(code: string) {
 
   const variant = readStringProp(attributes, 'variant')
   const shape = readStringProp(attributes, 'shape')
+  const size = readStringProp(attributes, 'size')
   const iconOnly = readBooleanProp(attributes, 'iconOnly')
-  const text = body.replace(/<span\b[\s\S]*?<\/span>/g, '').trim()
+  const text = body.replace(/<span\b[\s\S]*?<\/span>/g, '').replace(/<ArrowIcon\s*\/>/g, '').trim()
 
   return {
     disabled: readBooleanProp(attributes, 'disabled'),
-    icon: /<span\b[^>]*aria-hidden=["']true["'][^>]*>\s*→\s*<\/span>/.test(body),
+    icon: /<span\b[^>]*aria-hidden=["']true["'][^>]*>\s*→\s*<\/span>/.test(body) || /<ArrowIcon\s*\/>/.test(body),
     iconOnly,
     label: iconOnly
       ? readStringProp(attributes, 'aria-label')
       : text && !/[<>]/.test(text) ? text : null,
     shape: shape === 'full' || shape === 'neat' ? shape as ButtonShape : null,
+    size: size === null ? 'medium' : size === 'medium' || size === 'large' ? size as ButtonSize : null,
     variant: BUTTON_VARIANTS.includes(variant as ButtonVariant) ? variant as ButtonVariant : null,
   }
 }
@@ -1471,6 +1499,7 @@ function ButtonConfigurator() {
   const [icon, setIcon] = useState<'true' | 'false'>('false')
   const [iconOnly, setIconOnly] = useState(false)
   const [shape, setShape] = useState<ButtonShape>('full')
+  const [size, setSize] = useState<ButtonSize>('medium')
   const [disabled, setDisabled] = useState(false)
   const [loadingMode, setLoadingMode] = useState<ButtonLoadingMode>('idle')
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -1494,13 +1523,14 @@ function ButtonConfigurator() {
   const activeEffect = loadingMode === 'generating' ? generatingEffects[shape] : loadingEffects[shape]
   const statusLabel = loadingMode === 'generating' ? 'Generating' : 'Loading'
   const idleContent = iconOnly
-    ? '<span aria-hidden="true">→</span>'
-    : `${buttonLabel}${icon === 'true' ? '\n      <span aria-hidden="true">→</span>' : ''}`
-  const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}`
+    ? '<ArrowIcon />'
+    : `${buttonLabel}${icon === 'true' ? '\n      <ArrowIcon />' : ''}`
+  const iconCode = iconOnly || icon === 'true' ? BUTTON_ARROW_ICON_CODE : ''
+  const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"\n      size="${size}"${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}`
   const code = loadingMode === 'idle'
     ? `import { Button } from 'larsui'
 import 'larsui/style.css'
-
+${iconCode}
 export function Example() {
   return (
     <Button${buttonProps}
@@ -1512,7 +1542,7 @@ export function Example() {
     : `import { useEffect, useState } from 'react'
 import { Button } from 'larsui'
 import 'larsui/style.css'
-
+${iconCode}
 export function Example() {
   const [loading, setLoading] = useState(false)
 
@@ -1549,12 +1579,13 @@ export function Example() {
               if (loadingMode !== 'idle') setPreviewLoading(true)
             }}
             shape={shape}
+            size={size}
             spinner={activeEffect}
             type="button"
             variant={variant}
           >
-            {iconOnly ? <span aria-hidden="true">→</span> : buttonLabel}
-            {!iconOnly && icon === 'true' && <span aria-hidden="true">→</span>}
+            {iconOnly ? <ArrowIcon /> : buttonLabel}
+            {!iconOnly && icon === 'true' && <ArrowIcon />}
           </Button>
         </div>
 
@@ -1574,6 +1605,13 @@ export function Example() {
                 { label: 'Danger', value: 'danger' },
               ]}
               value={variant}
+            />
+
+            <SegmentedControl
+              label="Size"
+              onChange={setSize}
+              options={[{ label: 'Medium', value: 'medium' }, { label: 'Large', value: 'large' }]}
+              value={size}
             />
 
             <AnimatePresence initial={false} mode="popLayout">
@@ -1600,15 +1638,6 @@ export function Example() {
               )}
             </AnimatePresence>
 
-            <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
-              <SegmentedControl
-                label="Icon Only"
-                onChange={(value) => setIconOnly(value === 'true')}
-                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
-                value={iconOnly ? 'true' : 'false'}
-              />
-            </motion.div>
-
             <ButtonLoadingProperties
               generatingEffect={generatingEffects[shape]}
               loadingEffect={loadingEffects[shape]}
@@ -1621,6 +1650,15 @@ export function Example() {
               }}
               shape={shape}
             />
+
+            <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
+              <SegmentedControl
+                label="Icon Only"
+                onChange={(value) => setIconOnly(value === 'true')}
+                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
+                value={iconOnly ? 'true' : 'false'}
+              />
+            </motion.div>
 
             <AnimatePresence initial={false} mode="popLayout">
               {!iconOnly && (
@@ -1679,6 +1717,7 @@ export function Example() {
             if (!next) return
             if (next.variant) setVariant(next.variant)
             if (next.shape) setShape(next.shape)
+            if (next.size) setSize(next.size)
             if (next.label !== null) setLabel(next.label)
             setIconOnly(next.iconOnly)
             setDisabled(next.disabled)
@@ -1985,18 +2024,25 @@ function SegmentedControlConfigurator() {
   const [quantity, setQuantity] = useState(3)
   const [value, setValue] = useState('details')
   const [disabled, setDisabled] = useState(false)
-  const options = SEGMENT_OPTIONS.slice(0, quantity)
+  const options = (content === 'icon-only' ? SEGMENT_ICON_ONLY_OPTIONS : SEGMENT_OPTIONS).slice(0, quantity)
   const codeOptions = options.map(({ label, value: optionValue }) =>
-    `    { label: '${label}', value: '${optionValue}'${content === 'text-icon' ? ', icon: <DiamondIcon />' : ''} },`
+    `    { label: '${label}', value: '${optionValue}'${content === 'text-icon' ? ', icon: <DiamondIcon />' : content === 'icon-only' ? `, icon: <ViewIcon value="${optionValue}" />` : ''} },`
   ).join('\n')
-  const code = `import { useState } from 'react'
-import { SegmentedControl } from 'larsui'
-import 'larsui/style.css'
-${content === 'text-icon' ? `
+  const iconCode = content === 'icon-only' ? `
+const paths = ${JSON.stringify(Object.fromEntries(options.map((option) => [option.value, SEGMENT_ICON_PATHS[option.value]])), null, 2)}
+
+function ViewIcon({ value }: { value: keyof typeof paths }) {
+  return <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d={paths[value]} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+}
+` : content === 'text-icon' ? `
 function DiamondIcon() {
   return <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.6 14.4 8 8 14.4 1.6 8Z" /></svg>
 }
-` : ''}
+` : ''
+  const code = `import { useState } from 'react'
+import { SegmentedControl } from 'larsui'
+import 'larsui/style.css'
+${iconCode}
 export function Example() {
   const [value, setValue] = useState('${value}')
 
@@ -2051,7 +2097,7 @@ ${codeOptions}
             <PropertySelect
               label="Content"
               onChange={setContent}
-              options={[{ label: 'Text only', value: 'text-only' }, { label: 'Text & icon', value: 'text-icon' }]}
+              options={[{ label: 'Text only', value: 'text-only' }, { label: 'Text & icon', value: 'text-icon' }, { label: 'Icon only', value: 'icon-only' }]}
               value={content}
             />
             <PropertySelect

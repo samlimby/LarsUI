@@ -6,6 +6,7 @@ export {
   Button,
   type ButtonProps,
   type ButtonShape,
+  type ButtonSize,
   type ButtonSpinner,
   type ButtonVariant,
 } from './components/Button.js'
