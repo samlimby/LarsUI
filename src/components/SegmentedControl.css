@@ -24,7 +24,8 @@
 .lars-segmented-control--cornered { border-radius: 999px; }
 .lars-segmented-control--square { gap: 9px; border-radius: 8px; }
 
-.lars-segmented-control__legend {
+.lars-segmented-control__legend,
+.lars-segmented-control__label--hidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -61,6 +62,16 @@
 .lars-segmented-control--square .lars-segmented-control__segment {
   padding-inline: 16px;
   border-radius: 6px;
+}
+
+.lars-segmented-control__segment[data-icon-only='true'] {
+  width: 32px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.lars-segmented-control--large .lars-segmented-control__segment[data-icon-only='true'] {
+  width: 38px;
 }
 
 .lars-segmented-control__segment:has(input:checked) { color: var(--segment-selected-text); }

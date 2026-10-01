@@ -5,6 +5,7 @@ import './Button.css'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'danger'
 export type ButtonShape = 'full' | 'neat'
+export type ButtonSize = 'medium' | 'large'
 export type ButtonSpinner = 'atom' | 'blocks' | 'classic' | 'clock' | 'flip' | 'gather' | 'loading' | 'morph' | 'ring' | 'slide' | 'swirl' | 'trace'
 
 const SPINNERS = {
@@ -32,6 +33,8 @@ export type ButtonProps = Omit<ComponentProps<typeof BaseButton>, 'className'> &
   /** Visible and announced loading label. */
   loadingText?: string
   shape?: ButtonShape
+  /** Medium preserves the original sizing; Large fits its content with 24px / 12px padding. */
+  size?: ButtonSize
   /** A loading-dev effect name or a custom indicator. */
   spinner?: ButtonSpinner | ReactElement
   variant?: ButtonVariant
@@ -48,6 +51,7 @@ export function Button({
   onClick,
   onKeyDown,
   shape = 'full',
+  size = 'medium',
   spinner = 'ring',
   variant = 'primary',
   ...props
@@ -100,7 +104,7 @@ export function Button({
         ref={buttonRef}
         aria-busy={loading || ariaBusy}
         aria-disabled={loading || ariaDisabled}
-        className={`lars-button lars-button--${variant} lars-button--${shape}${iconOnly ? ' lars-button--icon-only' : ''}${loading ? ' lars-button--loading' : ''}${retainSpinner ? ' lars-button--retaining-spinner' : ''}${className ? ` ${className}` : ''}`}
+        className={`lars-button lars-button--${variant} lars-button--${shape} lars-button--${size}${iconOnly ? ' lars-button--icon-only' : ''}${loading ? ' lars-button--loading' : ''}${retainSpinner ? ' lars-button--retaining-spinner' : ''}${className ? ` ${className}` : ''}`}
         onClick={(event) => {
           if (loading) {
             event.preventDefault()
@@ -121,7 +125,7 @@ export function Button({
         <span aria-hidden={loading || undefined} className="lars-button__idle">{children}</span>
         <span aria-hidden={!loading || undefined} className="lars-button__status">
           <span className="lars-button__spinner" aria-hidden="true">
-            {loading || retainSpinner ? Spinner ? <Spinner size={16} /> : spinner : null}
+            {loading || retainSpinner ? Spinner ? <Spinner size={size === 'large' ? 20 : 16} /> : spinner : null}
           </span>
           <span className="lars-button__spinner-static" aria-hidden="true" />
           {!iconOnly && <span>{loadingText}</span>}

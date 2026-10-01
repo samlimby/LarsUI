@@ -5,7 +5,7 @@ import './SegmentedControl.css'
 
 export type SegmentedControlType = 'cornered' | 'square'
 export type SegmentedControlSize = 'default' | 'large'
-export type SegmentedControlContent = 'text-only' | 'text-icon'
+export type SegmentedControlContent = 'text-only' | 'text-icon' | 'icon-only'
 
 export type SegmentedControlOption = {
   value: string
@@ -24,6 +24,7 @@ export type SegmentedControlProps = {
   onValueChange?: (value: string) => void
   type?: SegmentedControlType
   size?: SegmentedControlSize
+  /** Icon-only choices keep their labels accessible; choices without icons show their label. */
   content?: SegmentedControlContent
   name?: string
   disabled?: boolean
@@ -73,7 +74,11 @@ export function SegmentedControl({
         {options.map((option, index) => {
           const selected = selectedValue === option.value
           return (
-            <label className="lars-segmented-control__segment" key={option.value}>
+            <label
+              className="lars-segmented-control__segment"
+              data-icon-only={content === 'icon-only' && Boolean(option.icon) || undefined}
+              key={option.value}
+            >
               <input
                 checked={selected}
                 className="lars-segmented-control__input"
@@ -98,10 +103,10 @@ export function SegmentedControl({
                 />
               ))}
               <span className="lars-segmented-control__content">
-                {content === 'text-icon' && option.icon && (
+                {content !== 'text-only' && option.icon && (
                   <span aria-hidden="true" className="lars-segmented-control__icon">{option.icon}</span>
                 )}
-                <span>{option.label}</span>
+                <span className={content === 'icon-only' && option.icon ? 'lars-segmented-control__label--hidden' : undefined}>{option.label}</span>
               </span>
               {index < options.length - 1 && <span aria-hidden="true" className="lars-segmented-control__divider" />}
             </label>

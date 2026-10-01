@@ -16,7 +16,7 @@ import 'larsui/style.css'
 ```
 
 ```tsx
-<Button variant="primary" shape="full">View</Button>
+<Button variant="primary" shape="full" size="medium">View</Button>
 <Chip variant="positive" iconPosition="start" size="small" burst>Approved</Chip>
 <SegmentedControl
   label="View"
@@ -41,6 +41,10 @@ import 'larsui/style.css'
 When a custom `icon` is provided without an `iconPosition`, the Chip renders it at the start rather than silently dropping it.
 
 The components can be themed with the CSS custom properties included in the generated stylesheet.
+
+Button supports `size="medium"` (the default, preserving the original 32px height) and `size="large"`. Large buttons fit their content with 24px horizontal padding, 12px vertical padding, an 8px gap, and sans semibold text at 14px with an 18px line height and zero letter spacing. Icons are 20px. These dimensions apply to both `full` and `neat` shapes, including icon-only buttons; text-only Large buttons are 42px tall and Large buttons with icons are 44px tall.
+
+SegmentedControl supports `content="icon-only"` alongside `text-only` and `text-icon`. Supply an `icon` and a descriptive `label` for each option: the label stays available to assistive technology while only the icon is visible. Options without icons keep their visible label. Icon-only segments are 32px square at the default size and 38px square at the large size, for both `cornered` and `square` types.
 
 The light square SegmentedControl border uses `--divider-mid_emphasis`, based on `--radix-gray-5` (`#e0e0e0`).
 
