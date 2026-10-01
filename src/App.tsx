@@ -1409,7 +1409,7 @@ function ButtonLoadingProperties({
                 value={mode === 'generating' ? 'true' : 'false'}
               />
               {mode === 'generating' && (
-                <PropertySelect<ButtonLoadingEffect>
+                <PropertyDropdown<ButtonLoadingEffect>
                   label="Generating effect"
                   onChange={onGeneratingEffectChange}
                   options={BUTTON_EFFECT_OPTIONS.generating[shape]}
@@ -2214,8 +2214,8 @@ function TableConfigurator() {
   const [toolbarCounter, setToolbarCounter] = useState(true)
   const [selectable, setSelectable] = useState(true)
   const [variant, setVariant] = useState<TableVariant>('default')
-  const [rowCount, setRowCount] = useState(15)
-  const [codeRowCount, setCodeRowCount] = useState(15)
+  const [rowCount, setRowCount] = useState(4)
+  const [codeRowCount, setCodeRowCount] = useState(4)
   const [columnCount, setColumnCount] = useState(6)
   const [showActions, setShowActions] = useState(true)
   const [selectedRows, setSelectedRows] = useState<string[]>([])
