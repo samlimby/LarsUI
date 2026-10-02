@@ -1,5 +1,8 @@
 .lars-button {
+  --button-icon-size: 16px;
+  --button-gap: 6px;
   position: relative;
+  box-sizing: border-box;
   display: inline-grid;
   align-items: center;
   justify-content: center;
@@ -7,6 +10,7 @@
   padding-block: 8px;
   border: 0;
   color: var(--lars-text-primary, #202020);
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
   font-size: 12px;
   font-weight: 600;
   line-height: 16px;
@@ -19,7 +23,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--button-gap);
   white-space: nowrap;
   transition: opacity 180ms ease-in-out;
 }
@@ -33,8 +37,19 @@
 }
 .lars-button--loading .lars-button__idle { opacity: 0; }
 .lars-button--loading .lars-button__status { grid-area: 1 / 1; position: static; width: max-content; justify-self: center; opacity: 1; }
-.lars-button__spinner { display: inline-flex; width: 16px; height: 16px; align-items: center; justify-content: center; flex: none; }
-.lars-button__spinner-static { display: none; width: 14px; height: 14px; flex: none; border: 2px solid currentColor; border-radius: 50%; }
+.lars-button__idle > svg,
+.lars-button__idle > [aria-hidden='true'],
+.lars-button__idle > [aria-hidden='true'] svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-icon-size);
+  height: var(--button-icon-size);
+  flex: none;
+}
+
+.lars-button__spinner { display: inline-flex; width: var(--button-icon-size); height: var(--button-icon-size); align-items: center; justify-content: center; flex: none; }
+.lars-button__spinner-static { display: none; width: calc(var(--button-icon-size) - 2px); height: calc(var(--button-icon-size) - 2px); flex: none; border: 2px solid currentColor; border-radius: 50%; }
 .lars-button__announcement {
   position: absolute;
   width: 1px;
@@ -81,6 +96,19 @@
   width: 32px;
   min-width: 32px;
   padding-inline: 8px;
+}
+
+.lars-button--large {
+  --button-icon-size: 20px;
+  --button-gap: 8px;
+  width: fit-content;
+  min-width: 0;
+  height: fit-content;
+  padding: 12px 24px;
+  font-size: 14px;
+  line-height: 18px;
+  letter-spacing: 0;
+  text-align: left;
 }
 
 .lars-button--primary {
