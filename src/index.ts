@@ -2,6 +2,8 @@ import './components/Focus.css'
 import './components/ColorTokens.css'
 import './components/Shadows.css'
 
+export { IconProvider, type IconProviderProps } from './components/IconProvider.js'
+
 export {
   Button,
   type ButtonProps,
@@ -10,6 +12,24 @@ export {
   type ButtonSpinner,
   type ButtonVariant,
 } from './components/Button.js'
+
+export {
+  AiComposer,
+  type AiComposerAction,
+  type AiComposerIcons,
+  type AiComposerIconName,
+  type AiComposerInputProps,
+  type AiComposerModelOption,
+  type AiComposerModelProvider,
+  type AiComposerMode,
+  type AiComposerProps,
+  type AiComposerSize,
+  type AiComposerSubmission,
+  type AiComposerTranscribeAudio,
+  type AiComposerTranscriptionOptions,
+  type AiComposerSuggestion,
+  type AiComposerVariant,
+} from './components/AiComposer.js'
 
 export {
   Chip,
@@ -43,9 +63,3 @@ export {
 } from './components/Table.js'
 
 export { Tooltip, type TooltipProps } from './components/Tooltip.js'
-
-export {
-  AdaptiveTooltip,
-  type AdaptiveTooltipProps,
-  type AdaptiveTooltipStep,
-} from './components/AdaptiveTooltip.js'

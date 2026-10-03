@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <mask id="round-outlined-radius-2-stroke-1.5-IconDotGrid1x3VerticalTight" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+    <rect width="24" height="24" fill="#000" />
+    <g fill="none">
+      <rect x="10" y="3" width="4" height="4" rx="2" fill="#fff" />
+      <rect x="10" y="10" width="4" height="4" rx="2" fill="#fff" />
+      <rect x="10" y="17" width="4" height="4" rx="2" fill="#fff" />
+    </g>
+  </mask>
+  <rect width="24" height="24" fill="black" mask="url(#round-outlined-radius-2-stroke-1.5-IconDotGrid1x3VerticalTight)" />
+</svg>

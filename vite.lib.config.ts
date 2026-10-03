@@ -11,7 +11,8 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: (id) => /^(react|react-dom|@base-ui\/react|framer-motion|loading-dev)(\/|$)/.test(id),
+      output: { banner: '"use client";' },
+      external: (id) => /^(react|react-dom|@base-ui\/react|lucide-react|framer-motion|loading-dev)(\/|$)/.test(id),
     },
   },
 })

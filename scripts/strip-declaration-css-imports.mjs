@@ -28,3 +28,6 @@ async function stripCssImports(directory) {
 
 const removed = await stripCssImports(distDirectory)
 console.log(`Removed ${removed} CSS side-effect imports from generated declarations.`)
+
+// Allow strict TypeScript consumers to import the public stylesheet without Vite globals.
+await writeFile(join(distDirectory, 'style.css.d.ts'), 'export {}\n')

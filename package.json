@@ -24,7 +24,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    }
   },
   "sideEffects": [
     "**/*.css"
@@ -45,28 +48,44 @@
     "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/strip-declaration-css-imports.mjs",
     "build:site": "tsc -b && vite build",
     "preview": "vite preview --outDir site-dist",
-    "prepack": "npm run build:lib"
+    "prepack": "npm run build:lib",
+    "test": "npm run build:lib && node --test tests/*.test.mjs tests/*.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
     "framer-motion": "^13.4.0",
-    "loading-dev": "^0.3.4"
+    "loading-dev": "^0.3.4",
+    "lucide-react": "^1.50.0"
   },
   "peerDependencies": {
     "react": ">=19 <20",
-    "react-dom": ">=19 <20"
+    "react-dom": ">=19 <20",
+    "@central-icons-react/round-filled-radius-2-stroke-1.5": "^1.2.1",
+    "@central-icons-react/round-outlined-radius-2-stroke-1.5": "^1.2.1"
   },
   "devDependencies": {
+    "@central-icons-react/round-filled-radius-2-stroke-1.5": "^1.2.1",
+    "@central-icons-react/round-outlined-radius-2-stroke-1.5": "^1.2.1",
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
     "@vercel/analytics": "^2.0.1",
+    "@vitejs/plugin-react": "^6.1.0",
+    "jsdom": "^26.1.0",
+    "pdfjs-dist": "^6.3.289",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "~6.0.2",
     "vite": "^8.2.2"
+  },
+  "peerDependenciesMeta": {
+    "@central-icons-react/round-filled-radius-2-stroke-1.5": {
+      "optional": true
+    },
+    "@central-icons-react/round-outlined-radius-2-stroke-1.5": {
+      "optional": true
+    }
   }
 }

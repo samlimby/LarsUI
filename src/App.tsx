@@ -2,6 +2,7 @@ import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { AiComposer, type AiComposerMode, type AiComposerSize, type AiComposerSuggestion, type AiComposerVariant } from './components/AiComposer'
 import { Button, type ButtonShape, type ButtonSize, type ButtonSpinner, type ButtonVariant } from './components/Button'
 import './components/Focus.css'
 import './components/ColorTokens.css'
@@ -27,6 +28,7 @@ import {
   type TableVariant,
 } from './components/Table'
 import { Tooltip as LarsTooltip } from './components/Tooltip'
+import { transcribeAudio } from './lib/transcribeAudio'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -264,7 +266,7 @@ export function Example() {
   )
 }`
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table' | 'tooltip'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table' | 'tooltip' | 'ai-composer'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -276,6 +278,7 @@ function getRouteFromHash(): Route {
   if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
   if (window.location.hash === '#/components/table') return 'table'
   if (window.location.hash === '#/components/tooltip') return 'tooltip'
+  if (window.location.hash === '#/components/ai-composer') return 'ai-composer'
   return 'home'
 }
 
@@ -2743,6 +2746,276 @@ export function Example() {
   )
 }
 
+const aiComposerSuggestions: readonly AiComposerSuggestion[] = [
+  { id: 'card-limit', label: 'Raise the limit on the marketing card' },
+  { id: 'invoices', label: 'What invoices are still outstanding?' },
+  { id: 'runway', label: 'How long is my cash runway?' },
+]
+
+function AiComposerExample({ variant, size = 'default', generating, onGeneratingChange, mode, onModeChange, rotatePlaceholder = true, showAddButton = true, showDictation = true, showModelDropdown = true, showModelSelector = true, showSuggestions = false }: { variant: AiComposerVariant; size?: AiComposerSize; generating?: boolean; onGeneratingChange?: (generating: boolean) => void; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showAddButton?: boolean; showDictation?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
+  const [message, setMessage] = useState('')
+  const [demoGenerating, setDemoGenerating] = useState(false)
+  const generationTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  const activeGenerating = generating ?? demoGenerating
+  const setGenerating = onGeneratingChange ?? setDemoGenerating
+  const clearGenerationTimer = () => {
+    if (generationTimer.current !== null) window.clearTimeout(generationTimer.current)
+    generationTimer.current = null
+  }
+
+  useEffect(() => () => clearGenerationTimer(), [])
+  useEffect(() => {
+    if (!activeGenerating) clearGenerationTimer()
+  }, [activeGenerating])
+
+  return (
+    <div className="lars-ai-example">
+      <AiComposer
+        generating={activeGenerating}
+        onSubmit={() => {
+          // Simulate a host-owned response in the gallery.
+          clearGenerationTimer()
+          setGenerating(true)
+          generationTimer.current = window.setTimeout(() => {
+            generationTimer.current = null
+            setGenerating(false)
+          }, 10_000)
+        }}
+        onStop={() => {
+          clearGenerationTimer()
+          setGenerating(false)
+        }}
+        key={variant}
+        mode={mode}
+        onModeChange={onModeChange}
+        onValueChange={setMessage}
+        rotatePlaceholder={rotatePlaceholder}
+        size={size}
+        showAddButton={showAddButton}
+        showDictation={showDictation}
+        showModelDropdown={showModelDropdown}
+        showModelSelector={showModelSelector}
+        showSuggestions={showSuggestions}
+        suggestions={aiComposerSuggestions}
+        transcribeAudio={transcribeAudio}
+        value={message}
+        variant={variant}
+      />
+    </div>
+  )
+}
+
+function AiComposerStage() {
+  const [variant, setVariant] = useState<AiComposerVariant>('structured')
+
+  return (
+    <div className="lars-stage lars-stage--ai-composer" data-variant={variant}>
+      <div className="lars-ai-stage__content">
+        <AiComposerExample key={variant} showModelDropdown={false} showSuggestions={false} variant={variant} />
+        <LarsSegmentedControl
+          className="lars-ai-stage__switch"
+          label="Composer variant"
+          onValueChange={(next) => setVariant(next as AiComposerVariant)}
+          options={[{ label: 'Structured', value: 'structured' }, { label: 'Unstructured', value: 'unstructured' }]}
+          value={variant}
+        />
+      </div>
+    </div>
+  )
+}
+
+function AiComposerDetail() {
+  const [generating, setGenerating] = useState(false)
+  const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
+  const [size, setSize] = useState<AiComposerSize>('default')
+  const [showMode, setShowMode] = useState(true)
+  const [showAddButton, setShowAddButton] = useState(true)
+  const [showDictation, setShowDictation] = useState(true)
+  const [composerMode, setComposerMode] = useState<AiComposerMode>('plan')
+  const [showModelSelection, setShowModelSelection] = useState(true)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [rotatePlaceholder, setRotatePlaceholder] = useState(true)
+  const code = `'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { AiComposer, type AiComposerSubmission, type AiComposerTranscribeAudio } from 'larsui'
+import 'larsui/style.css'
+
+const transcribeAudio: AiComposerTranscribeAudio = async (audio, { signal, language }) => {
+  const form = new FormData()
+  const extension = audio.type.includes('mp4') ? 'mp4' : 'webm'
+  form.append('file', audio, 'dictation.' + extension)
+  form.append('language', language.split('-')[0])
+
+  // Requires your own server endpoint for speech-to-text.
+  const response = await fetch('/api/transcribe', { method: 'POST', body: form, signal })
+  const result = await response.json()
+  if (!response.ok || typeof result.text !== 'string') {
+    throw new Error(result.error || 'Audio could not be transcribed. Please try again.')
+  }
+  return result.text
+}
+${size === 'default' ? `
+const suggestions = [
+  { id: 'card-limit', label: 'Raise the limit on the marketing card' },
+  { id: 'invoices', label: 'What invoices are still outstanding?' },
+  { id: 'runway', label: 'How long is my cash runway?' },
+]
+` : ''}
+export function Example() {
+  const [isGenerating, setIsGenerating] = useState(false)
+  const generationTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (generationTimer.current !== null) clearTimeout(generationTimer.current)
+  }, [])
+
+  function stopGeneration() {
+    if (generationTimer.current !== null) clearTimeout(generationTimer.current)
+    generationTimer.current = null
+    setIsGenerating(false)
+  }
+
+  function sendMessage(submission: AiComposerSubmission) {
+    // Replace this local simulation with your chat API or SDK.
+    console.log('Submitted message:', submission)
+    stopGeneration()
+    setIsGenerating(true)
+    generationTimer.current = setTimeout(() => {
+      generationTimer.current = null
+      setIsGenerating(false)
+    }, 10_000)
+  }
+
+  return (
+    <AiComposer
+      variant="${variant}"
+      size="${size}"
+      transcribeAudio={transcribeAudio}
+      rotatePlaceholder={${rotatePlaceholder}}${size === 'small' ? `
+      showAddButton={${showAddButton}}
+      showDictation={${showDictation}}` : ''}
+      showModelDropdown={${showModelSelection}}${size === 'default' ? `
+      showModelSelector={${showMode}}${showMode ? `
+      defaultMode="${composerMode}"` : ''}
+      showSuggestions={${showSuggestions}}
+      suggestions={suggestions}` : ''}
+      generating={isGenerating}
+      onStop={stopGeneration}
+      onSubmit={sendMessage}
+    />
+  )
+}`
+
+  return (
+    <>
+      <div className="lars-configurator">
+        <div className="lars-stage lars-component-canvas lars-component-canvas--ai-composer">
+          <AiComposerExample key={variant} generating={generating} onGeneratingChange={setGenerating} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showAddButton={showAddButton} showDictation={showDictation} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
+        </div>
+        <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">
+          <header className="lars-properties__header">
+            <h2 id="ai-composer-properties-title">Properties</h2>
+          </header>
+          <div className="lars-properties__fields">
+            <SegmentedControl
+              label="Size"
+              onChange={setSize}
+              options={[
+                { label: 'Default', value: 'default' },
+                { label: 'Small', value: 'small' },
+              ]}
+              value={size}
+            />
+            <PropertySelect
+              label="Variant"
+              onChange={setVariant}
+              options={[
+                { label: 'Unstructured', value: 'unstructured' },
+                { label: 'Structured', value: 'structured' },
+              ]}
+              value={variant}
+            />
+            <SegmentedControl
+              label="Model selection"
+              onChange={(next) => setShowModelSelection(next === 'true')}
+              options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+              value={showModelSelection ? 'true' : 'false'}
+            />
+            {size === 'small' && (
+              <>
+                <SegmentedControl
+                  label="Add button"
+                  onChange={(next) => setShowAddButton(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showAddButton ? 'true' : 'false'}
+                />
+                <SegmentedControl
+                  label="Voice dictation"
+                  onChange={(next) => setShowDictation(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showDictation ? 'true' : 'false'}
+                />
+              </>
+            )}
+            {size === 'default' && (
+              <>
+                <SegmentedControl
+                  label="Mode toggle"
+                  onChange={(next) => setShowMode(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showMode ? 'true' : 'false'}
+                />
+                <SegmentedControl
+                  label="Suggestions"
+                  onChange={(next) => setShowSuggestions(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showSuggestions ? 'true' : 'false'}
+                />
+              </>
+            )}
+            <SegmentedControl
+              label="Generating"
+              onChange={(next) => setGenerating(next === 'true')}
+              options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+              value={generating ? 'true' : 'false'}
+            />
+            <SegmentedControl
+              label="Animating placeholder"
+              onChange={(next) => setRotatePlaceholder(next === 'true')}
+              options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+              value={rotatePlaceholder ? 'true' : 'false'}
+            />
+          </div>
+        </aside>
+      </div>
+      <div className="lars-code-with-footnote">
+        <MemoizedCodeBlock code={code} fileName="AiComposer.tsx" label="AI Composer usage code" />
+        <aside className="lars-footnotes" aria-label="Notes">
+          <p id="ai-composer-footnote-1" tabIndex={-1}>
+            <sup>1</sup>
+            <span>
+              “Shuffle suggestions 🎲” — the suggestions feature was inspired by{' '}
+              <a href="https://x.com/timothymaarv/status/2104489312670867896" target="_blank" rel="noreferrer">
+                Timothy M. (@timothymaarv)’s post
+              </a>.
+            </span>
+          </p>
+          <p id="ai-composer-footnote-2" tabIndex={-1}>
+            <sup>2</sup>
+            <span>
+              “Here's how an AI input actually works, layer by layer.” The composer’s overall structure, features, and requirements were informed by{' '}
+              <a href="https://ibelick.com/anatomy-ai-input" target="_blank" rel="noreferrer">
+                Julien Thibeaut’s article, Anatomy of AI Input
+              </a>.
+            </span>
+          </p>
+        </aside>
+      </div>
+    </>
+  )
+}
+
 const HOME_COMPONENTS = [
   { route: 'inline-slider', title: 'Inline Slider', description: 'Adjust values directly in context without interrupting the workflow.', keywords: 'range slider drag values input', Stage: SliderStage },
   { route: 'buttons', title: 'Buttons', description: 'A foundational element for interacting with any interface.', keywords: 'button click action', Stage: ButtonStage },
@@ -2750,6 +3023,7 @@ const HOME_COMPONENTS = [
   { route: 'segmented-control', title: 'Segmented Control', description: 'Choose one view from a compact set of related options.', keywords: 'segments tabs toggle options', Stage: SegmentedControlStage },
   { route: 'tooltip', title: 'Tooltip', description: 'A quiet hint that appears from an inline action.', keywords: 'tooltips hover hint shortcut', Stage: TooltipStage },
   { route: 'table', title: 'Table', description: 'Organise dense information into clear, selectable rows.', keywords: 'data columns filters selection', Stage: TableStage },
+  { route: 'ai-composer', title: 'AI Composer', description: 'Two compact ways to compose: an open prompt or a framed one.', keywords: 'ai chat prompt composer attachments models', Stage: AiComposerStage },
 ] as const
 
 function HomePage({
@@ -2954,21 +3228,26 @@ function ComponentPage({
       description: 'A quiet hint that appears from an inline action.',
       title: 'Tooltip',
     },
+    'ai-composer': {
+      description: 'Compose in an open or framed prompt with file attachments.',
+      title: 'AI Composer',
+    },
   }
   const { description, title } = details[component]
   const reduceMotion = useReducedMotion()
-  const footnoteId = component === 'buttons'
-    ? 'button-footnote-1'
-    : component === 'chip'
-      ? 'chip-footnote-1'
-      : component === 'table'
-        ? 'table-footnote-1'
-        : component === 'tooltip'
-          ? 'tooltip-footnote-1'
-          : null
+  const footnoteIds = component === 'ai-composer'
+    ? ['ai-composer-footnote-1', 'ai-composer-footnote-2']
+    : component === 'buttons'
+      ? ['button-footnote-1']
+      : component === 'chip'
+        ? ['chip-footnote-1']
+        : component === 'table'
+          ? ['table-footnote-1']
+          : component === 'tooltip'
+            ? ['tooltip-footnote-1']
+            : []
 
-  const scrollToFootnote = () => {
-    if (!footnoteId) return
+  const scrollToFootnote = (footnoteId: string) => {
     const footnote = document.getElementById(footnoteId)
     if (!footnote) return
     footnote.scrollIntoView({
@@ -2993,18 +3272,21 @@ function ComponentPage({
         <header className="lars-detail__intro">
           <div className="lars-detail__title">
             <h1 id="component-detail-title">{title}</h1>
-            {footnoteId && (
+            {footnoteIds.length > 0 && (
               <sup>
-                <a
-                  aria-label="Read note 1"
-                  href={`#${footnoteId}`}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    scrollToFootnote()
-                  }}
-                >
-                  1
-                </a>
+                {footnoteIds.map((footnoteId, index) => (
+                  <a
+                    aria-label={`Read note ${index + 1}`}
+                    href={`#${footnoteId}`}
+                    key={footnoteId}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      scrollToFootnote(footnoteId)
+                    }}
+                  >
+                    {index > 0 ? ', ' : ''}{index + 1}
+                  </a>
+                ))}
               </sup>
             )}
           </div>
@@ -3017,6 +3299,7 @@ function ComponentPage({
         {component === 'segmented-control' && <SegmentedControlConfigurator />}
         {component === 'table' && <TableConfigurator />}
         {component === 'tooltip' && <TooltipConfigurator />}
+        {component === 'ai-composer' && <AiComposerDetail />}
       </section>
     </div>
   )
