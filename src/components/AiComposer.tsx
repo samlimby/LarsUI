@@ -597,11 +597,13 @@ export function AiComposer({
   })
 
   const setMessage = (next: string) => {
-    messageRef.current = next
+    if (!isControlledRef.current) {
+      messageRef.current = next
+      setDraft(next)
+    }
     setDictationFeedback(null)
     setSubmissionError(null)
-    if (value === undefined) setDraft(next)
-    onValueChange?.(next)
+    onValueChangeRef.current?.(next)
   }
 
   const clearStopTimeout = () => {
@@ -639,8 +641,10 @@ export function AiComposer({
     setCanInstallLocalRecognition(false)
     if (transcript) {
       const next = appendSpokenText(messageRef.current, transcript)
-      messageRef.current = next
-      if (!isControlledRef.current) setDraft(next)
+      if (!isControlledRef.current) {
+        messageRef.current = next
+        setDraft(next)
+      }
       onValueChangeRef.current?.(next)
       onDictationCompleteRef.current?.(transcript)
     }
@@ -845,6 +849,7 @@ export function AiComposer({
       releaseDictationStream()
       setDictationState('idle')
       setDictationFeedback({ message: 'Voice dictation could not start. Try again.', tone: 'error' })
+      focusMessage()
       return
     }
 
@@ -948,6 +953,7 @@ export function AiComposer({
       setDictationPreview('')
       setDictationState('idle')
       setDictationFeedback({ message: 'Voice dictation could not start. Check microphone access and try again.', tone: 'error' })
+      focusMessage()
     }
   }
 
@@ -1193,7 +1199,7 @@ export function AiComposer({
 
   const dictationMenuItem = hasDictation && (
     <Menu.Item disabled={interactionBlocked} className="lars-ai-composer__attach-item lars-ai-composer__dictation-menu-item" onClick={startDictation}>
-      {icon('microphone')}
+      {icon('microphone', { size: 16 })}
       <span>Voice dictation</span>
     </Menu.Item>
   )

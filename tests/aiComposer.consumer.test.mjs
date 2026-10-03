@@ -188,6 +188,31 @@ test('native drag handlers compose with consumer callbacks and leave text draggi
   assert.equal(input().value, 'Draft')
 })
 
+test('a controlled draft remains authoritative when its parent declines an edit', async () => {
+  const changes = []
+  let submission
+  await render({ value: 'Accepted draft', onValueChange: value => changes.push(value), onSubmit: value => { submission = value } })
+  await act(() => {
+    Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(input(), 'Declined edit')
+    input().dispatchEvent(new window.Event('input', { bubbles: true }))
+  })
+  assert.equal(input().value, 'Accepted draft')
+  assert.equal(changes[0], 'Declined edit')
+  await submit()
+  assert.equal(submission.message, 'Accepted draft')
+})
+
+test('a pending send clears through the latest controlled change callback', async () => {
+  const request = deferred(), previousChanges = [], currentChanges = []
+  const props = { value: 'Draft', onSubmit: () => request.promise }
+  await render({ ...props, onValueChange: value => previousChanges.push(value) })
+  await submit()
+  await render({ ...props, onValueChange: value => currentChanges.push(value) })
+  await act(() => request.resolve())
+  assert.deepEqual(previousChanges, [])
+  assert.deepEqual(currentChanges, [''])
+})
+
 test('successful async submission preserves a newer controlled draft', async () => {
   const request=deferred(), changes=[]
   const props={value:'Original',onSubmit:()=>request.promise,onValueChange:value=>changes.push(value)}
@@ -433,6 +458,42 @@ test('dictation acceptance focuses the busy textarea before the tick disables in
       assert.equal(input().readOnly, false)
       assert.equal(document.activeElement, input())
     }
+  }
+})
+
+test('declined controlled dictation does not replace the next submitted draft', async () => {
+  mockAudio()
+  let submission
+  const changes = []
+  await render({ value: 'Accepted draft', onValueChange: next => changes.push(next), transcribeAudio: async () => 'Spoken words', onSubmit: next => { submission = next } })
+  await click('Start voice dictation')
+  await click('Use dictated text')
+  assert.equal(input().value, 'Accepted draft')
+  assert.equal(changes[0], 'Accepted draft Spoken words')
+  await submit()
+  assert.equal(submission.message, 'Accepted draft')
+})
+
+test('browser recognition startup failures return keyboard focus to the message', { timeout: 5000 }, async (context) => {
+  const previousRecognition = window.SpeechRecognition
+  context.after(() => { window.SpeechRecognition = previousRecognition })
+  for (const size of ['default', 'small']) for (const failure of ['construct', 'start']) {
+    const permission = deferred()
+    let released = 0
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: () => permission.promise } })
+    window.SpeechRecognition = class {
+      constructor() { if (failure === 'construct') throw new Error('Unavailable') }
+      start() { throw new Error('Unavailable') }
+      abort() {}
+    }
+    await render({ key: size + failure, size })
+    await click('Start voice dictation')
+    await act(() => new Promise(resolve => requestAnimationFrame(resolve)))
+    assert.equal(document.activeElement.getAttribute('aria-label'), 'Cancel voice dictation')
+    await act(() => permission.resolve({ getTracks: () => [{ stop() { released++ } }], getAudioTracks: () => [] }))
+    assert.ok(host.querySelector('[role="alert"]'))
+    assert.equal(released, 1)
+    assert.ok(document.activeElement === input(), 'focus should return to the message after recognition startup fails')
   }
 })
 

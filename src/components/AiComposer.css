@@ -242,7 +242,7 @@
   flex: 1;
 }
 
-.lars-ai-composer--default .lars-ai-composer__input-wrap { padding-top: 8px; padding-bottom: 12px; }
+.lars-ai-composer--default .lars-ai-composer__input-wrap { padding-bottom: 12px; }
 
 .lars-ai-composer__input {
   position: relative;
@@ -289,7 +289,7 @@
   --lars-composer-reveal-dur: 750ms;
   --lars-composer-reveal-distance: 8px;
   position: absolute;
-  top: 8px;
+  top: 0;
   left: 8px;
   width: calc(100% - 16px);
   pointer-events: none;
@@ -457,9 +457,9 @@
   .lars-ai-composer__attachment-trigger.lars-button,
   .lars-ai-composer__more-standalone.lars-button { display: none; }
   .lars-ai-composer__attachment-motion,
-  .lars-ai-composer__model-motion { display: none; }
+  .lars-ai-composer__toolbar[data-add-button] .lars-ai-composer__model-motion { display: none; }
   .lars-ai-composer__more-menu-trigger.lars-button { display: flex; }
-  .lars-ai-composer--default .lars-ai-composer__model-inline { display: none; }
+  .lars-ai-composer__toolbar[data-add-button] .lars-ai-composer__model-inline { display: none; }
 }
 .lars-ai-composer__attach-positioner { z-index: 50; }
 /* Portals sit outside the page container; keep theme fallbacks with the menus. */
