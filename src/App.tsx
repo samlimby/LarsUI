@@ -28,6 +28,7 @@ import {
   type TableVariant,
 } from './components/Table'
 import { Tooltip as LarsTooltip } from './components/Tooltip'
+import { transcribeAudio } from './lib/transcribeAudio'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -2751,22 +2752,26 @@ const aiComposerSuggestions: readonly AiComposerSuggestion[] = [
   { id: 'runway', label: 'How long is my cash runway?' },
 ]
 
-function AiComposerExample({ variant, size = 'default', mode, onModeChange, rotatePlaceholder = true, showModelDropdown = true, showModelSelector = true, showSuggestions = false }: { variant: AiComposerVariant; size?: AiComposerSize; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
+function AiComposerExample({ variant, size = 'default', mode, onModeChange, rotatePlaceholder = true, showAddButton = true, showDictation = true, showModelDropdown = true, showModelSelector = true, showSuggestions = false }: { variant: AiComposerVariant; size?: AiComposerSize; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showAddButton?: boolean; showDictation?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
   const [message, setMessage] = useState('')
 
   return (
     <div className="lars-ai-example">
       <AiComposer
+        onSubmit={() => { /* The component gallery demonstrates submission locally. */ }}
         key={variant}
         mode={mode}
         onModeChange={onModeChange}
         onValueChange={setMessage}
         rotatePlaceholder={rotatePlaceholder}
         size={size}
+        showAddButton={showAddButton}
+        showDictation={showDictation}
         showModelDropdown={showModelDropdown}
         showModelSelector={showModelSelector}
         showSuggestions={showSuggestions}
         suggestions={aiComposerSuggestions}
+        transcribeAudio={transcribeAudio}
         value={message}
         variant={variant}
       />
@@ -2797,6 +2802,8 @@ function AiComposerDetail() {
   const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
   const [size, setSize] = useState<AiComposerSize>('default')
   const [showMode, setShowMode] = useState(true)
+  const [showAddButton, setShowAddButton] = useState(true)
+  const [showDictation, setShowDictation] = useState(true)
   const [composerMode, setComposerMode] = useState<AiComposerMode>('plan')
   const [showModelSelection, setShowModelSelection] = useState(true)
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -2806,8 +2813,23 @@ function AiComposerDetail() {
       ? 'onSubmit={({ message, files, model }) => sendMessage(message, files, model)}'
       : 'onSubmit={({ message, files }) => sendMessage(message, files)}'
     : 'onSubmit={({ message, files, model, mode }) => sendMessage(message, files, model, mode)}'
-  const code = `import { AiComposer } from 'larsui'
+  const code = `import { AiComposer, type AiComposerTranscribeAudio } from 'larsui'
 import 'larsui/style.css'
+
+const transcribeAudio: AiComposerTranscribeAudio = async (audio, { signal, language }) => {
+  const form = new FormData()
+  const extension = audio.type.includes('mp4') ? 'mp4' : 'webm'
+  form.append('file', audio, 'dictation.' + extension)
+  form.append('language', language.split('-')[0])
+
+  // Your server calls whichever speech-to-text provider you use.
+  const response = await fetch('/api/transcribe', { method: 'POST', body: form, signal })
+  const result = await response.json()
+  if (!response.ok || typeof result.text !== 'string') {
+    throw new Error(result.error || 'Audio could not be transcribed. Please try again.')
+  }
+  return result.text
+}
 
 ${size === 'default' ? `const suggestions = [
   { id: 'card-limit', label: 'Raise the limit on the marketing card' },
@@ -2818,7 +2840,10 @@ ${size === 'default' ? `const suggestions = [
 <AiComposer
   variant="${variant}"
   size="${size}"
-  rotatePlaceholder={${rotatePlaceholder}}
+  transcribeAudio={transcribeAudio}
+  rotatePlaceholder={${rotatePlaceholder}}${size === 'small' ? `
+  showAddButton={${showAddButton}}
+  showDictation={${showDictation}}` : ''}
   showModelDropdown={${showModelSelection}}${size === 'default' ? `
   showModelSelector={${showMode}}${showMode ? `
   defaultMode="${composerMode}"` : ''}
@@ -2831,7 +2856,7 @@ ${size === 'default' ? `const suggestions = [
     <>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-component-canvas--ai-composer">
-          <AiComposerExample key={variant} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
+          <AiComposerExample key={variant} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showAddButton={showAddButton} showDictation={showDictation} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
         </div>
         <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">
           <header className="lars-properties__header">
@@ -2862,6 +2887,22 @@ ${size === 'default' ? `const suggestions = [
               options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
               value={showModelSelection ? 'true' : 'false'}
             />
+            {size === 'small' && (
+              <>
+                <SegmentedControl
+                  label="Add button"
+                  onChange={(next) => setShowAddButton(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showAddButton ? 'true' : 'false'}
+                />
+                <SegmentedControl
+                  label="Voice dictation"
+                  onChange={(next) => setShowDictation(next === 'true')}
+                  options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+                  value={showDictation ? 'true' : 'false'}
+                />
+              </>
+            )}
             {size === 'default' && (
               <>
                 <SegmentedControl

@@ -3,10 +3,14 @@ import { createRoot } from 'react-dom/client'
 import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.tsx'
+import { IconProvider } from './components/IconProvider'
+import { websiteAiComposerIcons } from './lib/aiComposerIcons'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
-    <Analytics />
+    <IconProvider icons={websiteAiComposerIcons}>
+      <App />
+      <Analytics />
+    </IconProvider>
   </StrictMode>,
 )

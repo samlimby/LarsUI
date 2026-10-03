@@ -26,8 +26,8 @@ function waveformPath(levels: Float32Array, width: number) {
 
 const IDLE_PATH = waveformPath(new Float32Array(INITIAL_BAR_COUNT), INITIAL_WAVE_WIDTH)
 
-/** A silent microphone monitor. Speech recognition owns its own audio input. */
-export function AiComposerWaveform({ active, reducedMotion }: { active: boolean; reducedMotion: boolean }) {
+/** A silent microphone monitor that can observe a shared recognition stream. */
+export function AiComposerWaveform({ active, reducedMotion, stream }: { active: boolean; reducedMotion: boolean; stream?: MediaStream | null }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const pathRef = useRef<SVGPathElement>(null)
   const levelsRef = useRef(new Float32Array(INITIAL_BAR_COUNT))
@@ -66,14 +66,14 @@ export function AiComposerWaveform({ active, reducedMotion }: { active: boolean;
     levelsRef.current.fill(0)
     path?.setAttribute('d', waveformPath(levelsRef.current, widthRef.current))
 
-    if (!active || reducedMotion || !navigator.mediaDevices?.getUserMedia) return
+    if (!active || reducedMotion || (!stream && !navigator.mediaDevices?.getUserMedia)) return
 
     const AudioContextConstructor = window.AudioContext ??
       (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!AudioContextConstructor) return
 
     let disposed = false
-    let stream: MediaStream | null = null
+    let ownedStream: MediaStream | null = null
     let context: AudioContext | null = null
     let source: MediaStreamAudioSourceNode | null = null
     let analyser: AnalyserNode | null = null
@@ -85,65 +85,74 @@ export function AiComposerWaveform({ active, reducedMotion }: { active: boolean;
       frameId = null
       source?.disconnect()
       analyser?.disconnect()
-      stream?.getTracks().forEach((track) => track.stop())
+      ownedStream?.getTracks().forEach((track) => track.stop())
       if (context && context.state !== 'closed') void context.close().catch(() => {})
     }
 
-    void navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(async (capturedStream) => {
-        if (disposed) {
-          capturedStream.getTracks().forEach((track) => track.stop())
-          return
-        }
+    const monitor = async (inputStream: MediaStream) => {
+      if (disposed) return
+      context = new AudioContextConstructor()
+      source = context.createMediaStreamSource(inputStream)
+      analyser = context.createAnalyser()
+      analyser.fftSize = 2048
+      source.connect(analyser)
 
-        stream = capturedStream
-        context = new AudioContextConstructor()
-        source = context.createMediaStreamSource(stream)
-        analyser = context.createAnalyser()
-        analyser.fftSize = 2048
-        source.connect(analyser)
+      // Some browsers begin a newly created context suspended after a permission prompt.
+      if (context.state === 'suspended') await context.resume()
+      if (disposed) return
 
-        // Some browsers begin a newly created context suspended after a permission prompt.
-        if (context.state === 'suspended') await context.resume()
+      const samples = new Float32Array(analyser.fftSize)
+      const draw = (now: number) => {
         if (disposed) return
-
-        const samples = new Float32Array(analyser.fftSize)
-        const draw = (now: number) => {
-          if (disposed) return
-          frameId = window.requestAnimationFrame(draw)
-          if (now - lastFrame < FRAME_INTERVAL_MS) return
-          lastFrame = now
-
-          analyser?.getFloatTimeDomainData(samples)
-          let sumOfSquares = 0
-          for (let index = 0; index < samples.length; index++) {
-            sumOfSquares += samples[index] * samples[index]
-          }
-          const rms = Math.sqrt(sumOfSquares / samples.length)
-          const targetLevel = rms < 0.004 ? 0 : rms
-          smoothedLevel += (targetLevel - smoothedLevel) * (targetLevel > smoothedLevel ? 0.4 : 0.16)
-          const activity = Math.min(1, Math.max(0, (smoothedLevel - 0.003) / 0.012))
-          // Each bar holds one recent audio level, creating the reference's rounded,
-          // symmetric wave clusters while continuing to follow the microphone.
-          const levels = levelsRef.current
-          levels.copyWithin(0, 1)
-          levels[levels.length - 1] = Math.sqrt(activity)
-          path?.setAttribute('d', waveformPath(levels, widthRef.current))
-        }
-
         frameId = window.requestAnimationFrame(draw)
-      })
-      .catch(() => {
-        release()
-        levelsRef.current.fill(0)
-        path?.setAttribute('d', waveformPath(levelsRef.current, widthRef.current))
-      })
+        if (now - lastFrame < FRAME_INTERVAL_MS) return
+        lastFrame = now
+
+        analyser?.getFloatTimeDomainData(samples)
+        let sumOfSquares = 0
+        for (let index = 0; index < samples.length; index++) {
+          sumOfSquares += samples[index] * samples[index]
+        }
+        const rms = Math.sqrt(sumOfSquares / samples.length)
+        const targetLevel = rms < 0.004 ? 0 : rms
+        smoothedLevel += (targetLevel - smoothedLevel) * (targetLevel > smoothedLevel ? 0.4 : 0.16)
+        const activity = Math.min(1, Math.max(0, (smoothedLevel - 0.003) / 0.012))
+        // Each bar holds one recent audio level, creating the reference's rounded,
+        // symmetric wave clusters while continuing to follow the microphone.
+        const levels = levelsRef.current
+        levels.copyWithin(0, 1)
+        levels[levels.length - 1] = Math.sqrt(activity)
+        path?.setAttribute('d', waveformPath(levels, widthRef.current))
+      }
+
+      frameId = window.requestAnimationFrame(draw)
+    }
+    const resetAfterError = () => {
+      release()
+      levelsRef.current.fill(0)
+      path?.setAttribute('d', waveformPath(levelsRef.current, widthRef.current))
+    }
+
+    if (stream) {
+      void monitor(stream).catch(resetAfterError)
+    } else {
+      void navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(async (capturedStream) => {
+          if (disposed) {
+            capturedStream.getTracks().forEach((track) => track.stop())
+            return
+          }
+          ownedStream = capturedStream
+          await monitor(capturedStream)
+        })
+        .catch(resetAfterError)
+    }
 
     return () => {
       disposed = true
       release()
     }
-  }, [active, reducedMotion])
+  }, [active, reducedMotion, stream])
 
   return (
     <svg
