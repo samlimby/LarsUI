@@ -2835,12 +2835,10 @@ function AiComposerDetail() {
   const [showModelSelection, setShowModelSelection] = useState(true)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [rotatePlaceholder, setRotatePlaceholder] = useState(true)
-  const submitExample = size === 'small'
-    ? showModelSelection
-      ? 'onSubmit={({ message, files, model }) => sendMessage(message, files, model)}'
-      : 'onSubmit={({ message, files }) => sendMessage(message, files)}'
-    : 'onSubmit={({ message, files, model, mode }) => sendMessage(message, files, model, mode)}'
-  const code = `import { AiComposer, type AiComposerTranscribeAudio } from 'larsui'
+  const code = `'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { AiComposer, type AiComposerSubmission, type AiComposerTranscribeAudio } from 'larsui'
 import 'larsui/style.css'
 
 const transcribeAudio: AiComposerTranscribeAudio = async (audio, { signal, language }) => {
@@ -2849,7 +2847,7 @@ const transcribeAudio: AiComposerTranscribeAudio = async (audio, { signal, langu
   form.append('file', audio, 'dictation.' + extension)
   form.append('language', language.split('-')[0])
 
-  // Your server calls whichever speech-to-text provider you use.
+  // Requires your own server endpoint for speech-to-text.
   const response = await fetch('/api/transcribe', { method: 'POST', body: form, signal })
   const result = await response.json()
   if (!response.ok || typeof result.text !== 'string') {
@@ -2857,30 +2855,57 @@ const transcribeAudio: AiComposerTranscribeAudio = async (audio, { signal, langu
   }
   return result.text
 }
-
-${size === 'default' ? `const suggestions = [
+${size === 'default' ? `
+const suggestions = [
   { id: 'card-limit', label: 'Raise the limit on the marketing card' },
   { id: 'invoices', label: 'What invoices are still outstanding?' },
   { id: 'runway', label: 'How long is my cash runway?' },
-]\n` : ''}
+]
+` : ''}
+export function Example() {
+  const [isGenerating, setIsGenerating] = useState(false)
+  const generationTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-// Use your chat request or stream status, and its cancellation callback.
-<AiComposer
-  variant="${variant}"
-  size="${size}"
-  transcribeAudio={transcribeAudio}
-  rotatePlaceholder={${rotatePlaceholder}}${size === 'small' ? `
-  showAddButton={${showAddButton}}
-  showDictation={${showDictation}}` : ''}
-  showModelDropdown={${showModelSelection}}${size === 'default' ? `
-  showModelSelector={${showMode}}${showMode ? `
-  defaultMode="${composerMode}"` : ''}
-  showSuggestions={${showSuggestions}}
-  suggestions={suggestions}` : ''}
-  generating={isGenerating}
-  onStop={stopGeneration}
-  ${submitExample}
-/>`
+  useEffect(() => () => {
+    if (generationTimer.current !== null) clearTimeout(generationTimer.current)
+  }, [])
+
+  function stopGeneration() {
+    if (generationTimer.current !== null) clearTimeout(generationTimer.current)
+    generationTimer.current = null
+    setIsGenerating(false)
+  }
+
+  function sendMessage(submission: AiComposerSubmission) {
+    // Replace this local simulation with your chat API or SDK.
+    console.log('Submitted message:', submission)
+    stopGeneration()
+    setIsGenerating(true)
+    generationTimer.current = setTimeout(() => {
+      generationTimer.current = null
+      setIsGenerating(false)
+    }, 10_000)
+  }
+
+  return (
+    <AiComposer
+      variant="${variant}"
+      size="${size}"
+      transcribeAudio={transcribeAudio}
+      rotatePlaceholder={${rotatePlaceholder}}${size === 'small' ? `
+      showAddButton={${showAddButton}}
+      showDictation={${showDictation}}` : ''}
+      showModelDropdown={${showModelSelection}}${size === 'default' ? `
+      showModelSelector={${showMode}}${showMode ? `
+      defaultMode="${composerMode}"` : ''}
+      showSuggestions={${showSuggestions}}
+      suggestions={suggestions}` : ''}
+      generating={isGenerating}
+      onStop={stopGeneration}
+      onSubmit={sendMessage}
+    />
+  )
+}`
 
   return (
     <>

@@ -69,7 +69,8 @@ test('async failures retain the draft and files, prevent duplicate sends, and su
   await submit()
   await submit()
   assert.equal(requests.length,1)
-  assert.equal(input().disabled,true)
+  assert.equal(input().disabled,false)
+  assert.equal(input().readOnly,true)
   await act(()=>requests[0].reject(new Error('Please retry')))
   assert.equal(input().value,'Keep this draft')
   assert.equal(input().disabled,false)
@@ -80,6 +81,111 @@ test('async failures retain the draft and files, prevent duplicate sends, and su
   await act(()=>requests[1].resolve())
   assert.equal(input().value,'')
   assert.equal(host.querySelector('[role="alert"]'),null)
+})
+
+const dispatchDrag = async (type, files = [], types = ['Files'], target = host.querySelector('form')) => {
+  const event = new window.Event(type, { bubbles: true, cancelable: true })
+  const dataTransfer = { files, types, dropEffect: 'none' }
+  Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+  await act(() => target.dispatchEvent(event))
+  return { event, dataTransfer }
+}
+
+
+test('removing a focused attachment hands focus to the next, previous, or message input', async () => {
+  for (const variant of ['structured', 'unstructured']) {
+    for (const size of ['default', 'small']) {
+      await render({ key: variant + size, variant, size })
+      const upload = host.querySelector('input[type="file"]')
+      const files = ['first.txt', 'middle.txt', 'last.txt'].map(name => new File(['contents'], name))
+      Object.defineProperty(upload, 'files', { configurable: true, value: files })
+      await act(() => upload.dispatchEvent(new window.Event('change', { bubbles: true })))
+      const remove = name => host.querySelector(`[aria-label="Remove ${name}"]`)
+      remove('middle.txt').focus()
+      await act(() => remove('middle.txt').click())
+      assert.equal(document.activeElement, remove('last.txt'))
+      await act(() => remove('last.txt').click())
+      assert.equal(document.activeElement, remove('first.txt'))
+      await act(() => remove('first.txt').click())
+      assert.equal(document.activeElement, input())
+      assert.equal(input().disabled, false)
+    }
+  }
+})
+
+test('removing an unfocused attachment leaves the current input focus alone', async () => {
+  await render()
+  const upload = host.querySelector('input[type="file"]')
+  Object.defineProperty(upload, 'files', { configurable: true, value: [new File(['contents'], 'notes.txt')] })
+  await act(() => upload.dispatchEvent(new window.Event('change', { bubbles: true })))
+  input().focus()
+  await act(() => host.querySelector('[aria-label="Remove notes.txt"]').click())
+  assert.equal(document.activeElement, input())
+})
+
+test('native file drops append attachments and preserve the draft across all composer variants', async () => {
+  for (const variant of ['structured', 'unstructured']) {
+    for (const size of ['default', 'small']) {
+      let submission
+      await render({ key: variant + size, variant, size, defaultValue: 'Keep the draft', onSubmit: value => { submission = value } })
+      const existing = new File(['existing'], 'existing.txt', { type: 'text/plain' })
+      const upload = host.querySelector('input[type="file"]')
+      Object.defineProperty(upload, 'files', { configurable: true, value: [existing] })
+      await act(() => upload.dispatchEvent(new window.Event('change', { bubbles: true })))
+      // During dragover the browser protects the files list, while exposing its type.
+      const over = await dispatchDrag('dragover', [], ['Files'], input())
+      assert.equal(over.event.defaultPrevented, true)
+      assert.equal(over.dataTransfer.dropEffect, 'copy')
+      const dropped = [new File(['one'], 'one.txt'), new File(['two'], 'two.txt')]
+      const drop = await dispatchDrag('drop', dropped, ['Files'], input())
+      assert.equal(drop.event.defaultPrevented, true)
+      for (const file of [existing, ...dropped]) assert.ok(host.querySelector(`[aria-label="Remove ${file.name}"]`))
+      assert.equal(input().value, 'Keep the draft')
+      assert.equal(submission, undefined)
+      await submit()
+      assert.deepEqual(submission.files, [existing, ...dropped])
+      assert.equal(submission.message, 'Keep the draft')
+    }
+  }
+})
+
+test('disabled, read-only, and submitting composers reject file drops without browser navigation', async () => {
+  const file = new File(['contents'], 'blocked.txt')
+  for (const state of ['disabled', 'readOnly']) {
+    await render({ key: state, [state]: true })
+    const over = await dispatchDrag('dragover')
+    assert.equal(over.dataTransfer.dropEffect, 'none')
+    const drop = await dispatchDrag('drop', [file])
+    assert.equal(drop.event.defaultPrevented, true)
+    assert.equal(host.querySelector('[aria-label="Remove blocked.txt"]'), null)
+  }
+  const request = deferred()
+  await render({ key: 'busy', defaultValue: 'Working', onSubmit: () => request.promise })
+  await submit()
+  const over = await dispatchDrag('dragover')
+  assert.equal(over.dataTransfer.dropEffect, 'none')
+  await dispatchDrag('drop', [file])
+  assert.equal(host.querySelector('[aria-label="Remove blocked.txt"]'), null)
+  await act(() => request.resolve())
+})
+
+test('native drag handlers compose with consumer callbacks and leave text dragging alone', async () => {
+  let overCalls = 0, dropCalls = 0
+  await render({ defaultValue: 'Draft', onDragOver: () => { overCalls++ }, onDrop: event => { dropCalls++; event.preventDefault() } })
+  await dispatchDrag('dragover')
+  await dispatchDrag('drop', [new File(['contents'], 'custom.txt')])
+  assert.equal(overCalls, 1)
+  assert.equal(dropCalls, 1)
+  assert.equal(host.querySelector('[aria-label="Remove custom.txt"]'), null)
+
+  await render({ inputProps: { onDrop: event => event.preventDefault() } })
+  await dispatchDrag('drop', [new File(['contents'], 'input-custom.txt')], ['Files'], input())
+  assert.equal(host.querySelector('[aria-label="Remove input-custom.txt"]'), null)
+
+  await render({})
+  assert.equal((await dispatchDrag('dragover', [], ['text/plain'], input())).event.defaultPrevented, false)
+  assert.equal((await dispatchDrag('drop', [], ['text/plain'], input())).event.defaultPrevented, false)
+  assert.equal(input().value, 'Draft')
 })
 
 test('successful async submission preserves a newer controlled draft', async () => {
@@ -121,6 +227,35 @@ test('host-controlled generation swaps Send for Stop without losing the draft, b
   }
 })
 
+
+test('Stop transfers focus before disabling, and retains it when an empty draft ends generation', async () => {
+  for (const variant of ['structured', 'unstructured']) {
+    for (const size of ['default', 'small']) {
+      const request = deferred()
+      function Chat() {
+        const [generating, setGenerating] = React.useState(true)
+        return h(AiComposer, {
+          variant, size, generating, rotatePlaceholder: false, onSubmit: () => {},
+          onStop: async () => {
+            assert.equal(document.activeElement, input())
+            await request.promise
+            setGenerating(false)
+          },
+        })
+      }
+      await act(() => root.render(h(Chat)))
+      const stop = host.querySelector('[aria-label="Stop generating"]')
+      stop.focus()
+      await click('Stop generating')
+      assert.equal(stop.disabled, true)
+      assert.equal(document.activeElement, input())
+      await act(() => request.resolve())
+      assert.equal(host.querySelector('[aria-label="Send message"]').disabled, true)
+      assert.equal(document.activeElement, input())
+    }
+  }
+})
+
 test('Stop can cancel a pending async submission and works with an empty draft', async () => {
   const controller = new AbortController()
   const request = new Promise((_resolve, reject) => controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true }))
@@ -130,12 +265,13 @@ test('Stop can cancel a pending async submission and works with an empty draft',
     return h(AiComposer, {
       rotatePlaceholder: false, defaultValue: 'Question', generating,
       onSubmit: () => { sends++; setGenerating(true); return request },
-      onStop: () => { stops++; setGenerating(false); controller.abort() },
+      onStop: () => { assert.equal(document.activeElement, input()); stops++; setGenerating(false); controller.abort() },
     })
   }
   await act(() => root.render(h(Chat)))
   await submit()
-  assert.equal(input().disabled, true)
+  assert.equal(input().disabled, false)
+  assert.equal(input().readOnly, true)
   assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, false)
   await submit()
   await click('Stop generating')
@@ -271,6 +407,34 @@ function mockAudio() {
   globalThis.MediaRecorder=Recorder
   return {stream,stopped:()=>stopped}
 }
+
+
+test('dictation acceptance focuses the busy textarea before the tick disables in every layout', async () => {
+  for (const variant of ['structured', 'unstructured']) {
+    for (const size of ['default', 'small']) {
+      mockAudio()
+      const request = deferred()
+      await render({ key: variant + size, variant, size, defaultValue: 'Existing', transcribeAudio: () => request.promise })
+      await click('Start voice dictation')
+      await act(() => new Promise(resolve => requestAnimationFrame(resolve)))
+      const accept = host.querySelector('[aria-label="Use dictated text"]')
+      accept.focus()
+      await click('Use dictated text')
+      assert.equal(accept.disabled, true)
+      assert.equal(input().placeholder, 'Transcribing')
+      assert.equal(input().readOnly, true)
+      assert.equal(input().disabled, false)
+      assert.equal(document.activeElement, input())
+      // A queued dictation-entry frame must not steal focus back to Cancel.
+      await act(() => new Promise(resolve => requestAnimationFrame(resolve)))
+      assert.equal(document.activeElement, input())
+      await act(() => request.resolve('Spoken words'))
+      assert.equal(input().value, 'Existing Spoken words')
+      assert.equal(input().readOnly, false)
+      assert.equal(document.activeElement, input())
+    }
+  }
+})
 
 test('accept waits for the final audio chunk, displays Transcribing, then appends once', async () => {
   const audio=mockAudio(),request=deferred(),completed=[]

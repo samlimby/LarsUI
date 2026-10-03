@@ -180,7 +180,7 @@ function formatFileSize(bytes: number) {
   return `${bytes}b`
 }
 
-function AttachmentCard({ file, onRemove, reducedMotion, disabled, icons }: { file: File; onRemove: () => void; reducedMotion: boolean; disabled: boolean; icons?: AiComposerIcons }) {
+function AttachmentCard({ id, file, onRemove, reducedMotion, disabled, icons }: { id: number; file: File; onRemove: (button: HTMLButtonElement) => void; reducedMotion: boolean; disabled: boolean; icons?: AiComposerIcons }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -225,7 +225,7 @@ function AttachmentCard({ file, onRemove, reducedMotion, disabled, icons }: { fi
             transition={{ duration: reducedMotion ? 0 : 0.18 }}
           />
         )}
-        <button aria-label={`Remove ${file.name}`} className="lars-ai-composer__remove" disabled={disabled} onClick={onRemove} title={`Remove ${file.name}`} type="button">
+        <button aria-label={`Remove ${file.name}`} className="lars-ai-composer__remove" data-attachment-id={id} disabled={disabled} onClick={(event) => onRemove(event.currentTarget)} title={`Remove ${file.name}`} type="button">
           <AiComposerIcon icons={icons} name="close" size={16} />
         </button>
       </span>
@@ -277,7 +277,9 @@ export function AiComposer({
   const feedbackId = `${generatedMessageId}-feedback`
   const fileInput = useRef<HTMLInputElement>(null)
   const messageInput = useRef<HTMLTextAreaElement>(null)
+  const pendingMessageFocusRef = useRef(false)
   const composerContent = useRef<HTMLDivElement>(null)
+  const composerToolbar = useRef<HTMLDivElement>(null)
   const nextAttachmentId = useRef(0)
   const submittingRef = useRef(false)
   const submissionIdRef = useRef(0)
@@ -332,6 +334,7 @@ export function AiComposer({
   const message = value ?? draft
   const isDictating = dictationState !== 'idle'
   const isTranscribing = dictationState === 'accepting'
+  const hasKeyboardShortcuts = Boolean(onSubmit) && !interactionBlocked && !isStopping && !generating && !isDictating
   const displayedMessage = isDictating ? appendSpokenText(message, dictationPreview) : message
   // Preserve the stored draft and captured words while showing the processing placeholder.
   const inputValue = isTranscribing ? '' : displayedMessage
@@ -360,6 +363,106 @@ export function AiComposer({
     }),
     ...suggestions.filter((item) => !suggestionOrder.includes(item.id)),
   ]
+
+  // Stretch the mode group only after its natural layout wraps above the actions.
+  useLayoutEffect(() => {
+    const toolbar = composerToolbar.current
+    if (!toolbar) return
+    toolbar.removeAttribute('data-stacked')
+    if (isSmall || isDictating || !hasModelSelector) return
+    const modeGroup = toolbar.querySelector<HTMLElement>('.lars-ai-composer__mode-motion')
+    const actions = toolbar.querySelector<HTMLElement>('.lars-ai-composer__toolbar-actions')
+    if (!modeGroup || !actions) return
+
+    let active = true
+    let previousSizes = ''
+    const sizes = () => [toolbar.clientWidth, modeGroup.offsetWidth, actions.offsetWidth].join(':')
+    const updateLayout = () => {
+      // Measure intrinsic widths first so a filled row can return to inline.
+      toolbar.removeAttribute('data-stacked')
+      if (modeGroup.offsetHeight > 0 && actions.offsetTop >= modeGroup.offsetTop + modeGroup.offsetHeight) {
+        toolbar.setAttribute('data-stacked', '')
+      }
+      previousSizes = sizes()
+    }
+    updateLayout()
+    const observer = new ResizeObserver(() => {
+      if (sizes() !== previousSizes) updateLayout()
+    })
+    observer.observe(toolbar)
+    observer.observe(modeGroup)
+    observer.observe(actions)
+    void document.fonts?.ready.then(() => { if (active) updateLayout() })
+    return () => {
+      active = false
+      observer.disconnect()
+      toolbar.removeAttribute('data-stacked')
+    }
+  }, [isSmall, isDictating, hasModelSelector, hasModelDropdown, hasAddButton, hasDictation, variant])
+
+  // Grow with wrapped text, keeping complete lines within the viewport budget.
+  useLayoutEffect(() => {
+    const textarea = messageInput.current
+    const content = composerContent.current
+    if (!textarea || !content) return
+    if (isSmall) {
+      textarea.style.height = ''
+      return
+    }
+    // Keep the draft's height while the processing placeholder replaces its text.
+    if (isTranscribing) return
+
+    const composer = textarea.closest('form')
+    const toolbar = content.querySelector<HTMLElement>('.lars-ai-composer__toolbar')
+    const attachments = content.querySelector<HTMLElement>('.lars-ai-composer__attachments-reveal')
+    const resizeInput = () => {
+      const style = window.getComputedStyle(textarea)
+      const lineHeight = Number.parseFloat(style.lineHeight) || 18
+      const padding = (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.paddingBottom) || 0)
+      const border = (Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0)
+      const minHeight = Math.max(Number.parseFloat(style.minHeight) || 0, lineHeight * 3 + padding + border)
+      const lineLimit = lineHeight * 10 + padding + border
+      const scrollTop = textarea.scrollTop
+      textarea.style.height = '0px'
+      const naturalHeight = Math.max(minHeight, textarea.scrollHeight + border)
+      textarea.style.height = `${Math.min(naturalHeight, lineLimit)}px`
+
+      // Measure the natural inner content, rather than the animated outer clip.
+      // Include attachments, stacked controls, and the form's own padding/border.
+      const composerStyle = composer ? window.getComputedStyle(composer) : null
+      const outerSpacing = composerStyle
+        ? ['padding-top', 'padding-bottom', 'border-top-width', 'border-bottom-width']
+          .reduce((total, property) => total + (Number.parseFloat(composerStyle.getPropertyValue(property)) || 0), 0)
+        : 0
+      const chromeHeight = Math.max(0, content.offsetHeight - textarea.offsetHeight) + outerSpacing
+      const viewportHeight = window.visualViewport?.height || window.innerHeight
+      const availableLines = Math.floor((viewportHeight * 0.4 - chromeHeight - padding - border) / lineHeight)
+      // Preserve a usable minimum when the viewport or attachment area is very small.
+      const maxHeight = Math.max(minHeight, Math.min(lineLimit, availableLines * lineHeight + padding + border))
+      textarea.style.height = `${Math.min(naturalHeight, maxHeight)}px`
+      textarea.scrollTop = scrollTop
+    }
+
+    resizeInput()
+    const measureLayout = () => [textarea.clientWidth, toolbar?.offsetHeight ?? 0, attachments?.offsetHeight ?? 0].join(':')
+    let previousLayout = measureLayout()
+    const observer = new ResizeObserver(() => {
+      const layout = measureLayout()
+      if (layout === previousLayout) return
+      previousLayout = layout
+      resizeInput()
+    })
+    observer.observe(textarea)
+    if (toolbar) observer.observe(toolbar)
+    if (attachments) observer.observe(attachments)
+    window.addEventListener('resize', resizeInput)
+    window.visualViewport?.addEventListener('resize', resizeInput)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', resizeInput)
+      window.visualViewport?.removeEventListener('resize', resizeInput)
+    }
+  }, [inputValue, isDictating, isSmall, isTranscribing, variant, inputProps.className, inputProps.style, showAttachmentChrome, hasModelSelector, hasModelDropdown, hasAddButton, hasDictation])
 
   // Keep the expanded layout until clear: its wider input may fit the same text on one line.
   useLayoutEffect(() => {
@@ -473,12 +576,25 @@ export function AiComposer({
   }, [transcribeAudio])
 
   useEffect(() => {
-    if (!isDictating) return
+    if (!isDictating || isTranscribing) return
     const frame = window.requestAnimationFrame(() => {
       dictationViewRef.current?.querySelector<HTMLButtonElement>('[data-dictation-cancel]')?.focus({ preventScroll: true })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [isDictating])
+  }, [isDictating, isTranscribing])
+
+  // Compact dictation mounts its textarea only when transcription begins.
+  // Complete the requested handoff after refs are set, before the browser paints.
+  useLayoutEffect(() => {
+    if (!pendingMessageFocusRef.current) return
+    if (disabled) {
+      pendingMessageFocusRef.current = false
+      return
+    }
+    if (!messageInput.current || messageInput.current.disabled) return
+    messageInput.current.focus({ preventScroll: true })
+    pendingMessageFocusRef.current = false
+  })
 
   const setMessage = (next: string) => {
     messageRef.current = next
@@ -500,7 +616,13 @@ export function AiComposer({
   }
 
   const focusMessage = () => {
-    window.requestAnimationFrame(() => messageInput.current?.focus({ preventScroll: true }))
+    pendingMessageFocusRef.current = true
+    if (messageInput.current && !messageInput.current.disabled) {
+      messageInput.current.focus({ preventScroll: true })
+    } else {
+      // Keep focus on a live control until the compact textarea is mounted.
+      dictationViewRef.current?.querySelector<HTMLButtonElement>('[data-dictation-cancel]')?.focus({ preventScroll: true })
+    }
   }
 
   const capturedTranscript = () => appendSpokenText(dictationTranscriptRef.current, dictationInterimRef.current).trim()
@@ -599,6 +721,7 @@ export function AiComposer({
 
   const acceptDictation = () => {
     if (dictationState === 'starting' || acceptingDictationRef.current) return
+    focusMessage()
     const session = recordingRef.current
     if (session) {
       void finishRecordedDictation(session)
@@ -901,6 +1024,7 @@ export function AiComposer({
 
   const stopGeneration = async () => {
     if (!generating || disabled || readOnly || stoppingRef.current || !onStop) return
+    focusMessage()
     const requestId = ++stopRequestIdRef.current
     stoppingRef.current = true
     setIsStopping(true)
@@ -926,14 +1050,32 @@ export function AiComposer({
     void submit()
   }
 
+  const addAttachments = (selectedFiles: File[]) => {
+    if (interactionBlocked || submittingRef.current || isDictating || selectedFiles.length === 0) return
+    setAttachmentExiting(false)
+    setFiles((current) => [
+      ...current,
+      ...selectedFiles.map((file) => ({ id: nextAttachmentId.current++, file })),
+    ])
+  }
+
   const attach = (accept = '') => {
     if (interactionBlocked || !fileInput.current) return
     fileInput.current.accept = accept
     fileInput.current.click()
   }
 
-  const removeAttachment = (id: number) => {
+  const removeAttachment = (id: number, button: HTMLButtonElement) => {
     if (interactionBlocked) return
+    if (document.activeElement === button) {
+      const index = files.findIndex((attachment) => attachment.id === id)
+      const nextAttachment = files[index + 1] ?? files[index - 1]
+      const nextButton = nextAttachment
+        ? composerContent.current?.querySelector<HTMLButtonElement>(`[data-attachment-id="${nextAttachment.id}"]`)
+        : null
+      if (nextButton) nextButton.focus({ preventScroll: true })
+      else focusMessage()
+    }
     if (files.length === 1) setAttachmentExiting(true)
     setFiles((current) => current.filter((attachment) => attachment.id !== id))
   }
@@ -966,15 +1108,21 @@ export function AiComposer({
       <textarea
         {...inputProps}
         aria-describedby={[inputProps['aria-describedby'], feedback ? feedbackId : null].filter(Boolean).join(' ') || undefined}
-        disabled={disabled || isSubmitting}
-        aria-busy={isTranscribing || undefined}
+        aria-keyshortcuts={inputProps['aria-keyshortcuts'] ?? (hasKeyboardShortcuts ? 'Enter Shift+Enter' : undefined)}
+        disabled={disabled}
+        aria-busy={isSubmitting || isTranscribing || undefined}
         className={`lars-ai-composer__input${inputProps.className ? ` ${inputProps.className}` : ''}`}
         id={messageId}
-        onChange={(event) => setMessage(event.currentTarget.value)}
+        onChange={(event) => { if (!interactionBlocked && !isDictating) setMessage(event.currentTarget.value) }}
         onKeyDown={handleKeyDown}
         placeholder={isTranscribing ? 'Transcribing' : placeholder ?? (hasRotatingPlaceholder ? placeholderMessages[0] : 'How can I help you?')}
-        ref={messageInput}
-        readOnly={readOnly || isDictating}
+        ref={(node) => {
+          if (!node) return
+          messageInput.current = node
+          // An exiting compact dictation input must not clear the new input's ref.
+          return () => { if (messageInput.current === node) messageInput.current = null }
+        }}
+        readOnly={readOnly || isDictating || isSubmitting}
         rows={isSmall ? 1 : 3}
         value={inputValue}
       />
@@ -1169,7 +1317,7 @@ export function AiComposer({
           <div aria-label="Attached files" className="lars-ai-composer__attachments">
             <AnimatePresence initial={false}>
               {files.map(({ id, file }) => (
-                <AttachmentCard disabled={interactionBlocked} icons={icons} file={file} key={id} onRemove={() => removeAttachment(id)} reducedMotion={reducedMotion} />
+                <AttachmentCard disabled={interactionBlocked} icons={icons} id={id} file={file} key={id} onRemove={(button) => removeAttachment(id, button)} reducedMotion={reducedMotion} />
               ))}
             </AnimatePresence>
           </div>
@@ -1267,23 +1415,6 @@ export function AiComposer({
       key="controls"
       transition={{ duration: reducedMotion ? 0.12 : 0.2, ease: attachmentEase }}
     >
-      <motion.div className="lars-ai-composer__actions" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
-        <AnimatePresence initial={false} mode="popLayout">
-          {hasModelSelector && (
-            <motion.div
-              animate={{ opacity: 1, x: 0 }}
-              className="lars-ai-composer__mode-motion"
-              exit={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
-              initial={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
-              key="mode"
-              layout={reducedMotion ? false : 'position'}
-              transition={modeMotion}
-            >
-              {modeSelector}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
       <motion.div className="lars-ai-composer__actions lars-ai-composer__actions--end" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
         {hasAddButton && compactMoreMenu}
         {hasAddButton && <motion.div className="lars-ai-composer__attachment-motion" layout={reducedMotion ? false : 'position'} transition={modeMotion}>{attachmentMenu}</motion.div>}
@@ -1309,7 +1440,7 @@ export function AiComposer({
       >
         <span aria-hidden="true" className="lars-ai-composer__send-icons">
           {icon('send', { className: 'lars-ai-composer__send-arrow' })}
-          {icon('stop', { className: 'lars-ai-composer__send-stop' })}
+          {icon('stop', { size: 16, className: 'lars-ai-composer__send-stop' })}
         </span>
       </Button>
     </motion.div>
@@ -1334,6 +1465,20 @@ export function AiComposer({
       {...formProps}
       aria-busy={isSubmitting || isTranscribing || formProps['aria-busy']}
       className={`lars-ai-composer lars-ai-composer--${variant} lars-ai-composer--${effectiveSize}${size === 'small' ? ' lars-ai-composer--auto-size' : ''}${isDictating ? ' lars-ai-composer--dictating' : ''}${keyboardFocus ? ' lars-ai-composer--keyboard-focus' : ''}${hasModelSelector ? ' lars-ai-composer--with-model-selector' : ''}${showAttachmentChrome ? ' lars-ai-composer--has-attachments' : ''}${attachmentExiting ? ' lars-ai-composer--attachment-exiting' : ''}${className ? ` ${className}` : ''}`}
+      onDragOver={(event) => {
+        formProps.onDragOver?.(event)
+        if (event.defaultPrevented || !event.dataTransfer.types.includes('Files')) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = interactionBlocked || submittingRef.current || isDictating ? 'none' : 'copy'
+      }}
+      onDrop={(event) => {
+        formProps.onDrop?.(event)
+        if (event.defaultPrevented) return
+        const droppedFiles = Array.from(event.dataTransfer.files)
+        if (droppedFiles.length === 0) return
+        event.preventDefault()
+        addAttachments(droppedFiles)
+      }}
       onKeyDown={(event) => {
         if (isDictating && event.key === 'Escape') {
           event.preventDefault()
@@ -1358,13 +1503,7 @@ export function AiComposer({
             className="lars-ai-composer__file-input"
             multiple
             onChange={(event) => {
-              const selectedFiles = Array.from(event.currentTarget.files ?? [])
-              if (selectedFiles.length === 0) return
-              setAttachmentExiting(false)
-              setFiles((current) => [
-                ...current,
-                ...selectedFiles.map((file) => ({ id: nextAttachmentId.current++, file })),
-              ])
+              addAttachments(Array.from(event.currentTarget.files ?? []))
               event.currentTarget.value = ''
             }}
             ref={fileInput}
@@ -1388,9 +1527,26 @@ export function AiComposer({
                 {isSmall && sendButton}
               </motion.div>
               {!isSmall && (
-                <motion.div className="lars-ai-composer__toolbar" data-add-button={hasAddButton || undefined} data-model-selector={hasModelSelector || undefined} layout={!reducedMotion} transition={modeMotion}>
-                  <AnimatePresence initial={false} mode="popLayout">{isDictating ? dictationView : normalToolbarControls}</AnimatePresence>
-                  {sendButton}
+                <motion.div ref={composerToolbar} className="lars-ai-composer__toolbar" data-add-button={hasAddButton || undefined} data-model-selector={hasModelSelector || undefined} layout={!reducedMotion} transition={modeMotion}>
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {!isDictating && hasModelSelector && (
+                      <motion.div
+                        animate={{ opacity: 1, x: 0 }}
+                        className="lars-ai-composer__mode-motion"
+                        exit={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
+                        initial={{ opacity: 0, x: reducedMotion ? 0 : -8 }}
+                        key="mode"
+                        layout={reducedMotion ? false : 'position'}
+                        transition={modeMotion}
+                      >
+                        {modeSelector}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <motion.div className="lars-ai-composer__toolbar-actions" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
+                    <AnimatePresence initial={false} mode="popLayout">{isDictating ? dictationView : normalToolbarControls}</AnimatePresence>
+                    {sendButton}
+                  </motion.div>
                 </motion.div>
               )}
             </div>
