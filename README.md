@@ -15,7 +15,7 @@ AI Composer includes open-source Lucide defaults and installs without a Central 
 ## Use
 
 ```tsx
-import { AiComposer, Button, Chip, InlineSlider, SegmentedControl, Tooltip } from 'larsui'
+import { AdaptiveTooltip, AiComposer, Button, Chip, InlineSlider, SegmentedControl, Tooltip } from 'larsui'
 import 'larsui/style.css'
 ```
 
@@ -44,6 +44,12 @@ import 'larsui/style.css'
 <Tooltip anchor label="Export quality" description="Higher quality creates a larger file.">
   <button className="lars-tooltip-inline" type="button">export settings</button>
 </Tooltip>
+<AdaptiveTooltip steps={[
+  { title: 'Provenance', description: 'Where an item came from and how it changed.' },
+  { title: 'Chain of custody', description: 'Who handled the item.' },
+]}>
+  <button type="button">provenance</button>
+</AdaptiveTooltip>
 ```
 
 The AI Composer accepts `value` / `onValueChange` for a controlled draft, or `defaultValue` for an uncontrolled draft. Press Enter to submit or Shift + Enter for a new line. The standard input grows with wrapped text up to ten visible lines, or until the composer reaches 40% of the visible viewport height, then scrolls. It keeps the action buttons clear of the text. The viewport limit allows room for attachments and stacked controls, while preserving at least three input lines on very small screens. Choose attachments with the file picker or drag files onto the composer using native browser drag and drop. Attachments stay local until your `onSubmit` handler receives them; selecting or dropping a file does not upload it. Image and PDF previews are generated locally, with PDF support loaded on demand.
