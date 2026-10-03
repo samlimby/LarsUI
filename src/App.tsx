@@ -2752,13 +2752,39 @@ const aiComposerSuggestions: readonly AiComposerSuggestion[] = [
   { id: 'runway', label: 'How long is my cash runway?' },
 ]
 
-function AiComposerExample({ variant, size = 'default', mode, onModeChange, rotatePlaceholder = true, showAddButton = true, showDictation = true, showModelDropdown = true, showModelSelector = true, showSuggestions = false }: { variant: AiComposerVariant; size?: AiComposerSize; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showAddButton?: boolean; showDictation?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
+function AiComposerExample({ variant, size = 'default', generating, onGeneratingChange, mode, onModeChange, rotatePlaceholder = true, showAddButton = true, showDictation = true, showModelDropdown = true, showModelSelector = true, showSuggestions = false }: { variant: AiComposerVariant; size?: AiComposerSize; generating?: boolean; onGeneratingChange?: (generating: boolean) => void; mode?: AiComposerMode; onModeChange?: (mode: AiComposerMode) => void; rotatePlaceholder?: boolean; showAddButton?: boolean; showDictation?: boolean; showModelDropdown?: boolean; showModelSelector?: boolean; showSuggestions?: boolean }) {
   const [message, setMessage] = useState('')
+  const [demoGenerating, setDemoGenerating] = useState(false)
+  const generationTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  const activeGenerating = generating ?? demoGenerating
+  const setGenerating = onGeneratingChange ?? setDemoGenerating
+  const clearGenerationTimer = () => {
+    if (generationTimer.current !== null) window.clearTimeout(generationTimer.current)
+    generationTimer.current = null
+  }
+
+  useEffect(() => () => clearGenerationTimer(), [])
+  useEffect(() => {
+    if (!activeGenerating) clearGenerationTimer()
+  }, [activeGenerating])
 
   return (
     <div className="lars-ai-example">
       <AiComposer
-        onSubmit={() => { /* The component gallery demonstrates submission locally. */ }}
+        generating={activeGenerating}
+        onSubmit={() => {
+          // Simulate a host-owned response in the gallery.
+          clearGenerationTimer()
+          setGenerating(true)
+          generationTimer.current = window.setTimeout(() => {
+            generationTimer.current = null
+            setGenerating(false)
+          }, 10_000)
+        }}
+        onStop={() => {
+          clearGenerationTimer()
+          setGenerating(false)
+        }}
         key={variant}
         mode={mode}
         onModeChange={onModeChange}
@@ -2799,6 +2825,7 @@ function AiComposerStage() {
 }
 
 function AiComposerDetail() {
+  const [generating, setGenerating] = useState(false)
   const [variant, setVariant] = useState<AiComposerVariant>('unstructured')
   const [size, setSize] = useState<AiComposerSize>('default')
   const [showMode, setShowMode] = useState(true)
@@ -2837,6 +2864,7 @@ ${size === 'default' ? `const suggestions = [
   { id: 'runway', label: 'How long is my cash runway?' },
 ]\n` : ''}
 
+// Use your chat request or stream status, and its cancellation callback.
 <AiComposer
   variant="${variant}"
   size="${size}"
@@ -2849,6 +2877,8 @@ ${size === 'default' ? `const suggestions = [
   defaultMode="${composerMode}"` : ''}
   showSuggestions={${showSuggestions}}
   suggestions={suggestions}` : ''}
+  generating={isGenerating}
+  onStop={stopGeneration}
   ${submitExample}
 />`
 
@@ -2856,7 +2886,7 @@ ${size === 'default' ? `const suggestions = [
     <>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-component-canvas--ai-composer">
-          <AiComposerExample key={variant} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showAddButton={showAddButton} showDictation={showDictation} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
+          <AiComposerExample key={variant} generating={generating} onGeneratingChange={setGenerating} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showAddButton={showAddButton} showDictation={showDictation} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
         </div>
         <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">
           <header className="lars-properties__header">
@@ -2919,6 +2949,12 @@ ${size === 'default' ? `const suggestions = [
                 />
               </>
             )}
+            <SegmentedControl
+              label="Generating"
+              onChange={(next) => setGenerating(next === 'true')}
+              options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]}
+              value={generating ? 'true' : 'false'}
+            />
             <SegmentedControl
               label="Animating placeholder"
               onChange={(next) => setRotatePlaceholder(next === 'true')}

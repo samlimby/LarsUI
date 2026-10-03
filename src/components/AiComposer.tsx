@@ -69,8 +69,12 @@ export type AiComposerProps = Omit<ComponentProps<'form'>, 'children' | 'onSubmi
   onDictationComplete?: (transcript: string) => void
   /** Records audio and calls your provider when accepted; omitted uses browser recognition. */
   transcribeAudio?: AiComposerTranscribeAudio
-  /** The draft clears after success; rejected promises preserve it for retry. */
+  /** Success clears the draft; rejection preserves it. AbortError cancellation is silent. */
   onSubmit?: (submission: AiComposerSubmission) => void | Promise<void>
+  /** Host-controlled response generation state; replaces Send with Stop. */
+  generating?: boolean
+  /** Cancel the host's generation request. The host also resets generating when it ends. */
+  onStop?: () => void | Promise<void>
   onAction?: (action: AiComposerAction) => void
   placeholder?: string
   rotatePlaceholder?: boolean
@@ -239,6 +243,7 @@ export function AiComposer({
   defaultModel,
   defaultValue = '',
   disabled = false,
+  generating = false,
   readOnly = false,
   inputLabel = 'Message',
   inputProps = {},
@@ -251,6 +256,7 @@ export function AiComposer({
   onModelChange,
   onModeChange,
   onSubmit,
+  onStop,
   onValueChange,
   placeholder,
   rotatePlaceholder = true,
@@ -275,6 +281,8 @@ export function AiComposer({
   const nextAttachmentId = useRef(0)
   const submittingRef = useRef(false)
   const submissionIdRef = useRef(0)
+  const stoppingRef = useRef(false)
+  const stopRequestIdRef = useRef(0)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const dictationStreamRef = useRef<MediaStream | null>(null)
   const recordingRef = useRef<{ recording: AudioRecording; transcribe: AiComposerTranscribeAudio; language: string; startId: number } | null>(null)
@@ -304,6 +312,7 @@ export function AiComposer({
   const [shuffleRound, setShuffleRound] = useState(0)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isStopping, setIsStopping] = useState(false)
   const [submissionError, setSubmissionError] = useState<string | null>(null)
   const [files, setFiles] = useState<AttachedFile[]>([])
   const [attachmentExiting, setAttachmentExiting] = useState(false)
@@ -426,6 +435,7 @@ export function AiComposer({
 
   useEffect(() => () => {
     submissionIdRef.current += 1
+    stopRequestIdRef.current += 1
     dictationStartIdRef.current += 1
     if (stopTimeoutRef.current !== null) window.clearTimeout(stopTimeoutRef.current)
     if (recognitionRef.current) abortRecognition(recognitionRef.current)
@@ -437,6 +447,14 @@ export function AiComposer({
     dictationStreamRef.current?.getTracks().forEach((track) => track.stop())
     dictationStreamRef.current = null
   }, [])
+
+  useEffect(() => {
+    if (generating) return
+    // A completed response invalidates any unfinished stop callback from that response.
+    stopRequestIdRef.current += 1
+    stoppingRef.current = false
+    setIsStopping(false)
+  }, [generating])
 
   useEffect(() => {
     if (transcribeAudio) return
@@ -844,7 +862,7 @@ export function AiComposer({
   }
 
   const submit = async () => {
-    if (interactionBlocked || submittingRef.current || dictationState !== 'idle' || !canSubmit || !onSubmit) return
+    if (interactionBlocked || generating || stoppingRef.current || submittingRef.current || dictationState !== 'idle' || !canSubmit || !onSubmit) return
     if (messageInput.current && !messageInput.current.reportValidity()) return
     const submissionId = ++submissionIdRef.current
     const submittedMessage = messageRef.current
@@ -867,6 +885,8 @@ export function AiComposer({
       setFiles([])
       if (fileInput.current) fileInput.current.value = ''
     } catch (error) {
+      // A host may abort its pending send from onStop; cancellation keeps the draft quietly.
+      if (error instanceof Error && error.name === 'AbortError') return
       if (submissionIdRef.current === submissionId) {
         setSubmissionError(error instanceof Error && error.message ? error.message : 'Message could not be sent. Try again.')
       }
@@ -875,6 +895,26 @@ export function AiComposer({
         submittingRef.current = false
         setIsSubmitting(false)
         focusMessage()
+      }
+    }
+  }
+
+  const stopGeneration = async () => {
+    if (!generating || disabled || readOnly || stoppingRef.current || !onStop) return
+    const requestId = ++stopRequestIdRef.current
+    stoppingRef.current = true
+    setIsStopping(true)
+    setSubmissionError(null)
+    try {
+      await onStop()
+    } catch (error) {
+      if (stopRequestIdRef.current === requestId) {
+        setSubmissionError(error instanceof Error && error.message ? error.message : 'Generation could not be stopped. Try again.')
+      }
+    } finally {
+      if (stopRequestIdRef.current === requestId) {
+        stoppingRef.current = false
+        setIsStopping(false)
       }
     }
   }
@@ -1255,7 +1295,23 @@ export function AiComposer({
 
   const sendButton = (
     <motion.div className="lars-ai-composer__send-motion" layout={reducedMotion ? false : 'position'} transition={modeMotion}>
-      <Button aria-label="Send message" className="lars-ai-composer__send" disabled={interactionBlocked || isDictating || !canSubmit || !onSubmit} aria-busy={isSubmitting || undefined} iconOnly shape="neat" type="submit" variant="primary">{icon('send')}</Button>
+      <Button
+        aria-label={generating ? 'Stop generating' : 'Send message'}
+        aria-busy={generating || isStopping || isSubmitting || undefined}
+        className="lars-ai-composer__send"
+        data-generating={generating || undefined}
+        disabled={generating ? disabled || readOnly || isStopping || !onStop : interactionBlocked || isStopping || isDictating || !canSubmit || !onSubmit}
+        iconOnly
+        onClick={generating ? () => { void stopGeneration() } : undefined}
+        shape="neat"
+        type={generating ? 'button' : 'submit'}
+        variant="primary"
+      >
+        <span aria-hidden="true" className="lars-ai-composer__send-icons">
+          {icon('send', { className: 'lars-ai-composer__send-arrow' })}
+          {icon('stop', { className: 'lars-ai-composer__send-stop' })}
+        </span>
+      </Button>
     </motion.div>
   )
 
@@ -1318,7 +1374,7 @@ export function AiComposer({
           <div className="lars-ai-composer__surface">
             <div className="lars-ai-composer__body">
               {(!isSmall || !isDictating || isTranscribing) && <label className="lars-ai-composer__sr-only" htmlFor={messageId}>{inputLabel}</label>}
-              <span className="lars-ai-composer__sr-only" role="status">{isSubmitting ? 'Sending message' : isDictating ? dictationLiveStatus : ''}</span>
+              <span className="lars-ai-composer__sr-only" role="status">{isStopping ? 'Stopping generation' : generating ? 'Generating response' : isSubmitting ? 'Sending message' : isDictating ? dictationLiveStatus : ''}</span>
               {variant === 'unstructured' && attachments}
               <motion.div
                 className={`lars-ai-composer__entry${isSmall ? ' lars-ai-composer__small-row' : ''}`}

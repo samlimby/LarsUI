@@ -1,5 +1,6 @@
 import { IconArrowRedoDown } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconArrowRedoDown'
 import { IconCheckCircle2 } from '@central-icons-react/round-filled-radius-2-stroke-1.5/IconCheckCircle2'
+import { IconFormSquare } from '@central-icons-react/round-filled-radius-2-stroke-1.5/IconFormSquare'
 import { IconExclamationTriangle } from '@central-icons-react/round-filled-radius-2-stroke-1.5/IconExclamationTriangle'
 import { IconCrossMedium } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconCrossMedium'
 import { IconImages1 } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconImages1'
@@ -26,6 +27,7 @@ export const websiteAiComposerIcons: AiComposerIcons = {
   attachment: <IconPaperclip1 />,
   more: <IconDotGrid1x3VerticalTight />,
   send: <IconArrowUp />,
+  stop: <IconFormSquare />,
   shuffle: <IconShuffle />,
   chevronDown: <IconChevronBottom />,
   chevronRight: <IconChevronRight />,

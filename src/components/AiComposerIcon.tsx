@@ -1,4 +1,4 @@
-import { ArrowUp, Check, ChevronDown, ChevronRight, CircleCheck, EllipsisVertical, Images, Mic, Paperclip, Plus, Redo2, Shuffle, TriangleAlert, X } from 'lucide-react'
+import { ArrowUp, Check, ChevronDown, ChevronRight, CircleCheck, EllipsisVertical, Images, Mic, Paperclip, Plus, Redo2, Shuffle, Square, TriangleAlert, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useProvidedIcons } from './IconProvider'
 
@@ -13,6 +13,7 @@ const defaults = {
   attachment: Paperclip,
   more: EllipsisVertical,
   send: ArrowUp,
+  stop: Square,
   shuffle: Shuffle,
   chevronDown: ChevronDown,
   chevronRight: ChevronRight,
@@ -32,7 +33,7 @@ export function AiComposerIcon({ name, icons, size = 20, className = '' }: {
   const DefaultIcon = defaults[name]
   return (
     <span aria-hidden="true" className={`lars-ai-composer__glyph${className ? ` ${className}` : ''}`} style={{ width: size, height: size }}>
-      {override === undefined ? <DefaultIcon size={size} strokeWidth={1.5} /> : override}
+      {override === undefined ? <DefaultIcon size={size} strokeWidth={name === 'stop' ? 0 : 1.5} fill={name === 'stop' ? 'currentColor' : 'none'} /> : override}
     </span>
   )
 }

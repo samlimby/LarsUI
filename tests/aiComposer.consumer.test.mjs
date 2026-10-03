@@ -93,6 +93,125 @@ test('successful async submission preserves a newer controlled draft', async () 
   assert.deepEqual(changes,[])
 })
 
+test('host-controlled generation swaps Send for Stop without losing the draft, button, or focus', async () => {
+  for (const variant of ['structured', 'unstructured']) {
+    for (const size of ['default', 'small']) {
+      let sends = 0, stops = 0
+      const props = { key: variant + size, variant, size, defaultValue: 'Next draft', onSubmit: () => { sends++ }, onStop: () => { stops++ } }
+      await render(props)
+      const button = host.querySelector('[aria-label="Send message"]')
+      button.focus()
+      await render({ ...props, generating: true })
+      assert.equal(host.querySelector('[aria-label="Stop generating"]'), button)
+      assert.equal(document.activeElement, button)
+      assert.equal(button.type, 'button')
+      assert.equal(button.disabled, false)
+      await submit()
+      await act(() => input().dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })))
+      await click('Stop generating')
+      assert.equal(sends, 0)
+      assert.equal(stops, 1)
+      assert.equal(input().value, 'Next draft')
+      // Only the host ends generation; resolving onStop does not reset it.
+      assert.equal(button.getAttribute('aria-label'), 'Stop generating')
+      await render(props)
+      assert.equal(host.querySelector('[aria-label="Send message"]'), button)
+      assert.equal(button.type, 'submit')
+    }
+  }
+})
+
+test('Stop can cancel a pending async submission and works with an empty draft', async () => {
+  const controller = new AbortController()
+  const request = new Promise((_resolve, reject) => controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true }))
+  let sends = 0, stops = 0
+  function Chat() {
+    const [generating, setGenerating] = React.useState(false)
+    return h(AiComposer, {
+      rotatePlaceholder: false, defaultValue: 'Question', generating,
+      onSubmit: () => { sends++; setGenerating(true); return request },
+      onStop: () => { stops++; setGenerating(false); controller.abort() },
+    })
+  }
+  await act(() => root.render(h(Chat)))
+  await submit()
+  assert.equal(input().disabled, true)
+  assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, false)
+  await submit()
+  await click('Stop generating')
+  assert.equal(sends, 1)
+  assert.equal(stops, 1)
+  assert.equal(input().value, 'Question')
+  assert.equal(controller.signal.aborted, true)
+  assert.equal(host.querySelector('[role="alert"]'), null)
+  assert.ok(host.querySelector('[aria-label="Send message"]'))
+
+  await render({ generating: true, onStop: () => { stops++ } })
+  assert.equal(input().value, '')
+  assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, false)
+  await click('Stop generating')
+  assert.equal(stops, 2)
+})
+
+test('async Stop prevents duplicates, retains attachments and the draft, and allows error retry', async () => {
+  const requests = []
+  await render({ generating: true, defaultValue: 'Keep this draft', onStop: () => {
+    const request = deferred(); requests.push(request); return request.promise
+  } })
+  const file = new File(['contents'], 'next-message.txt', { type: 'text/plain' })
+  const upload = host.querySelector('input[type="file"]')
+  Object.defineProperty(upload, 'files', { configurable: true, value: [file] })
+  await act(() => upload.dispatchEvent(new window.Event('change', { bubbles: true })))
+  await click('Stop generating')
+  await click('Stop generating')
+  assert.equal(requests.length, 1)
+  assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, true)
+  await act(() => requests[0].reject(new Error('Please retry stopping')))
+  assert.equal(host.querySelector('[role="alert"]').textContent, 'Please retry stopping')
+  assert.equal(input().value, 'Keep this draft')
+  assert.ok(host.querySelector('[aria-label="Remove next-message.txt"]'))
+  assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, false)
+  await click('Stop generating')
+  assert.equal(requests.length, 2)
+  assert.equal(host.querySelector('[role="alert"]'), null)
+  await act(() => requests[1].resolve())
+  assert.equal(input().value, 'Keep this draft')
+})
+
+test('a previous generation stop cannot report a late failure after completion or unmount', async () => {
+  const request = deferred()
+  const props = { generating: true, defaultValue: 'New draft', onStop: () => request.promise }
+  await render(props)
+  await click('Stop generating')
+  await render({ ...props, generating: false })
+  await render(props)
+  await act(() => request.reject(new Error('Old failure')))
+  assert.equal(host.querySelector('[role="alert"]'), null)
+  assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, false)
+
+  const lateRequest = deferred()
+  await render({ ...props, onStop: () => lateRequest.promise })
+  await click('Stop generating')
+  await act(() => root.render(null))
+  await act(() => lateRequest.reject(new Error('Unmounted failure')))
+  assert.equal(host.textContent, '')
+})
+
+test('Stop respects disabled, readOnly, and missing callbacks, and supports a custom icon', async () => {
+  let stops = 0
+  for (const state of ['disabled', 'readOnly']) {
+    await render({ key: state, generating: true, [state]: true, onStop: () => { stops++ } })
+    assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, true)
+    await click('Stop generating')
+  }
+  await render({ generating: true })
+  assert.equal(host.querySelector('[aria-label="Stop generating"]').disabled, true)
+  assert.equal(stops, 0)
+  await act(() => root.render(h(IconProvider, { icons: { stop: h('svg', { 'data-test-icon': 'custom-stop' }) } },
+    h(AiComposer, { generating: true, onStop: () => {}, rotatePlaceholder: false }))))
+  assert.ok(host.querySelector('[aria-label="Stop generating"] [data-test-icon="custom-stop"]'))
+})
+
 test('disabled/read-only composers cannot submit or start dictation', async () => {
   for (const state of ['disabled','readOnly']) {
     let count=0
@@ -133,6 +252,9 @@ test('provider icons inherit, nest, and allow per-component overrides', async ()
   assert.ok(host.querySelector('[data-test-icon="nested"]'))
   assert.ok(host.querySelector('[data-test-icon="local"]'))
   assert.equal(host.querySelector('[data-test-icon="parent"]'),null)
+  await render({ generating: true, onStop: () => {} })
+  assert.equal(host.querySelector('[aria-label="Start voice dictation"] svg').getAttribute('fill'), 'none')
+  assert.equal(host.querySelector('[aria-label="Stop generating"] .lars-ai-composer__send-stop svg').getAttribute('fill'), 'currentColor')
 })
 
 function mockAudio() {
@@ -155,6 +277,7 @@ test('accept waits for the final audio chunk, displays Transcribing, then append
   let captured
   await render({defaultValue:'Existing',rotatePlaceholder:true,transcribeAudio:async(blob,options)=>{captured={text:await blob.text(),options};return request.promise},onDictationComplete:text=>completed.push(text)})
   await click('Start voice dictation')
+  await act(() => new Promise(resolve => requestAnimationFrame(resolve)))
   assert.equal(document.activeElement.getAttribute('aria-label'),'Cancel voice dictation')
   await click('Use dictated text')
   assert.equal(captured.text,'first last')

@@ -48,7 +48,7 @@ import 'larsui/style.css'
 
 The AI Composer accepts `value` / `onValueChange` for a controlled draft, or `defaultValue` for an uncontrolled draft. Press Enter to submit or Shift + Enter for a new line. Attachments stay local until your `onSubmit` handler receives them; selecting a file does not upload it. Image and PDF previews are generated locally, with PDF support loaded on demand.
 
-Provide `onSubmit` to enable sending. It receives `{ message, files, model, mode, variant }`. Model and mode are included even when their controls are hidden. Return a promise for an asynchronous send: controls are disabled while it runs, success clears the submitted draft and attachments, and rejection preserves them for retry and displays the error. Controlled consumers must apply `onValueChange`, including the empty string after a successful send.
+Provide `onSubmit` to enable sending. It receives `{ message, files, model, mode, variant }`. Model and mode are included even when their controls are hidden. Return a promise for an asynchronous send: editing controls are disabled while it runs, success clears the submitted draft and attachments, and rejection preserves them for retry and displays the error. An `AbortError` cancellation preserves the draft without an error warning. Controlled consumers must apply `onValueChange`, including the empty string after a successful send.
 
 Use `disabled` to disable all interactions, `readOnly` to preserve selection/copying without editing or sending, and `inputLabel` to name the textarea accessibly. `inputProps` forwards native textarea options such as `name`, `required`, `maxLength`, `autoFocus`, and `aria-describedby`; other native form props belong on the composer itself. The component renders a form, so do not nest it inside another form. Its scoped styles do not require the website's global CSS reset.
 
@@ -70,6 +70,7 @@ import { IconMicrophone } from '@central-icons-react/round-outlined-radius-2-str
 import { IconPlusMedium } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconPlusMedium'
 import { IconCrossMedium } from '@central-icons-react/round-outlined-radius-2-stroke-1.5/IconCrossMedium'
 import { IconCheckCircle2 } from '@central-icons-react/round-filled-radius-2-stroke-1.5/IconCheckCircle2'
+import { IconFormSquare } from '@central-icons-react/round-filled-radius-2-stroke-1.5/IconFormSquare'
 import 'larsui/style.css'
 
 const icons = {
@@ -77,6 +78,7 @@ const icons = {
   close: <IconCrossMedium />,
   microphone: <IconMicrophone />,
   acceptDictation: <IconCheckCircle2 />,
+  stop: <IconFormSquare />,
 } satisfies AiComposerIcons
 
 export function ChatInput() {
@@ -88,11 +90,27 @@ export function ChatInput() {
 }
 ```
 
-Available slots: `add`, `close`, `microphone`, `acceptDictation`, `suggestion`, `warning`, `uploadImages`, `attachment`, `more`, `send`, `shuffle`, `chevronDown`, `chevronRight`, and `selected`. For model logos, pass `icon` on each `modelOptions` entry. Nested providers inherit other slots. The core component does not import the Central Icons React packages or require a license key at runtime; the host application owns those imports and installation credentials.
+Available slots: `add`, `close`, `microphone`, `acceptDictation`, `suggestion`, `warning`, `uploadImages`, `attachment`, `more`, `send`, `stop`, `shuffle`, `chevronDown`, `chevronRight`, and `selected`. For model logos, pass `icon` on each `modelOptions` entry. Nested providers inherit other slots. The core component does not import the Central Icons React packages or require a license key at runtime; the host application owns those imports and installation credentials.
 
 ### Compact layout
 
 With `size="small"`, set `showAddButton={false}` and `showDictation={false}` for an input and send button only. Both default to `true` and work at either size; hidden actions stay hidden if the input expands into the standard layout. Disabling dictation also removes it from the add menu.
+
+### Generating responses
+
+Pass `generating` from your chat request or stream status. It defaults to `false`; the composer never starts a generation request itself. While `true`, the Send arrow transitions to a filled square and the button calls `onStop` instead of submitting. The button keeps its size, position, and focus, and reduced motion uses a short fade.
+
+```tsx
+<AiComposer
+  generating={isGenerating}
+  onSubmit={sendMessage}
+  onStop={stopGeneration}
+/>
+```
+
+Your host sets `isGenerating` when a response starts and resets it when that response completes, fails, or is cancelled. Connect `stopGeneration` to your chat SDK's stop method or an `AbortController`. If `onSubmit` returns the entire request promise, Stop remains available while it is pending. To allow composing the next draft during a streamed response, resolve `onSubmit` after accepting the message and drive the longer response lifecycle with `generating`.
+
+New submissions are blocked during generation, including Enter in the textarea. Stop works with an empty draft and preserves any new draft or attachments. `onStop` may return a promise; repeat stops are disabled while it runs, and rejection displays a readable error for retry. The host still owns `generating` after the callback completes. Without `onStop`, or with `disabled` / `readOnly`, the Stop button is disabled. Use the `stop` icon slot to supply your preferred square glyph.
 
 ### Voice dictation
 
