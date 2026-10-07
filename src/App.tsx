@@ -1174,6 +1174,7 @@ function parseButtonCode(code: string) {
 
   return {
     disabled: readBooleanProp(attributes, 'disabled'),
+    highContrast: readBooleanProp(attributes, 'highContrast'),
     icon: /<span\b[^>]*aria-hidden=["']true["'][^>]*>\s*→\s*<\/span>/.test(body) || /<ArrowIcon\s*\/>/.test(body),
     iconOnly,
     label: iconOnly
@@ -1504,6 +1505,7 @@ function ButtonConfigurator() {
   const [shape, setShape] = useState<ButtonShape>('full')
   const [size, setSize] = useState<ButtonSize>('medium')
   const [disabled, setDisabled] = useState(false)
+  const [highContrast, setHighContrast] = useState(false)
   const [loadingMode, setLoadingMode] = useState<ButtonLoadingMode>('idle')
   const [previewLoading, setPreviewLoading] = useState(false)
   const [loadingEffects, setLoadingEffects] = useState<Record<ButtonShape, ButtonLoadingEffect>>({
@@ -1529,7 +1531,7 @@ function ButtonConfigurator() {
     ? '<ArrowIcon />'
     : `${buttonLabel}${icon === 'true' ? '\n      <ArrowIcon />' : ''}`
   const iconCode = iconOnly || icon === 'true' ? BUTTON_ARROW_ICON_CODE : ''
-  const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"\n      size="${size}"${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}`
+  const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"\n      size="${size}"${highContrast ? '\n      highContrast' : ''}${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}`
   const code = loadingMode === 'idle'
     ? `import { Button } from 'larsui'
 import 'larsui/style.css'
@@ -1575,6 +1577,7 @@ export function Example() {
             aria-label={iconOnly ? buttonLabel : undefined}
             className="lars-button-preview"
             disabled={disabled}
+            highContrast={highContrast}
             iconOnly={iconOnly}
             loading={previewLoading}
             loadingText={statusLabel}
@@ -1615,6 +1618,13 @@ export function Example() {
               onChange={setSize}
               options={[{ label: 'Medium', value: 'medium' }, { label: 'Large', value: 'large' }]}
               value={size}
+            />
+
+            <PropertySelect
+              label="High Contrast"
+              onChange={(next) => setHighContrast(next === 'on')}
+              options={[{ label: 'Off', value: 'off' }, { label: 'On', value: 'on' }]}
+              value={highContrast ? 'on' : 'off'}
             />
 
             <AnimatePresence initial={false} mode="popLayout">
@@ -1724,6 +1734,7 @@ export function Example() {
             if (next.label !== null) setLabel(next.label)
             setIconOnly(next.iconOnly)
             setDisabled(next.disabled)
+            setHighContrast(next.highContrast)
             if (!next.iconOnly) setIcon(next.icon ? 'true' : 'false')
           }}
         />

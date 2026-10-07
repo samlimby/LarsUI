@@ -27,13 +27,15 @@ const VISUAL_TRANSITION_MS = 180
 
 export type ButtonProps = Omit<ComponentProps<typeof BaseButton>, 'className'> & {
   className?: string
+  /** Use the opposite of the page or system color theme. Defaults to false. */
+  highContrast?: boolean
   iconOnly?: boolean
   /** Keeps focus on the button while preventing another action or form submit. */
   loading?: boolean
   /** Visible and announced loading label. */
   loadingText?: string
   shape?: ButtonShape
-  /** Medium preserves the original sizing; Large fits its content with 24px / 12px padding. */
+  /** Medium is 32px tall; Large is 44px tall with 20px icons and 12px vertical padding. */
   size?: ButtonSize
   /** A loading-dev effect name or a custom indicator. */
   spinner?: ButtonSpinner | ReactElement
@@ -45,6 +47,7 @@ export function Button({
   'aria-disabled': ariaDisabled,
   children,
   className = '',
+  highContrast = false,
   iconOnly = false,
   loading = false,
   loadingText = 'Loading',
@@ -104,7 +107,7 @@ export function Button({
         ref={buttonRef}
         aria-busy={loading || ariaBusy}
         aria-disabled={loading || ariaDisabled}
-        className={`lars-button lars-button--${variant} lars-button--${shape} lars-button--${size}${iconOnly ? ' lars-button--icon-only' : ''}${loading ? ' lars-button--loading' : ''}${retainSpinner ? ' lars-button--retaining-spinner' : ''}${className ? ` ${className}` : ''}`}
+        className={`lars-button lars-button--${variant} lars-button--${shape} lars-button--${size}${highContrast ? ' lars-button--high-contrast' : ''}${iconOnly ? ' lars-button--icon-only' : ''}${loading ? ' lars-button--loading' : ''}${retainSpinner ? ' lars-button--retaining-spinner' : ''}${className ? ` ${className}` : ''}`}
         onClick={(event) => {
           if (loading) {
             event.preventDefault()

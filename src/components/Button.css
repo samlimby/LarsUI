@@ -103,12 +103,71 @@
   --button-gap: 8px;
   width: fit-content;
   min-width: 0;
-  height: fit-content;
+  height: 44px;
   padding: 12px 24px;
   font-size: 14px;
   line-height: 18px;
   letter-spacing: 0;
-  text-align: left;
+  text-align: center;
+}
+
+.lars-button--large.lars-button--icon-only {
+  width: 44px;
+  min-width: 44px;
+  padding: 12px;
+}
+
+.lars-button--high-contrast {
+  --lars-focus-ring: #8da4ef;
+  --button-primary-bg: #202020;
+  --button-primary-text: #fcfcfc;
+  --button-primary-hover: #646464;
+  --button-secondary-bg: #d9d9d9;
+  --button-secondary-text: #646464;
+  --button-secondary-hover: #cecece;
+  --button-secondary-hover-text: #202020;
+  --button-tertiary-text: #202020;
+  --button-tertiary-hover: #e0e0e0;
+  --button-danger-bg: #f8bfc8;
+  --button-danger-text: #ca244d;
+  --button-danger-hover: #efacb8;
+  --button-danger-hover-text: #64172b;
+}
+
+html[data-theme='light'] .lars-button--high-contrast {
+  --lars-focus-ring: #3a5bc7;
+  --button-primary-bg: #f2f2f2;
+  --button-primary-text: #181818;
+  --button-primary-hover: #d8d8d8;
+  --button-secondary-bg: #383838;
+  --button-secondary-text: #fff;
+  --button-secondary-hover: #484848;
+  --button-secondary-hover-text: #fff;
+  --button-tertiary-text: #f2f2f2;
+  --button-tertiary-hover: #2b2b2b;
+  --button-danger-bg: #5a1c2c;
+  --button-danger-text: #fed2e1;
+  --button-danger-hover: #74223a;
+  --button-danger-hover-text: #fed2e1;
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-theme]) .lars-button--high-contrast {
+    --lars-focus-ring: #3a5bc7;
+    --button-primary-bg: #f2f2f2;
+    --button-primary-text: #181818;
+    --button-primary-hover: #d8d8d8;
+    --button-secondary-bg: #383838;
+    --button-secondary-text: #fff;
+    --button-secondary-hover: #484848;
+    --button-secondary-hover-text: #fff;
+    --button-tertiary-text: #f2f2f2;
+    --button-tertiary-hover: #2b2b2b;
+    --button-danger-bg: #5a1c2c;
+    --button-danger-text: #fed2e1;
+    --button-danger-hover: #74223a;
+    --button-danger-hover-text: #fed2e1;
+  }
 }
 
 .lars-button--primary {
@@ -121,7 +180,10 @@
   color: var(--button-secondary-text, #646464);
 }
 
-.lars-button--tertiary { background: transparent; }
+.lars-button--tertiary {
+  background: transparent;
+  color: var(--button-tertiary-text, var(--lars-text-primary, #202020));
+}
 
 .lars-button--danger {
   background: var(--button-danger-bg, #f8bfc8);
