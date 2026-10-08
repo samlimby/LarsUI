@@ -1624,20 +1624,6 @@ export function Example() {
               value={type}
             />
 
-            <SegmentedControl
-              label="Size"
-              onChange={setSize}
-              options={[{ label: 'Medium', value: 'medium' }, { label: 'Large', value: 'large' }]}
-              value={size}
-            />
-
-            <PropertySelect
-              label="High Contrast"
-              onChange={(next) => setHighContrast(next === 'on')}
-              options={[{ label: 'Off', value: 'off' }, { label: 'On', value: 'on' }]}
-              value={highContrast ? 'on' : 'off'}
-            />
-
             <AnimatePresence initial={false} mode="popLayout">
               {!iconOnly && (
                 <motion.div
@@ -1673,6 +1659,20 @@ export function Example() {
                 setLoadingMode(nextMode)
               }}
               shape={shape}
+            />
+
+            <SegmentedControl
+              label="Size"
+              onChange={setSize}
+              options={[{ label: 'Medium', value: 'medium' }, { label: 'Large', value: 'large' }]}
+              value={size}
+            />
+
+            <PropertySelect
+              label="High Contrast"
+              onChange={(next) => setHighContrast(next === 'on')}
+              options={[{ label: 'Off', value: 'off' }, { label: 'On', value: 'on' }]}
+              value={highContrast ? 'on' : 'off'}
             />
 
             <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
