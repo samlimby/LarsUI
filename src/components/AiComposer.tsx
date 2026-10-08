@@ -210,7 +210,7 @@ function AttachmentCard({ id, file, onRemove, reducedMotion, disabled, icons }: 
     <motion.div
       animate={{ opacity: 1, y: 0 }}
       className="lars-ai-composer__attachment"
-      exit={{ opacity: 0, y: reducedMotion ? 0 : -4 }}
+      exit={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
       initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
       layout={reducedMotion ? false : 'position'}
       transition={{ duration: reducedMotion ? 0.12 : 0.2, ease: attachmentEase }}
@@ -318,6 +318,8 @@ export function AiComposer({
   const [submissionError, setSubmissionError] = useState<string | null>(null)
   const [files, setFiles] = useState<AttachedFile[]>([])
   const [attachmentExiting, setAttachmentExiting] = useState(false)
+  const attachmentList = useRef<HTMLDivElement>(null)
+  const [attachmentHeight, setAttachmentHeight] = useState(0)
   const [keyboardFocus, setKeyboardFocus] = useState(false)
   const [dictationState, setDictationState] = useState<DictationState>('idle')
   const [dictationStream, setDictationStream] = useState<MediaStream | null>(null)
@@ -363,6 +365,17 @@ export function AiComposer({
     }),
     ...suggestions.filter((item) => !suggestionOrder.includes(item.id)),
   ]
+
+  // A numeric target also animates row wrapping while attachments remain present.
+  useLayoutEffect(() => {
+    const list = attachmentList.current
+    if (!list) return
+    const measureHeight = () => setAttachmentHeight(list.getBoundingClientRect().height)
+    measureHeight()
+    const observer = new ResizeObserver(measureHeight)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [variant])
 
   // Stretch the mode group only after its natural layout wraps above the actions.
   useLayoutEffect(() => {
@@ -1307,29 +1320,30 @@ export function AiComposer({
   )
 
   const attachments = (
-    <AnimatePresence initial={false} onExitComplete={() => setAttachmentExiting(false)}>
-      {hasAttachments && (
-        <motion.div
-          animate={{ height: 'auto', opacity: 1 }}
-          className="lars-ai-composer__attachments-reveal"
-          exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-          initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-          key="attachments"
-          layout={reducedMotion ? false : 'size'}
-          transition={reducedMotion
-            ? { duration: 0.12 }
-            : { height: { duration: 0.26, ease: attachmentEase }, layout: { duration: 0.26, ease: attachmentEase }, opacity: { duration: 0.18, ease: attachmentEase } }}
-        >
-          <div aria-label="Attached files" className="lars-ai-composer__attachments">
-            <AnimatePresence initial={false}>
-              {files.map(({ id, file }) => (
-                <AttachmentCard disabled={interactionBlocked} icons={icons} id={id} file={file} key={id} onRemove={(button) => removeAttachment(id, button)} reducedMotion={reducedMotion} />
-              ))}
-            </AnimatePresence>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      className="lars-ai-composer__attachments-reveal"
+      initial={false}
+      animate={{
+        height: hasAttachments || (reducedMotion && attachmentExiting) ? attachmentHeight : 0,
+        opacity: hasAttachments ? 1 : 0,
+      }}
+      aria-hidden={!hasAttachments || undefined}
+      inert={!hasAttachments || undefined}
+      onAnimationComplete={() => {
+        if (!hasAttachments && attachmentExiting) setAttachmentExiting(false)
+      }}
+      transition={reducedMotion
+        ? { height: { duration: 0 }, opacity: { duration: 0.12 } }
+        : { height: { duration: 0.26, ease: attachmentEase }, opacity: { duration: 0.18, ease: attachmentEase } }}
+    >
+      <div aria-label="Attached files" className="lars-ai-composer__attachments" ref={attachmentList}>
+        <AnimatePresence initial={false}>
+          {files.map(({ id, file }) => (
+            <AttachmentCard disabled={interactionBlocked} icons={icons} id={id} file={file} key={id} onRemove={(button) => removeAttachment(id, button)} reducedMotion={reducedMotion} />
+          ))}
+        </AnimatePresence>
+      </div>
+    </motion.div>
   )
 
   const dictationStatus = dictationState === 'starting'

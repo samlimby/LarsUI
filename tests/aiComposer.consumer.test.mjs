@@ -31,9 +31,11 @@ const deferred = () => { let resolve, reject; const promise = new Promise((a,b) 
 test('server-rendered small composers have natural height and retain their draft', () => {
   for (const variant of ['structured', 'unstructured']) {
     const html = renderToString(h(AiComposer, { size:'small', variant, defaultValue:'Saved draft' }))
-    assert.ok(html.includes('Saved draft'))
-    assert.ok(html.includes('height:auto'))
-    assert.ok(!html.includes('height:0'))
+    const markup = document.createElement('div')
+    markup.innerHTML = html
+    assert.equal(markup.querySelector('textarea').textContent, 'Saved draft')
+    assert.equal(markup.querySelector('.lars-ai-composer__content-clip').style.height, 'auto')
+    assert.equal(markup.querySelector('.lars-ai-composer__attachments-reveal').style.height, '0px')
   }
 })
 
@@ -90,6 +92,47 @@ const dispatchDrag = async (type, files = [], types = ['Files'], target = host.q
   await act(() => target.dispatchEvent(event))
   return { event, dataTransfer }
 }
+
+test('attachment reveal stays mounted through removal, interrupted re-add, and attachment-only submission', async () => {
+  for (const variant of ['structured', 'unstructured']) for (const size of ['default', 'small']) {
+    let submission
+    await render({ key: variant + size, variant, size, onSubmit: payload => { submission = payload } })
+    const reveal = host.querySelector('.lars-ai-composer__attachments-reveal')
+    const send = () => host.querySelector('[aria-label="Send message"]')
+    const file = new File(['contents'], 'notes.txt', { type: 'text/plain' })
+    const settle = () => act(() => new Promise(resolve => setTimeout(resolve, 180)))
+    assert.equal(reveal.getAttribute('aria-hidden'), 'true')
+    assert.equal(reveal.hasAttribute('inert'), true)
+
+    await dispatchDrag('drop', [file])
+    await settle()
+    assert.equal(reveal.hasAttribute('aria-hidden'), false)
+    assert.equal(reveal.hasAttribute('inert'), false)
+    assert.equal(send().disabled, false)
+    await click('Remove notes.txt')
+    assert.equal(reveal.getAttribute('aria-hidden'), 'true')
+    assert.equal(reveal.hasAttribute('inert'), true)
+    assert.equal(send().disabled, true)
+
+    // Re-adding during the fade must prevent stale completion from hiding it.
+    await dispatchDrag('drop', [file])
+    await settle()
+    assert.equal(host.querySelector('.lars-ai-composer__attachments-reveal'), reveal)
+    assert.equal(reveal.hasAttribute('inert'), false)
+    assert.equal(host.querySelector('form').classList.contains('lars-ai-composer--attachment-exiting'), false)
+    assert.equal(send().disabled, false)
+
+    await submit()
+    assert.deepEqual(submission.files, [file])
+    assert.equal(submission.message, '')
+    assert.equal(send().disabled, true)
+    assert.equal(reveal.hasAttribute('inert'), true)
+    await settle()
+    assert.equal(host.querySelector('.lars-ai-composer__attachments-reveal'), reveal)
+    assert.equal(host.querySelector('form').classList.contains('lars-ai-composer--has-attachments'), false)
+    assert.equal(reveal.style.height, '0px')
+  }
+})
 
 
 test('removing a focused attachment hands focus to the next, previous, or message input', async () => {
