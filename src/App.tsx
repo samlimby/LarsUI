@@ -1374,7 +1374,7 @@ function ButtonLoadingProperties({
   const [open, setOpen] = useState(false)
   const [pointerFocus, setPointerFocus] = useState(false)
   const reduceMotion = useReducedMotion()
-  const menuRef = usePropertyMenuFill(open, 8)
+  const menuRef = usePropertyMenuFill(open)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupId = useId()
   const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
