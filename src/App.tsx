@@ -1500,8 +1500,7 @@ function ButtonLoadingProperties({
 function ButtonConfigurator() {
   const [label, setLabel] = useState('View')
   const [variant, setVariant] = useState<ButtonVariant>('primary')
-  const [icon, setIcon] = useState<'true' | 'false'>('false')
-  const [iconOnly, setIconOnly] = useState(false)
+  const [type, setType] = useState<'text' | 'text-icon' | 'icon'>('text')
   const [shape, setShape] = useState<ButtonShape>('full')
   const [size, setSize] = useState<ButtonSize>('medium')
   const [disabled, setDisabled] = useState(false)
@@ -1524,13 +1523,15 @@ function ButtonConfigurator() {
   }, [previewLoading])
 
   const reduceMotion = useReducedMotion()
+  const iconOnly = type === 'icon'
+  const showIcon = type !== 'text'
   const buttonLabel = label || 'Button'
   const activeEffect = loadingMode === 'generating' ? generatingEffects[shape] : loadingEffects[shape]
   const statusLabel = loadingMode === 'generating' ? 'Generating' : 'Loading'
   const idleContent = iconOnly
     ? '<ArrowIcon />'
-    : `${buttonLabel}${icon === 'true' ? '\n      <ArrowIcon />' : ''}`
-  const iconCode = iconOnly || icon === 'true' ? BUTTON_ARROW_ICON_CODE : ''
+    : `${buttonLabel}${showIcon ? '\n      <ArrowIcon />' : ''}`
+  const iconCode = showIcon ? BUTTON_ARROW_ICON_CODE : ''
   const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"\n      size="${size}"${highContrast ? '\n      highContrast' : ''}${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}`
   const code = loadingMode === 'idle'
     ? `import { Button } from 'larsui'
@@ -1571,7 +1572,7 @@ export function Example() {
 
   return (
     <>
-      <div className="lars-configurator">
+      <div className="lars-configurator lars-configurator--buttons">
         <div className="lars-stage lars-component-canvas">
           <Button
             aria-label={iconOnly ? buttonLabel : undefined}
@@ -1591,7 +1592,7 @@ export function Example() {
             variant={variant}
           >
             <span aria-hidden={iconOnly || undefined} className="lars-button__label" key="label">{buttonLabel}</span>
-            <span aria-hidden="true" className="lars-button__icon" data-hidden={!iconOnly && icon === 'false' ? 'true' : undefined} key="icon"><ArrowIcon /></span>
+            <span aria-hidden="true" className="lars-button__icon" data-hidden={!showIcon ? 'true' : undefined} key="icon"><ArrowIcon /></span>
           </Button>
         </div>
 
@@ -1611,6 +1612,17 @@ export function Example() {
                 { label: 'Danger', value: 'danger' },
               ]}
               value={variant}
+            />
+
+            <PropertySelect
+              label="Type"
+              onChange={setType}
+              options={[
+                { label: 'Text Only', value: 'text' },
+                { label: 'Text + Icon', value: 'text-icon' },
+                { label: 'Icon Only', value: 'icon' },
+              ]}
+              value={type}
             />
 
             <SegmentedControl
@@ -1666,54 +1678,10 @@ export function Example() {
 
             <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
               <SegmentedControl
-                label="Icon Only"
-                onChange={(value) => setIconOnly(value === 'true')}
-                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
-                value={iconOnly ? 'true' : 'false'}
-              />
-            </motion.div>
-
-            <AnimatePresence initial={false} mode="popLayout">
-              {!iconOnly && (
-                <motion.div
-                  animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
-                  className="lars-properties__conditional"
-                  exit={{
-                    opacity: 0,
-                    transform: reduceMotion ? 'translate3d(0, 0, 0)' : 'translate3d(0, -4px, 0)',
-                  }}
-                  initial={{
-                    opacity: 0,
-                    transform: reduceMotion ? 'translate3d(0, 0, 0)' : 'translate3d(0, -4px, 0)',
-                  }}
-                  key="button-icon"
-                  transition={{ duration: reduceMotion ? 0.14 : 0.18, ease: [0.19, 1, 0.22, 1] }}
-                >
-                  <SegmentedControl
-                    label="Icon"
-                    onChange={setIcon}
-                    options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
-                    value={icon}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
-              <SegmentedControl
                 label="Shape"
                 onChange={setShape}
                 options={[{ label: 'Full', value: 'full' }, { label: 'Neat', value: 'neat' }]}
                 value={shape}
-              />
-            </motion.div>
-
-            <motion.div layout={!reduceMotion} transition={{ type: 'spring', duration: 0.26, bounce: 0 }}>
-              <SegmentedControl
-                label="Disabled"
-                onChange={(value) => setDisabled(value === 'true')}
-                options={[{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]}
-                value={disabled ? 'true' : 'false'}
               />
             </motion.div>
           </div>
@@ -1732,10 +1700,9 @@ export function Example() {
             if (next.shape) setShape(next.shape)
             if (next.size) setSize(next.size)
             if (next.label !== null) setLabel(next.label)
-            setIconOnly(next.iconOnly)
+            setType(next.iconOnly ? 'icon' : next.icon ? 'text-icon' : 'text')
             setDisabled(next.disabled)
             setHighContrast(next.highContrast)
-            if (!next.iconOnly) setIcon(next.icon ? 'true' : 'false')
           }}
         />
 

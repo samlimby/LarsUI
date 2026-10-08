@@ -121,6 +121,19 @@ test('reduced motion applies the new layout without size or position animations'
   assert.equal(host.querySelector('.lars-button__label').hasAttribute('aria-hidden'), false)
 })
 
+test('the native disabled prop remains available and prevents clicks', async () => {
+  let actions = 0
+  await render({ disabled: true, onClick: () => actions++ })
+  const button = host.querySelector('button')
+  assert.equal(button.disabled, true)
+  await act(() => button.click())
+  assert.equal(actions, 0)
+  await render({ disabled: false, onClick: () => actions++ })
+  assert.equal(button.disabled, false)
+  await act(() => button.click())
+  assert.equal(actions, 1)
+})
+
 test('loading uses the same icon-only transition while retaining focus and blocking duplicate actions', async () => {
   let actions = 0
   const onClick = () => actions++
