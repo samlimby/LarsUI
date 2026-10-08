@@ -894,6 +894,9 @@
   line-height: 20px;
 }
 
+/* Changing the button code sample must not shift the centered preview. */
+html:has(.lars-configurator--buttons) { scrollbar-gutter: stable; }
+
 .lars-configurator {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
