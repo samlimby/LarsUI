@@ -1323,7 +1323,7 @@ const BUTTON_EFFECT_OPTIONS: Record<
   },
 }
 
-function usePropertyMenuFill(open: boolean) {
+function usePropertyMenuFill(open: boolean, bottomInset = 4) {
   const menuRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -1337,8 +1337,7 @@ function usePropertyMenuFill(open: boolean) {
     const updateHeight = () => {
       const height = panel.getBoundingClientRect().bottom
         - menu.getBoundingClientRect().top
-        - panel.scrollTop
-        - 4
+        - bottomInset
       const value = `${Math.max(36, height)}px`
       if (menu.style.getPropertyValue('--property-menu-fill-height') !== value) {
         menu.style.setProperty('--property-menu-fill-height', value)
@@ -1350,7 +1349,7 @@ function usePropertyMenuFill(open: boolean) {
     observer.observe(panel)
     observer.observe(fields)
     return () => observer.disconnect()
-  }, [open])
+  }, [open, bottomInset])
 
   return menuRef
 }
@@ -1375,7 +1374,7 @@ function ButtonLoadingProperties({
   const [open, setOpen] = useState(false)
   const [pointerFocus, setPointerFocus] = useState(false)
   const reduceMotion = useReducedMotion()
-  const menuRef = usePropertyMenuFill(open)
+  const menuRef = usePropertyMenuFill(open, 8)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupId = useId()
   const booleanOptions = [{ label: 'False', value: 'false' }, { label: 'True', value: 'true' }]
