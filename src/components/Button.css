@@ -28,7 +28,7 @@
   transition: opacity 180ms ease-in-out;
 }
 
-.lars-button__idle { opacity: 1; }
+.lars-button__idle { position: relative; opacity: 1; }
 .lars-button__status {
   grid-area: auto;
   position: absolute;
@@ -36,16 +36,35 @@
   opacity: 0;
 }
 .lars-button--loading .lars-button__idle { opacity: 0; }
-.lars-button--loading .lars-button__status { grid-area: 1 / 1; position: static; width: max-content; justify-self: center; opacity: 1; }
+.lars-button--loading .lars-button__status { grid-area: 1 / 1; position: relative; width: max-content; justify-self: center; opacity: 1; }
 .lars-button__idle > svg,
-.lars-button__idle > [aria-hidden='true'],
-.lars-button__idle > [aria-hidden='true'] svg {
+.lars-button__idle > [aria-hidden='true']:not(.lars-button__label),
+.lars-button__idle > [aria-hidden='true']:not(.lars-button__label) svg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: var(--button-icon-size);
   height: var(--button-icon-size);
   flex: none;
+}
+
+.lars-button__label,
+.lars-button__icon { opacity: 1; transition: opacity 180ms ease-in-out; }
+.lars-button--icon-only .lars-button__label {
+  position: absolute;
+  right: calc(100% + var(--button-gap));
+  opacity: 0;
+  pointer-events: none;
+}
+.lars-button--icon-only .lars-button__status .lars-button__label {
+  right: auto;
+  left: calc(100% + var(--button-gap));
+}
+.lars-button__icon[data-hidden='true'] {
+  position: absolute;
+  left: calc(100% + var(--button-gap));
+  opacity: 0;
+  pointer-events: none;
 }
 
 .lars-button__spinner { display: inline-flex; width: var(--button-icon-size); height: var(--button-icon-size); align-items: center; justify-content: center; flex: none; }
@@ -205,7 +224,9 @@ html[data-theme='light'] .lars-button--high-contrast {
 
 @media (prefers-reduced-motion: reduce) {
   .lars-button__idle,
-  .lars-button__status { transition: opacity 120ms linear; }
+  .lars-button__status,
+  .lars-button__label,
+  .lars-button__icon { transition: opacity 120ms linear; }
   .lars-button__spinner { display: none; }
   .lars-button--retaining-spinner .lars-button__spinner-static,
   .lars-button--loading .lars-button__spinner-static { display: inline-block; }

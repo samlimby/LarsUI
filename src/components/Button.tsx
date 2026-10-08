@@ -25,6 +25,15 @@ const SPINNERS = {
 
 const VISUAL_TRANSITION_MS = 180
 
+type ButtonLayout = {
+  loading: boolean
+  iconOnly: boolean
+  width: number
+  paddingLeft: string
+  paddingRight: string
+  anchorOffset: number | null
+}
+
 export type ButtonProps = Omit<ComponentProps<typeof BaseButton>, 'className'> & {
   className?: string
   /** Use the opposite of the page or system color theme. Defaults to false. */
@@ -63,33 +72,76 @@ export function Button({
   const statusText = `${loadingText}${typeof children === 'string' ? ` ${children}` : ''}`
   const [retainSpinner, setRetainSpinner] = useState(loading)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const previousLoading = useRef(loading)
-  const previousWidth = useRef<number | null>(null)
+  const previousLayout = useRef<ButtonLayout | null>(null)
   const widthAnimation = useRef<Animation | null>(null)
+  const contentAnimation = useRef<Animation | null>(null)
 
   useLayoutEffect(() => {
     const button = buttonRef.current
     if (!button) return
 
-    const loadingChanged = previousLoading.current !== loading
+    const previous = previousLayout.current
+    const loadingChanged = previous !== null && previous.loading !== loading
+    const iconOnlyChanged = previous !== null && previous.iconOnly !== iconOnly
+    const layoutChanged = loadingChanged || iconOnlyChanged
     const widthWasAnimating = widthAnimation.current?.playState === 'running'
+    const contentWasAnimating = contentAnimation.current?.playState === 'running'
+    const content = button.querySelector<HTMLElement>(loading ? '.lars-button__status' : '.lars-button__idle')
+    const anchor = content?.querySelector<HTMLElement | SVGElement>(loading
+      ? '.lars-button__spinner'
+      : ':scope > svg, :scope > [aria-hidden="true"]:not(.lars-button__label)')
     const currentWidth = button.getBoundingClientRect().width
-    if (loadingChanged) widthAnimation.current?.cancel()
-    const nextWidth = button.getBoundingClientRect().width
-    const widthBeforeChange = widthWasAnimating ? currentWidth : previousWidth.current
-    previousLoading.current = loading
-    if (!loadingChanged && widthWasAnimating) return
-    previousWidth.current = nextWidth
+    const currentStyle = window.getComputedStyle(button)
+    const paddingBeforeChange = widthWasAnimating
+      ? { left: currentStyle.paddingLeft, right: currentStyle.paddingRight }
+      : { left: previous?.paddingLeft, right: previous?.paddingRight }
+    const currentTransform = contentWasAnimating && content ? window.getComputedStyle(content).transform : 'none'
+    const currentTranslation = currentTransform === 'none' ? 0 : new DOMMatrixReadOnly(currentTransform).m41
+    const anchorBeforeChange = previous?.anchorOffset == null ? null : previous.anchorOffset + currentTranslation
+    if (layoutChanged) {
+      widthAnimation.current?.cancel()
+      contentAnimation.current?.cancel()
+    }
+    const nextBounds = button.getBoundingClientRect()
+    const nextWidth = nextBounds.width
+    const nextStyle = window.getComputedStyle(button)
+    const paddingLeft = nextStyle.paddingLeft
+    const paddingRight = nextStyle.paddingRight
+    const anchorBounds = anchor?.getBoundingClientRect()
+    const nextAnchorOffset = anchorBounds ? anchorBounds.x + anchorBounds.width / 2 - (nextBounds.x + nextWidth / 2) : null
+    const widthBeforeChange = widthWasAnimating ? currentWidth : previous?.width
+    if (!layoutChanged && (widthWasAnimating || contentWasAnimating)) return
+    previousLayout.current = { loading, iconOnly, width: nextWidth, paddingLeft, paddingRight, anchorOffset: nextAnchorOffset }
 
-    if (!loadingChanged || widthBeforeChange === null || Math.abs(nextWidth - widthBeforeChange) < 1 || typeof button.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!layoutChanged || widthBeforeChange == null || typeof button.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-    widthAnimation.current = button.animate(
-      [{ width: `${widthBeforeChange}px` }, { width: `${nextWidth}px` }],
-      { duration: VISUAL_TRANSITION_MS, easing: 'ease-in-out' },
-    )
+    const timing = { duration: VISUAL_TRANSITION_MS, easing: 'ease-in-out' }
+    if (Math.abs(nextWidth - widthBeforeChange) >= 1 || paddingBeforeChange.left !== paddingLeft || paddingBeforeChange.right !== paddingRight) {
+      // Padding and min-width must not force the button wider than its starting width.
+      widthAnimation.current = button.animate(
+        [
+          { width: `${widthBeforeChange}px`, minWidth: 0, paddingLeft: paddingBeforeChange.left, paddingRight: paddingBeforeChange.right },
+          { width: `${nextWidth}px`, minWidth: 0, paddingLeft, paddingRight },
+        ],
+        timing,
+      )
+    }
+    if (iconOnlyChanged && !loadingChanged && content && anchorBeforeChange !== null && nextAnchorOffset !== null) {
+      // Keep the icon at its previous visual position while the surrounding content reflows.
+      const distance = anchorBeforeChange - nextAnchorOffset
+      if (Math.abs(distance) >= 1) {
+        contentAnimation.current = content.animate(
+          [{ transform: `translateX(${distance}px)` }, { transform: 'translateX(0)' }],
+          timing,
+        )
+      }
+    }
   })
 
-  useEffect(() => () => widthAnimation.current?.cancel(), [])
+  useEffect(() => () => {
+    widthAnimation.current?.cancel()
+    contentAnimation.current?.cancel()
+  }, [])
 
   useEffect(() => {
     if (loading) {
@@ -131,7 +183,7 @@ export function Button({
             {loading || retainSpinner ? Spinner ? <Spinner size={size === 'large' ? 20 : 16} /> : spinner : null}
           </span>
           <span className="lars-button__spinner-static" aria-hidden="true" />
-          {!iconOnly && <span>{loadingText}</span>}
+          <span aria-hidden={iconOnly || undefined} className="lars-button__label">{loadingText}</span>
         </span>
       </BaseButton>
       <span className="lars-button__announcement" role="status">{loading ? statusText : ''}</span>

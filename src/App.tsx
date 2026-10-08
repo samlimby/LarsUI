@@ -1590,8 +1590,8 @@ export function Example() {
             type="button"
             variant={variant}
           >
-            {iconOnly ? <ArrowIcon /> : buttonLabel}
-            {!iconOnly && icon === 'true' && <ArrowIcon />}
+            <span aria-hidden={iconOnly || undefined} className="lars-button__label" key="label">{buttonLabel}</span>
+            <span aria-hidden="true" className="lars-button__icon" data-hidden={!iconOnly && icon === 'false' ? 'true' : undefined} key="icon"><ArrowIcon /></span>
           </Button>
         </div>
 
