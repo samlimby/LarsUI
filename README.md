@@ -15,7 +15,7 @@ AI Composer includes open-source Lucide defaults and installs without a Central 
 ## Use
 
 ```tsx
-import { AiComposer, Button, Chip, InlineSlider, SegmentedControl, Tooltip } from 'larsui'
+import { AiComposer, Button, Chip, Input, InlineSlider, SegmentedControl, Tooltip } from 'larsui'
 import 'larsui/style.css'
 ```
 
@@ -51,6 +51,29 @@ The AI Composer accepts `value` / `onValueChange` for a controlled draft, or `de
 Provide `onSubmit` to enable sending. It receives `{ message, files, model, mode, variant }`. Model and mode are included even when their controls are hidden. Return a promise for an asynchronous send: editing controls are blocked while it runs (the textarea stays focusable and read-only), success clears the submitted draft and attachments, and rejection preserves them for retry and displays the error. An `AbortError` cancellation preserves the draft without an error warning. Controlled consumers must apply `onValueChange`, including the empty string after a successful send.
 
 Use `disabled` to disable all interactions, `readOnly` to preserve selection/copying without editing or sending, and `inputLabel` to name the textarea accessibly. `inputProps` forwards native textarea options such as `name`, `required`, `maxLength`, `autoFocus`, and `aria-describedby`; other native form props belong on the composer itself. The component renders a form, so do not nest it inside another form. Its scoped styles do not require the website's global CSS reset.
+
+### Input
+
+`Input` includes three variants: `text` (default), `dropdown`, and `textarea`. Each supports `size="small"` or `"large"` and `appearance="outline"`, `"subtle"`, or `"filled"`. Text and dropdown heights are 32px / 44px; textareas start at 320 × 96px and can resize vertically. All controls shrink to fit their container.
+
+```tsx
+<Input aria-label="Name" name="name" placeholder="Type here" />
+<Input
+  variant="dropdown"
+  aria-label="Team"
+  name="team"
+  placeholder="Select a team"
+  options={[
+    { label: 'Design', value: 'design' },
+    { label: 'Engineering', value: 'engineering' },
+  ]}
+/>
+<Input variant="textarea" aria-label="Notes" name="notes" size="large" rows={4} />
+```
+
+Use `value` / `onValueChange` for controlled fields or `defaultValue` for uncontrolled fields. Dropdown values are `string | null`; `null` shows the placeholder. Text fields and textareas also forward native `onChange`, validation, form attributes, and refs. The dropdown forwards its ref to the trigger, submits the selected option value under `name`, and supports keyboard navigation, typeahead, and Escape through Base UI Select. Supply an accessible name with `aria-label` or a `<label htmlFor>` matching the input's `id`. All variants support `disabled` and `readOnly`; the surface treatments remain editable unless either prop is set.
+
+Fields use subtle hover and color transitions. Pointer interactions animate the dropdown's entry, exit, and chevron; keyboard and assistive activations stay immediate. With `prefers-reduced-motion`, the dropdown uses a short fade without movement or icon rotation.
 
 ### Icons
 

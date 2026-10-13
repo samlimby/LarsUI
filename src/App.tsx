@@ -1,6 +1,6 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AiComposer, type AiComposerMode, type AiComposerSize, type AiComposerSuggestion, type AiComposerVariant } from './components/AiComposer'
 import { Button, type ButtonShape, type ButtonSize, type ButtonSpinner, type ButtonVariant } from './components/Button'
@@ -15,6 +15,7 @@ import {
   type ChipVariant,
 } from './components/Chip'
 import { InlineSlider, type InlineSliderSize } from './components/InlineSlider'
+import { Input, type InputVariant, type InputSize, type InputAppearance } from './components/Input'
 import {
   SegmentedControl as LarsSegmentedControl,
   type SegmentedControlContent,
@@ -266,7 +267,7 @@ export function Example() {
   )
 }`
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'chip' | 'segmented-control' | 'table' | 'tooltip' | 'ai-composer'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'input' | 'chip' | 'segmented-control' | 'table' | 'tooltip' | 'ai-composer'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -274,6 +275,7 @@ function getRouteFromHash(): Route {
   if (typeof window === 'undefined') return 'home'
   if (window.location.hash === '#/components/inline-slider') return 'inline-slider'
   if (window.location.hash === '#/components/buttons') return 'buttons'
+  if (window.location.hash === '#/components/input') return 'input'
   if (window.location.hash === '#/components/chip') return 'chip'
   if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
   if (window.location.hash === '#/components/table') return 'table'
@@ -527,6 +529,205 @@ function ButtonStage() {
         </BaseButton>
       </div>
     </div>
+  )
+}
+
+const INPUT_VARIANTS: ReadonlyArray<{ label: string; value: InputVariant }> = [
+  { label: 'Text', value: 'text' },
+  { label: 'Dropdown', value: 'dropdown' },
+  { label: 'Textarea', value: 'textarea' },
+]
+const INPUT_APPEARANCES: ReadonlyArray<{ label: string; value: InputAppearance }> = [
+  { label: 'White', value: 'outline' },
+  { label: 'Subtle', value: 'subtle' },
+  { label: 'Filled', value: 'filled' },
+]
+const INPUT_OPTIONS = [
+  { label: 'Hello', value: 'hello' },
+  { label: 'Good morning', value: 'morning' },
+  { label: 'Welcome back', value: 'welcome' },
+]
+
+function InputExamples({ variant }: { variant: InputVariant }) {
+  return (
+    <div className="input-preview" data-variant={variant} key={variant}>
+      {(['small', 'large'] as const).map((size) => (
+        <div className="input-preview__size" key={size}>
+          <span className="input-preview__size-label">{size === 'small' ? 'Small' : 'Large'}</span>
+          <div className="input-preview__states"><span>Default</span><span>Selected</span></div>
+          {INPUT_APPEARANCES.map(({ label, value: appearance }) => (
+            <div className="input-preview__row" key={appearance}>
+              {[false, true].map((selected) => {
+                const props = {
+                  size, appearance,
+                  'aria-label': `${size} ${label.toLowerCase()} ${variant}, ${selected ? 'selected' : 'default'}`,
+                  className: selected ? 'input-preview__selected' : '',
+                  placeholder: variant === 'dropdown' ? 'Select an option' : 'Type here',
+                }
+                return variant === 'dropdown'
+                  ? <Input {...props} key={String(selected)} variant="dropdown" options={INPUT_OPTIONS} defaultValue={selected ? 'hello' : null} />
+                  : variant === 'textarea'
+                    ? <Input {...props} key={String(selected)} variant="textarea" defaultValue={selected && appearance === 'outline' ? 'Hello' : undefined} />
+                    : <Input {...props} key={String(selected)} defaultValue={selected && appearance === 'outline' ? 'Hello' : undefined} />
+              })}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function InputStage() {
+  const [variant, setVariant] = useState<InputVariant>('text')
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="lars-stage lars-stage--input">
+      <BaseButton className="lars-copy" type="button" aria-label="Copy Input code" onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(`import { Input } from 'larsui'\nimport 'larsui/style.css'\n\n<Input variant="${variant}" aria-label="Greeting" placeholder="${variant === 'dropdown' ? 'Select an option' : 'Type here'}"${variant === 'dropdown' ? '\n  options={[{ label: "Hello", value: "hello" }, { label: "Good morning", value: "morning" }]}' : ''} />`)
+          setCopied(true)
+          window.setTimeout(() => setCopied(false), 1600)
+        } catch { setCopied(false) }
+      }}>
+        {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
+      </BaseButton>
+      <InputExamples variant={variant} />
+      <div className="input-preview__variants">
+        <LarsSegmentedControl label="Input variant" options={INPUT_VARIANTS} value={variant} onValueChange={(next) => setVariant(next as InputVariant)} />
+      </div>
+    </div>
+  )
+}
+
+function InputConfigurator() {
+  const reduceMotion = useReducedMotion()
+  const [pointerInteraction, setPointerInteraction] = useState(true)
+  const [variant, setVariant] = useState<InputVariant>('text')
+  const [appearance, setAppearance] = useState<InputAppearance>('outline')
+  const [size, setSize] = useState<InputSize>('small')
+  const [showLabel, setShowLabel] = useState(true)
+  const [placeholder, setPlaceholder] = useState('Type here')
+  const [disabled, setDisabled] = useState(false)
+  const [readOnly, setReadOnly] = useState(false)
+  const [text, setText] = useState('')
+  const [selection, setSelection] = useState<string | null>(null)
+  const controlFrameRef = useRef<HTMLDivElement>(null)
+  const nativeResizeRef = useRef(false)
+  const controlHeight = variant === 'textarea' ? 96 : size === 'large' ? 44 : 32
+
+  useLayoutEffect(() => {
+    const frame = controlFrameRef.current
+    const textarea = frame?.querySelector('textarea')
+    if (!frame || !textarea) return
+
+    // Keep the native textarea resize handle responsive while its frame follows it.
+    const observer = new ResizeObserver(() => {
+      if (nativeResizeRef.current) frame.style.height = `${textarea.offsetHeight}px`
+    })
+    const endResize = () => {
+      nativeResizeRef.current = false
+      delete frame.dataset.nativeResize
+    }
+    observer.observe(textarea)
+    window.addEventListener('pointerup', endResize)
+    window.addEventListener('pointercancel', endResize)
+    return () => {
+      observer.disconnect()
+      endResize()
+      window.removeEventListener('pointerup', endResize)
+      window.removeEventListener('pointercancel', endResize)
+    }
+  }, [variant])
+  const previewMotion = {
+    spatial: pointerInteraction && !reduceMotion,
+    duration: !pointerInteraction ? 0 : reduceMotion ? 0.1 : 0.16,
+  }
+  const previewLayout = previewMotion.spatial ? 'position' as const : false
+  const previewTransition = { type: 'spring', duration: pointerInteraction ? 0.24 : 0, bounce: 0 } as const
+  const labelVariants = {
+    hidden: ({ spatial, duration }: typeof previewMotion) => ({
+      opacity: 0,
+      transform: spatial ? 'translateY(-4px)' : 'translateY(0px)',
+      transition: { duration },
+    }),
+    visible: { opacity: 1, transform: 'translateY(0px)' },
+  }
+  const props = { size, appearance, placeholder, disabled, readOnly, id: 'input-example', 'aria-label': showLabel ? undefined : 'Greeting', className: 'input-configurator__control' }
+  const inputCode = `<Input
+  variant="${variant}"
+  appearance="${appearance}"
+  size="${size}"
+  ${showLabel ? 'id="input-example"' : 'aria-label="Greeting"'}
+  placeholder=${JSON.stringify(placeholder)}
+  value={value}
+  onValueChange={setValue}${variant === 'dropdown' ? '\n  options={[\n    { label: "Hello", value: "hello" },\n    { label: "Good morning", value: "morning" },\n    { label: "Welcome back", value: "welcome" },\n  ]}' : ''}${disabled ? '\n  disabled' : ''}${readOnly ? '\n  readOnly' : ''}
+/>`
+  const fieldCode = showLabel
+    ? `<div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+  <label htmlFor="input-example">Greeting</label>
+${inputCode.split('\n').map((line) => `  ${line}`).join('\n')}
+</div>`
+    : inputCode
+  const code = `import { useState } from 'react'
+import { Input } from 'larsui'
+import 'larsui/style.css'
+
+export function Example() {
+  const [value, setValue] = useState${variant === 'dropdown' ? '<string | null>(null)' : "('')"}
+
+  return (
+${fieldCode.split('\n').map((line) => `    ${line}`).join('\n')}
+  )
+}`
+  return (
+    <>
+      <div className="lars-configurator" onPointerDownCapture={() => setPointerInteraction(true)} onKeyDownCapture={() => setPointerInteraction(false)}>
+        <div className="lars-stage lars-component-canvas">
+          <LayoutGroup>
+            <motion.div className="input-configurator__field" data-variant={variant} data-preview-motion={previewMotion.spatial ? 'resize' : 'instant'} layout={previewLayout} transition={previewTransition}>
+              <AnimatePresence initial={false} mode="popLayout" custom={previewMotion}>
+                {showLabel && (
+                  <motion.label key="label" htmlFor="input-example" layout={previewLayout} custom={previewMotion} variants={labelVariants}
+                    initial="hidden" animate="visible" exit="hidden" transition={{ duration: previewMotion.duration, ease: 'easeOut', layout: previewTransition }}>
+                    Greeting
+                  </motion.label>
+                )}
+              </AnimatePresence>
+              <motion.div className="input-configurator__control-frame" layout={previewLayout} transition={previewTransition} ref={controlFrameRef} style={{ height: controlHeight }} onPointerDownCapture={(event) => {
+                if (!(event.target instanceof HTMLTextAreaElement)) return
+                const bounds = event.target.getBoundingClientRect()
+                if (event.clientX < bounds.right - 20 || event.clientY < bounds.bottom - 20) return
+                nativeResizeRef.current = true
+                event.currentTarget.dataset.nativeResize = 'true'
+              }}>
+                {variant === 'dropdown'
+                  ? <Input {...props} variant="dropdown" options={INPUT_OPTIONS} value={selection} onValueChange={setSelection} />
+                  : variant === 'textarea'
+                    ? <Input {...props} variant="textarea" value={text} onValueChange={setText} />
+                    : <Input {...props} value={text} onValueChange={setText} />}
+              </motion.div>
+            </motion.div>
+          </LayoutGroup>
+        </div>
+        <aside className="lars-properties" aria-labelledby="input-properties-title">
+          <header className="lars-properties__header"><h2 id="input-properties-title">Properties</h2></header>
+          <div className="lars-properties__fields">
+            <PropertySelect label="Variant" options={INPUT_VARIANTS} value={variant} onChange={(next) => {
+              setVariant(next)
+              setPlaceholder(next === 'dropdown' ? 'Select an option' : 'Type here')
+            }} />
+            <PropertySelect label="Surface" options={INPUT_APPEARANCES} value={appearance} onChange={setAppearance} />
+            <SegmentedControl label="Size" options={[{ label: 'Small', value: 'small' }, { label: 'Large', value: 'large' }]} value={size} onChange={setSize} />
+            <SegmentedControl label="Label" options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]} value={showLabel ? 'on' : 'off'} onChange={(next) => setShowLabel(next === 'on')} />
+            <label className="lars-property lars-property--stacked"><span>Placeholder</span><input value={placeholder} onChange={(event) => setPlaceholder(event.currentTarget.value)} /></label>
+            <SegmentedControl label="Disabled" options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]} value={disabled ? 'true' : 'false'} onChange={(next) => setDisabled(next === 'true')} />
+            <SegmentedControl label="Read only" options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]} value={readOnly ? 'true' : 'false'} onChange={(next) => setReadOnly(next === 'true')} />
+          </div>
+        </aside>
+      </div>
+      <CodeBlock code={code} fileName="Input.tsx" label="Configured input usage code" />
+    </>
   )
 }
 
@@ -2996,6 +3197,7 @@ export function Example() {
 const HOME_COMPONENTS = [
   { route: 'inline-slider', title: 'Inline Slider', description: 'Adjust values directly in context without interrupting the workflow.', keywords: 'range slider drag values input', Stage: SliderStage },
   { route: 'buttons', title: 'Buttons', description: 'A foundational element for interacting with any interface.', keywords: 'button click action', Stage: ButtonStage },
+  { route: 'input', title: 'Input', description: 'Text, dropdown and textarea, with a shared set of sizes and surfaces.', keywords: 'inputs text field dropdown select textarea form', Stage: InputStage },
   { route: 'chip', title: 'Chip', description: 'A compact label for statuses, categories, and concise metadata.', keywords: 'chips tag status badge', Stage: ChipStage },
   { route: 'segmented-control', title: 'Segmented Control', description: 'Choose one view from a compact set of related options.', keywords: 'segments tabs toggle options', Stage: SegmentedControlStage },
   { route: 'tooltip', title: 'Tooltip', description: 'A quiet hint that appears from an inline action.', keywords: 'tooltips hover hint shortcut', Stage: TooltipStage },
@@ -3189,6 +3391,10 @@ function ComponentPage({
       description: 'A foundational element for interacting with any interface.',
       title: 'Buttons',
     },
+    input: {
+      description: 'Text, dropdown and textarea, with a shared set of sizes and surfaces.',
+      title: 'Input',
+    },
     chip: {
       description: 'A compact label for statuses, categories, and concise metadata.',
       title: 'Chip',
@@ -3272,6 +3478,7 @@ function ComponentPage({
 
         {component === 'inline-slider' && <SliderConfigurator />}
         {component === 'buttons' && <ButtonConfigurator />}
+        {component === 'input' && <InputConfigurator />}
         {component === 'chip' && <ChipConfigurator />}
         {component === 'segmented-control' && <SegmentedControlConfigurator />}
         {component === 'table' && <TableConfigurator />}

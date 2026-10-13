@@ -5,6 +5,18 @@ import './components/Shadows.css'
 export { IconProvider, type IconProviderProps } from './components/IconProvider.js'
 
 export {
+  Input,
+  type InputProps,
+  type InputVariant,
+  type InputSize,
+  type InputAppearance,
+  type InputOption,
+  type TextInputProps,
+  type DropdownInputProps,
+  type TextareaInputProps,
+} from './components/Input.js'
+
+export {
   Button,
   type ButtonProps,
   type ButtonShape,
