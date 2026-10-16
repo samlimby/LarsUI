@@ -1,0 +1,50 @@
+/* Existing demo theme aliases. Paper's shared semantic contract lives in ../semantic/colors.css.
+ * Custom demo shades are retained here to preserve the current light/dark themes.
+ */
+.lars-page {
+  --lars-page: var(--color-bg-white);
+  --lars-text-primary: var(--color-fg-high_emphasis);
+  --lars-text-secondary: var(--color-fg-mid_emphasis);
+  --lars-container: var(--color-bg-base);
+  --lars-container-subtle: var(--color-bg-low_emphasis);
+  --lars-container-mid-emphasis: var(--color-bg-mid_emphasis);
+  --lars-container-high-emphasis: var(--color-bg-high_emphasis);
+  --lars-divider: var(--color-border-mid_emphasis);
+  --lars-line: var(--color-border-high_emphasis);
+  --lars-active: var(--color-bg-secondary_active);
+  --lars-logo: var(--radix-black);
+  --lars-copy-hover: var(--color-bg-mid_emphasis);
+  --lars-view-hover: var(--radix-gray-dark-6);
+  --lars-footer-divider: var(--color-border-low_emphasis);
+  --lars-decorative: #aeaeae;
+  --lars-low-emphasis: #8f8f8f;
+  --lars-nav-muted: var(--color-fg-low_emphasis);
+  --lars-accent: #1687d9;
+  --lars-tooltip-trigger: var(--color-fg-accent-icon);
+  --lars-tooltip-trigger-hover: var(--color-fg-accent);
+  --ruby-12: var(--radix-ruby-12);
+}
+
+.lars-page[data-theme='dark'] {
+  --ruby-dark-12: var(--radix-ruby-dark-12);
+  --lars-page: var(--radix-gray-dark-1);
+  --lars-text-primary: #f2f2f2;
+  --lars-text-secondary: #a0a0a0;
+  --lars-container: #242424;
+  --lars-container-subtle: #181818;
+  --lars-container-mid-emphasis: var(--radix-gray-dark-3);
+  --lars-container-high-emphasis: var(--radix-gray-dark-4);
+  --lars-divider: #323232;
+  --lars-line: #343434;
+  --lars-active: var(--radix-gray-dark-6);
+  --lars-logo: var(--radix-white);
+  --lars-copy-hover: #303030;
+  --lars-view-hover: #d7d7d7;
+  --lars-footer-divider: #2b2b2b;
+  --lars-decorative: var(--radix-gray-dark-8);
+  --lars-low-emphasis: #858585;
+  --lars-nav-muted: #a0a0a0;
+  --lars-accent: #73d0ff;
+  --lars-tooltip-trigger: var(--color-fg-accent-icon);
+  --lars-tooltip-trigger-hover: var(--color-fg-accent);
+}

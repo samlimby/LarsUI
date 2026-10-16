@@ -1,0 +1,519 @@
+/* Semantic color names and resolved values match Paper. All color values alias core primitives. */
+:root {
+  /* Primary high-contrast text for headings, labels, and body copy. */
+  --color-fg-high_emphasis: var(--radix-gray-12);
+  /* Secondary lower-emphasis text for supporting copy, metadata, and captions. */
+  --color-fg-mid_emphasis: var(--radix-gray-11);
+  /* Secondary lower-emphasis text for supporting copy, metadata, and captions. */
+  --color-fg-low_emphasis: var(--radix-gray-10);
+  /* High-emphasis text on high-contrast dark surfaces. */
+  --color-fg-high_contrast-high_emphasis: var(--radix-gray-1);
+  /* Supporting text on high-contrast dark surfaces. */
+  --color-fg-high_contrast-mid_emphasis: var(--radix-gray-dark-11);
+  /* Secondary shortcut text on high-contrast dark surfaces. */
+  --color-fg-high_contrast-low_emphasis: var(--radix-gray-10);
+  /* Text on selection surfaces. */
+  --color-fg-selection: var(--radix-indigo-12);
+  --color-fg-secondary_default: var(--radix-gray-10);
+  --color-fg-secondary_hover: var(--radix-gray-12);
+  /* Disabled content only. */
+  --color-fg-disabled: var(--radix-gray-9);
+  /* Pure white background for surfaces that must remain optically white. */
+  --color-bg-white: var(--radix-white);
+  /* Primary neutral canvas and container background. */
+  --color-bg-base: var(--radix-gray-1);
+  /* Subtle neutral container background used to separate adjacent surface levels. */
+  --color-bg-low_emphasis: var(--radix-gray-2);
+  /* Subtle neutral container background used to separate adjacent surface levels. */
+  --color-bg-mid_emphasis: var(--radix-gray-3);
+  /* Subtle neutral container background used to separate adjacent surface levels. */
+  --color-bg-high_emphasis: var(--radix-gray-4);
+  /* Default neutral secondary control or component background. */
+  --color-bg-secondary_default: var(--radix-gray-6);
+  /* Hover background for neutral secondary controls and components. */
+  --color-bg-secondary_hover: var(--radix-gray-4);
+  /* Pressed, selected, or active background for neutral secondary controls and components. */
+  --color-bg-secondary_active: var(--radix-gray-5);
+  /* Selected rows and list items. */
+  --color-bg-selection: var(--radix-indigo-3);
+  /* Subtle separators and dividers between nearby content regions. */
+  --color-border-low_emphasis: var(--radix-gray-4);
+  /* Default neutral border and line color for controls and containers. */
+  --color-border-mid_emphasis: var(--radix-gray-5);
+  /* Strong or interactive neutral border, including hover emphasis. */
+  --color-border-high_emphasis: var(--radix-gray-6);
+  /* Cosmetic hover emphasis for borders. */
+  --color-border-hover: var(--radix-gray-8);
+  /* Required control boundary. */
+  --color-border-control: var(--radix-gray-11);
+  /* Keyboard focus ring with a surface gap. */
+  --color-border-focus: var(--radix-indigo-9);
+  /* Indigo border for the selected state of an input. Apply to the input boundary; --color-border-focus is the separate focus ring. */
+  --color-border-selected: var(--radix-indigo-8);
+  /* Waveform accent border and action emphasis, mapped to Radix Blue 10. */
+  --color-border-waveform-accent: var(--radix-blue-10);
+  /* Accent foreground · default. */
+  --color-fg-accent: var(--radix-indigo-12);
+  /* Accent foreground · icon. */
+  --color-fg-accent-icon: var(--radix-indigo-11);
+  /* Positive foreground · default. */
+  --color-fg-positive: var(--radix-green-12);
+  /* Positive foreground · icon. */
+  --color-fg-positive-icon: var(--radix-green-11);
+  /* Information foreground · default. */
+  --color-fg-information: var(--radix-blue-12);
+  /* Information foreground · icon. */
+  --color-fg-information-icon: var(--radix-blue-11);
+  /* Error foreground · default. */
+  --color-fg-error: var(--radix-ruby-12);
+  /* Error foreground · icon. */
+  --color-fg-error-icon: var(--radix-ruby-11);
+  /* Warning foreground · default. */
+  --color-fg-warning: var(--radix-amber-12);
+  /* Warning foreground · icon. */
+  --color-fg-warning-icon: var(--radix-amber-11);
+  /* Custom gray tag foreground · default. */
+  --color-fg-tag-gray: var(--radix-gray-12);
+  /* Custom sage tag foreground · default. */
+  --color-fg-tag-sage: var(--radix-sage-12);
+  /* Custom jade tag foreground · default. */
+  --color-fg-tag-jade: var(--radix-jade-12);
+  /* Custom mauve tag foreground · default. */
+  --color-fg-tag-mauve: var(--radix-mauve-12);
+  /* Custom slate tag foreground · default. */
+  --color-fg-tag-slate: var(--radix-slate-12);
+  /* Custom olive tag foreground · default. */
+  --color-fg-tag-olive: var(--radix-olive-12);
+  /* Custom sand tag foreground · default. */
+  --color-fg-tag-sand: var(--radix-sand-12);
+  /* Custom bronze tag foreground · default. */
+  --color-fg-tag-bronze: var(--radix-bronze-12);
+  /* Custom gold tag foreground · default. */
+  --color-fg-tag-gold: var(--radix-gold-12);
+  /* Custom brown tag foreground · default. */
+  --color-fg-tag-brown: var(--radix-brown-12);
+  /* Custom orange tag foreground · default. */
+  --color-fg-tag-orange: var(--radix-orange-12);
+  /* Custom amber tag foreground · default. */
+  --color-fg-tag-amber: var(--radix-amber-12);
+  /* Custom yellow tag foreground · default. */
+  --color-fg-tag-yellow: var(--radix-yellow-12);
+  /* Custom yellow-p3 tag foreground · default. */
+  --color-fg-tag-yellow-p3: var(--radix-yellow-p3-12);
+  /* Custom lime tag foreground · default. */
+  --color-fg-tag-lime: var(--radix-lime-12);
+  /* Custom mint tag foreground · default. */
+  --color-fg-tag-mint: var(--radix-mint-12);
+  /* Custom sky tag foreground · default. */
+  --color-fg-tag-sky: var(--radix-sky-12);
+  /* Custom tomato tag foreground · default. */
+  --color-fg-tag-tomato: var(--radix-tomato-12);
+  /* Custom red tag foreground · default. */
+  --color-fg-tag-red: var(--radix-red-12);
+  /* Custom ruby tag foreground · default. */
+  --color-fg-tag-ruby: var(--radix-ruby-12);
+  /* Custom crimson tag foreground · default. */
+  --color-fg-tag-crimson: var(--radix-crimson-12);
+  /* Custom pink tag foreground · default. */
+  --color-fg-tag-pink: var(--radix-pink-12);
+  /* Custom plum tag foreground · default. */
+  --color-fg-tag-plum: var(--radix-plum-12);
+  /* Custom purple tag foreground · default. */
+  --color-fg-tag-purple: var(--radix-purple-12);
+  /* Custom violet tag foreground · default. */
+  --color-fg-tag-violet: var(--radix-violet-12);
+  /* Custom iris tag foreground · default. */
+  --color-fg-tag-iris: var(--radix-iris-12);
+  /* Custom indigo tag foreground · default. */
+  --color-fg-tag-indigo: var(--radix-indigo-12);
+  /* Custom blue tag foreground · default. */
+  --color-fg-tag-blue: var(--radix-blue-12);
+  /* Custom cyan tag foreground · default. */
+  --color-fg-tag-cyan: var(--radix-cyan-12);
+  /* Custom teal tag foreground · default. */
+  --color-fg-tag-teal: var(--radix-teal-12);
+  /* Custom green tag foreground · default. */
+  --color-fg-tag-green: var(--radix-green-12);
+  /* Custom grass tag foreground · default. */
+  --color-fg-tag-grass: var(--radix-grass-12);
+  /* Accent background · default. */
+  --color-bg-accent: var(--radix-indigo-3);
+  /* Accent background · hover. */
+  --color-bg-accent-hover: var(--radix-indigo-4);
+  /* Accent background · active. */
+  --color-bg-accent-active: var(--radix-indigo-5);
+  /* Positive background · default. */
+  --color-bg-positive: var(--radix-green-3);
+  /* Positive background · hover. */
+  --color-bg-positive-hover: var(--radix-green-4);
+  /* Positive background · active. */
+  --color-bg-positive-active: var(--radix-green-5);
+  /* Information background · default. */
+  --color-bg-information: var(--radix-blue-3);
+  /* Information background · hover. */
+  --color-bg-information-hover: var(--radix-blue-4);
+  /* Information background · active. */
+  --color-bg-information-active: var(--radix-blue-5);
+  /* Error background · default. */
+  --color-bg-error: var(--radix-ruby-3);
+  /* Error background · hover. */
+  --color-bg-error-hover: var(--radix-ruby-4);
+  /* Error background · active. */
+  --color-bg-error-active: var(--radix-ruby-5);
+  /* Warning background · default. */
+  --color-bg-warning: var(--radix-amber-3);
+  /* Warning background · hover. */
+  --color-bg-warning-hover: var(--radix-amber-4);
+  /* Warning background · active. */
+  --color-bg-warning-active: var(--radix-amber-5);
+  /* Custom gray tag background · default. */
+  --color-bg-tag-gray: var(--radix-gray-3);
+  /* Custom gray tag background · hover. */
+  --color-bg-tag-gray-hover: var(--radix-gray-4);
+  /* Custom gray tag background · active. */
+  --color-bg-tag-gray-active: var(--radix-gray-5);
+  /* Custom sage tag background · default. */
+  --color-bg-tag-sage: var(--radix-sage-3);
+  /* Custom sage tag background · hover. */
+  --color-bg-tag-sage-hover: var(--radix-sage-4);
+  /* Custom sage tag background · active. */
+  --color-bg-tag-sage-active: var(--radix-sage-5);
+  /* Custom jade tag background · default. */
+  --color-bg-tag-jade: var(--radix-jade-3);
+  /* Custom jade tag background · hover. */
+  --color-bg-tag-jade-hover: var(--radix-jade-4);
+  /* Custom jade tag background · active. */
+  --color-bg-tag-jade-active: var(--radix-jade-5);
+  /* Custom mauve tag background · default. */
+  --color-bg-tag-mauve: var(--radix-mauve-3);
+  /* Custom mauve tag background · hover. */
+  --color-bg-tag-mauve-hover: var(--radix-mauve-4);
+  /* Custom mauve tag background · active. */
+  --color-bg-tag-mauve-active: var(--radix-mauve-5);
+  /* Custom slate tag background · default. */
+  --color-bg-tag-slate: var(--radix-slate-3);
+  /* Custom slate tag background · hover. */
+  --color-bg-tag-slate-hover: var(--radix-slate-4);
+  /* Custom slate tag background · active. */
+  --color-bg-tag-slate-active: var(--radix-slate-5);
+  /* Custom olive tag background · default. */
+  --color-bg-tag-olive: var(--radix-olive-3);
+  /* Custom olive tag background · hover. */
+  --color-bg-tag-olive-hover: var(--radix-olive-4);
+  /* Custom olive tag background · active. */
+  --color-bg-tag-olive-active: var(--radix-olive-5);
+  /* Custom sand tag background · default. */
+  --color-bg-tag-sand: var(--radix-sand-3);
+  /* Custom sand tag background · hover. */
+  --color-bg-tag-sand-hover: var(--radix-sand-4);
+  /* Custom sand tag background · active. */
+  --color-bg-tag-sand-active: var(--radix-sand-5);
+  /* Custom bronze tag background · default. */
+  --color-bg-tag-bronze: var(--radix-bronze-3);
+  /* Custom bronze tag background · hover. */
+  --color-bg-tag-bronze-hover: var(--radix-bronze-4);
+  /* Custom bronze tag background · active. */
+  --color-bg-tag-bronze-active: var(--radix-bronze-5);
+  /* Custom gold tag background · default. */
+  --color-bg-tag-gold: var(--radix-gold-3);
+  /* Custom gold tag background · hover. */
+  --color-bg-tag-gold-hover: var(--radix-gold-4);
+  /* Custom gold tag background · active. */
+  --color-bg-tag-gold-active: var(--radix-gold-5);
+  /* Custom brown tag background · default. */
+  --color-bg-tag-brown: var(--radix-brown-3);
+  /* Custom brown tag background · hover. */
+  --color-bg-tag-brown-hover: var(--radix-brown-4);
+  /* Custom brown tag background · active. */
+  --color-bg-tag-brown-active: var(--radix-brown-5);
+  /* Custom orange tag background · default. */
+  --color-bg-tag-orange: var(--radix-orange-3);
+  /* Custom orange tag background · hover. */
+  --color-bg-tag-orange-hover: var(--radix-orange-4);
+  /* Custom orange tag background · active. */
+  --color-bg-tag-orange-active: var(--radix-orange-5);
+  /* Custom amber tag background · default. */
+  --color-bg-tag-amber: var(--radix-amber-3);
+  /* Custom amber tag background · hover. */
+  --color-bg-tag-amber-hover: var(--radix-amber-4);
+  /* Custom amber tag background · active. */
+  --color-bg-tag-amber-active: var(--radix-amber-5);
+  /* Custom yellow tag background · default. */
+  --color-bg-tag-yellow: var(--radix-yellow-3);
+  /* Custom yellow tag background · hover. */
+  --color-bg-tag-yellow-hover: var(--radix-yellow-4);
+  /* Custom yellow tag background · active. */
+  --color-bg-tag-yellow-active: var(--radix-yellow-5);
+  /* Custom yellow-p3 tag background · default. */
+  --color-bg-tag-yellow-p3: var(--radix-yellow-p3-3);
+  /* Custom yellow-p3 tag background · hover. */
+  --color-bg-tag-yellow-p3-hover: var(--radix-yellow-p3-4);
+  /* Custom yellow-p3 tag background · active. */
+  --color-bg-tag-yellow-p3-active: var(--radix-yellow-p3-5);
+  /* Custom lime tag background · default. */
+  --color-bg-tag-lime: var(--radix-lime-3);
+  /* Custom lime tag background · hover. */
+  --color-bg-tag-lime-hover: var(--radix-lime-4);
+  /* Custom lime tag background · active. */
+  --color-bg-tag-lime-active: var(--radix-lime-5);
+  /* Custom mint tag background · default. */
+  --color-bg-tag-mint: var(--radix-mint-3);
+  /* Custom mint tag background · hover. */
+  --color-bg-tag-mint-hover: var(--radix-mint-4);
+  /* Custom mint tag background · active. */
+  --color-bg-tag-mint-active: var(--radix-mint-5);
+  /* Custom sky tag background · default. */
+  --color-bg-tag-sky: var(--radix-sky-3);
+  /* Custom sky tag background · hover. */
+  --color-bg-tag-sky-hover: var(--radix-sky-4);
+  /* Custom sky tag background · active. */
+  --color-bg-tag-sky-active: var(--radix-sky-5);
+  /* Custom tomato tag background · default. */
+  --color-bg-tag-tomato: var(--radix-tomato-3);
+  /* Custom tomato tag background · hover. */
+  --color-bg-tag-tomato-hover: var(--radix-tomato-4);
+  /* Custom tomato tag background · active. */
+  --color-bg-tag-tomato-active: var(--radix-tomato-5);
+  /* Custom red tag background · default. */
+  --color-bg-tag-red: var(--radix-red-3);
+  /* Custom red tag background · hover. */
+  --color-bg-tag-red-hover: var(--radix-red-4);
+  /* Custom red tag background · active. */
+  --color-bg-tag-red-active: var(--radix-red-5);
+  /* Custom ruby tag background · default. */
+  --color-bg-tag-ruby: var(--radix-ruby-3);
+  /* Custom ruby tag background · hover. */
+  --color-bg-tag-ruby-hover: var(--radix-ruby-4);
+  /* Custom ruby tag background · active. */
+  --color-bg-tag-ruby-active: var(--radix-ruby-5);
+  /* Custom crimson tag background · default. */
+  --color-bg-tag-crimson: var(--radix-crimson-3);
+  /* Custom crimson tag background · hover. */
+  --color-bg-tag-crimson-hover: var(--radix-crimson-4);
+  /* Custom crimson tag background · active. */
+  --color-bg-tag-crimson-active: var(--radix-crimson-5);
+  /* Custom pink tag background · default. */
+  --color-bg-tag-pink: var(--radix-pink-3);
+  /* Custom pink tag background · hover. */
+  --color-bg-tag-pink-hover: var(--radix-pink-4);
+  /* Custom pink tag background · active. */
+  --color-bg-tag-pink-active: var(--radix-pink-5);
+  /* Custom plum tag background · default. */
+  --color-bg-tag-plum: var(--radix-plum-3);
+  /* Custom plum tag background · hover. */
+  --color-bg-tag-plum-hover: var(--radix-plum-4);
+  /* Custom plum tag background · active. */
+  --color-bg-tag-plum-active: var(--radix-plum-5);
+  /* Custom purple tag background · default. */
+  --color-bg-tag-purple: var(--radix-purple-3);
+  /* Custom purple tag background · hover. */
+  --color-bg-tag-purple-hover: var(--radix-purple-4);
+  /* Custom purple tag background · active. */
+  --color-bg-tag-purple-active: var(--radix-purple-5);
+  /* Custom violet tag background · default. */
+  --color-bg-tag-violet: var(--radix-violet-3);
+  /* Custom violet tag background · hover. */
+  --color-bg-tag-violet-hover: var(--radix-violet-4);
+  /* Custom violet tag background · active. */
+  --color-bg-tag-violet-active: var(--radix-violet-5);
+  /* Custom iris tag background · default. */
+  --color-bg-tag-iris: var(--radix-iris-3);
+  /* Custom iris tag background · hover. */
+  --color-bg-tag-iris-hover: var(--radix-iris-4);
+  /* Custom iris tag background · active. */
+  --color-bg-tag-iris-active: var(--radix-iris-5);
+  /* Custom indigo tag background · default. */
+  --color-bg-tag-indigo: var(--radix-indigo-3);
+  /* Custom indigo tag background · hover. */
+  --color-bg-tag-indigo-hover: var(--radix-indigo-4);
+  /* Custom indigo tag background · active. */
+  --color-bg-tag-indigo-active: var(--radix-indigo-5);
+  /* Custom blue tag background · default. */
+  --color-bg-tag-blue: var(--radix-blue-3);
+  /* Custom blue tag background · hover. */
+  --color-bg-tag-blue-hover: var(--radix-blue-4);
+  /* Custom blue tag background · active. */
+  --color-bg-tag-blue-active: var(--radix-blue-5);
+  /* Custom cyan tag background · default. */
+  --color-bg-tag-cyan: var(--radix-cyan-3);
+  /* Custom cyan tag background · hover. */
+  --color-bg-tag-cyan-hover: var(--radix-cyan-4);
+  /* Custom cyan tag background · active. */
+  --color-bg-tag-cyan-active: var(--radix-cyan-5);
+  /* Custom teal tag background · default. */
+  --color-bg-tag-teal: var(--radix-teal-3);
+  /* Custom teal tag background · hover. */
+  --color-bg-tag-teal-hover: var(--radix-teal-4);
+  /* Custom teal tag background · active. */
+  --color-bg-tag-teal-active: var(--radix-teal-5);
+  /* Custom green tag background · default. */
+  --color-bg-tag-green: var(--radix-green-3);
+  /* Custom green tag background · hover. */
+  --color-bg-tag-green-hover: var(--radix-green-4);
+  /* Custom green tag background · active. */
+  --color-bg-tag-green-active: var(--radix-green-5);
+  /* Custom grass tag background · default. */
+  --color-bg-tag-grass: var(--radix-grass-3);
+  /* Custom grass tag background · hover. */
+  --color-bg-tag-grass-hover: var(--radix-grass-4);
+  /* Custom grass tag background · active. */
+  --color-bg-tag-grass-active: var(--radix-grass-5);
+  /* Accent border · default. */
+  --color-border-accent: var(--radix-indigo-7);
+  /* Accent border · hover. */
+  --color-border-accent-hover: var(--radix-indigo-8);
+  /* Accent border · control. */
+  --color-border-accent-control: var(--radix-indigo-11);
+  /* Positive border · default. */
+  --color-border-positive: var(--radix-green-7);
+  /* Positive border · hover. */
+  --color-border-positive-hover: var(--radix-green-8);
+  /* Positive border · control. */
+  --color-border-positive-control: var(--radix-green-11);
+  /* Information border · default. */
+  --color-border-information: var(--radix-blue-7);
+  /* Information border · hover. */
+  --color-border-information-hover: var(--radix-blue-8);
+  /* Information border · control. */
+  --color-border-information-control: var(--radix-blue-11);
+  /* Error border · default. */
+  --color-border-error: var(--radix-ruby-7);
+  /* Error border · hover. */
+  --color-border-error-hover: var(--radix-ruby-8);
+  /* Error border · control. */
+  --color-border-error-control: var(--radix-ruby-11);
+  /* Warning border · default. */
+  --color-border-warning: var(--radix-amber-7);
+  /* Warning border · hover. */
+  --color-border-warning-hover: var(--radix-amber-8);
+  /* Warning border · control. */
+  --color-border-warning-control: var(--radix-amber-11);
+  /* Custom gray tag border · default. */
+  --color-border-tag-gray: var(--radix-gray-7);
+  /* Custom gray tag border · hover. */
+  --color-border-tag-gray-hover: var(--radix-gray-8);
+  /* Custom sage tag border · default. */
+  --color-border-tag-sage: var(--radix-sage-7);
+  /* Custom sage tag border · hover. */
+  --color-border-tag-sage-hover: var(--radix-sage-8);
+  /* Custom jade tag border · default. */
+  --color-border-tag-jade: var(--radix-jade-7);
+  /* Custom jade tag border · hover. */
+  --color-border-tag-jade-hover: var(--radix-jade-8);
+  /* Custom mauve tag border · default. */
+  --color-border-tag-mauve: var(--radix-mauve-7);
+  /* Custom mauve tag border · hover. */
+  --color-border-tag-mauve-hover: var(--radix-mauve-8);
+  /* Custom slate tag border · default. */
+  --color-border-tag-slate: var(--radix-slate-7);
+  /* Custom slate tag border · hover. */
+  --color-border-tag-slate-hover: var(--radix-slate-8);
+  /* Custom olive tag border · default. */
+  --color-border-tag-olive: var(--radix-olive-7);
+  /* Custom olive tag border · hover. */
+  --color-border-tag-olive-hover: var(--radix-olive-8);
+  /* Custom sand tag border · default. */
+  --color-border-tag-sand: var(--radix-sand-7);
+  /* Custom sand tag border · hover. */
+  --color-border-tag-sand-hover: var(--radix-sand-8);
+  /* Custom bronze tag border · default. */
+  --color-border-tag-bronze: var(--radix-bronze-7);
+  /* Custom bronze tag border · hover. */
+  --color-border-tag-bronze-hover: var(--radix-bronze-8);
+  /* Custom gold tag border · default. */
+  --color-border-tag-gold: var(--radix-gold-7);
+  /* Custom gold tag border · hover. */
+  --color-border-tag-gold-hover: var(--radix-gold-8);
+  /* Custom brown tag border · default. */
+  --color-border-tag-brown: var(--radix-brown-7);
+  /* Custom brown tag border · hover. */
+  --color-border-tag-brown-hover: var(--radix-brown-8);
+  /* Custom orange tag border · default. */
+  --color-border-tag-orange: var(--radix-orange-7);
+  /* Custom orange tag border · hover. */
+  --color-border-tag-orange-hover: var(--radix-orange-8);
+  /* Custom amber tag border · default. */
+  --color-border-tag-amber: var(--radix-amber-7);
+  /* Custom amber tag border · hover. */
+  --color-border-tag-amber-hover: var(--radix-amber-8);
+  /* Custom yellow tag border · default. */
+  --color-border-tag-yellow: var(--radix-yellow-7);
+  /* Custom yellow tag border · hover. */
+  --color-border-tag-yellow-hover: var(--radix-yellow-8);
+  /* Custom yellow-p3 tag border · default. */
+  --color-border-tag-yellow-p3: var(--radix-yellow-p3-7);
+  /* Custom yellow-p3 tag border · hover. */
+  --color-border-tag-yellow-p3-hover: var(--radix-yellow-p3-8);
+  /* Custom lime tag border · default. */
+  --color-border-tag-lime: var(--radix-lime-7);
+  /* Custom lime tag border · hover. */
+  --color-border-tag-lime-hover: var(--radix-lime-8);
+  /* Custom mint tag border · default. */
+  --color-border-tag-mint: var(--radix-mint-7);
+  /* Custom mint tag border · hover. */
+  --color-border-tag-mint-hover: var(--radix-mint-8);
+  /* Custom sky tag border · default. */
+  --color-border-tag-sky: var(--radix-sky-7);
+  /* Custom sky tag border · hover. */
+  --color-border-tag-sky-hover: var(--radix-sky-8);
+  /* Custom tomato tag border · default. */
+  --color-border-tag-tomato: var(--radix-tomato-7);
+  /* Custom tomato tag border · hover. */
+  --color-border-tag-tomato-hover: var(--radix-tomato-8);
+  /* Custom red tag border · default. */
+  --color-border-tag-red: var(--radix-red-7);
+  /* Custom red tag border · hover. */
+  --color-border-tag-red-hover: var(--radix-red-8);
+  /* Custom ruby tag border · default. */
+  --color-border-tag-ruby: var(--radix-ruby-7);
+  /* Custom ruby tag border · hover. */
+  --color-border-tag-ruby-hover: var(--radix-ruby-8);
+  /* Custom crimson tag border · default. */
+  --color-border-tag-crimson: var(--radix-crimson-7);
+  /* Custom crimson tag border · hover. */
+  --color-border-tag-crimson-hover: var(--radix-crimson-8);
+  /* Custom pink tag border · default. */
+  --color-border-tag-pink: var(--radix-pink-7);
+  /* Custom pink tag border · hover. */
+  --color-border-tag-pink-hover: var(--radix-pink-8);
+  /* Custom plum tag border · default. */
+  --color-border-tag-plum: var(--radix-plum-7);
+  /* Custom plum tag border · hover. */
+  --color-border-tag-plum-hover: var(--radix-plum-8);
+  /* Custom purple tag border · default. */
+  --color-border-tag-purple: var(--radix-purple-7);
+  /* Custom purple tag border · hover. */
+  --color-border-tag-purple-hover: var(--radix-purple-8);
+  /* Custom violet tag border · default. */
+  --color-border-tag-violet: var(--radix-violet-7);
+  /* Custom violet tag border · hover. */
+  --color-border-tag-violet-hover: var(--radix-violet-8);
+  /* Custom iris tag border · default. */
+  --color-border-tag-iris: var(--radix-iris-7);
+  /* Custom iris tag border · hover. */
+  --color-border-tag-iris-hover: var(--radix-iris-8);
+  /* Custom indigo tag border · default. */
+  --color-border-tag-indigo: var(--radix-indigo-7);
+  /* Custom indigo tag border · hover. */
+  --color-border-tag-indigo-hover: var(--radix-indigo-8);
+  /* Custom blue tag border · default. */
+  --color-border-tag-blue: var(--radix-blue-7);
+  /* Custom blue tag border · hover. */
+  --color-border-tag-blue-hover: var(--radix-blue-8);
+  /* Custom cyan tag border · default. */
+  --color-border-tag-cyan: var(--radix-cyan-7);
+  /* Custom cyan tag border · hover. */
+  --color-border-tag-cyan-hover: var(--radix-cyan-8);
+  /* Custom teal tag border · default. */
+  --color-border-tag-teal: var(--radix-teal-7);
+  /* Custom teal tag border · hover. */
+  --color-border-tag-teal-hover: var(--radix-teal-8);
+  /* Custom green tag border · default. */
+  --color-border-tag-green: var(--radix-green-7);
+  /* Custom green tag border · hover. */
+  --color-border-tag-green-hover: var(--radix-green-8);
+  /* Custom grass tag border · default. */
+  --color-border-tag-grass: var(--radix-grass-7);
+  /* Custom grass tag border · hover. */
+  --color-border-tag-grass-hover: var(--radix-grass-8);
+}

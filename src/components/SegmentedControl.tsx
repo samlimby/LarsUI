@@ -2,6 +2,22 @@ import { LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import './SegmentedControl.css'
+import { useRadiusToken } from './useRadiusToken'
+
+function AnimatedIndicator({ id }: { id: string }) {
+  const { ref, radius } = useRadiusToken('--segment-radius')
+  return (
+    <motion.span
+      aria-hidden="true"
+      animate={{ borderRadius: radius }}
+      className="lars-segmented-control__indicator"
+      initial={false}
+      layoutId={`${id}-selection`}
+      ref={ref}
+      transition={{ type: 'spring', duration: 0.32, bounce: 0 }}
+    />
+  )
+}
 
 export type SegmentedControlType = 'cornered' | 'square'
 export type SegmentedControlSize = 'default' | 'large'
@@ -93,14 +109,7 @@ export function SegmentedControl({
               {selected && (!animateSelection || prefersReducedMotion ? (
                 <span aria-hidden="true" className="lars-segmented-control__indicator" />
               ) : (
-                <motion.span
-                  aria-hidden="true"
-                  animate={{ borderRadius: type === 'cornered' ? 999 : 6 }}
-                  className="lars-segmented-control__indicator"
-                  initial={false}
-                  layoutId={`${id}-selection`}
-                  transition={{ type: 'spring', duration: 0.32, bounce: 0 }}
-                />
+                <AnimatedIndicator id={id} />
               ))}
               <span className="lars-segmented-control__content">
                 {content !== 'text-only' && option.icon && (

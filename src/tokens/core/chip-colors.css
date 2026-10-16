@@ -1,0 +1,16 @@
+/* Existing LarsUI dark Chip palette. These custom shades predate the semantic
+ * migration and are retained exactly; they are not Radix palette steps.
+ * Light Chip colors use the Radix primitives in colors.css.
+ */
+:root {
+  --palette-chip-dark-neutral-bg: #303030;
+  --palette-chip-dark-neutral-fg: #B7B7B7;
+  --palette-chip-dark-information-bg: #173246;
+  --palette-chip-dark-information-fg: #73C8FF;
+  --palette-chip-dark-warning-bg: #3D2B15;
+  --palette-chip-dark-warning-fg: #FFAD42;
+  --palette-chip-dark-positive-bg: #193B20;
+  --palette-chip-dark-positive-fg: #72DC7E;
+  --palette-chip-dark-error-bg: #472126;
+  --palette-chip-dark-error-fg: #FF8D85;
+}

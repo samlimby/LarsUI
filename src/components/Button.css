@@ -1,20 +1,21 @@
 .lars-button {
-  --button-icon-size: 16px;
-  --button-gap: 6px;
+  --button-icon-size: var(--size-16);
+  --button-gap: calc(var(--size-12) / 2);
   position: relative;
   box-sizing: border-box;
   display: inline-grid;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  padding-block: 8px;
+  height: var(--size-32);
+  padding-block: var(--size-8);
   border: 0;
-  color: var(--lars-text-primary, #202020);
-  font-family: var(--font-sans, Inter, system-ui, sans-serif);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
+  color: var(--color-fg-text-primary);
+  font-family: var(--font-body-sm-semibold);
+  font-size: var(--text-body-sm-semibold);
+  font-weight: var(--font-weight-body-sm-semibold);
+  line-height: var(--leading-body-sm-semibold);
   transition: color 150ms ease, background-color 150ms ease, transform 150ms cubic-bezier(.25, .46, .45, .94);
+  letter-spacing: var(--tracking-body-sm-semibold);
 }
 
 .lars-button__idle,
@@ -68,7 +69,7 @@
 }
 
 .lars-button__spinner { display: inline-flex; width: var(--button-icon-size); height: var(--button-icon-size); align-items: center; justify-content: center; flex: none; }
-.lars-button__spinner-static { display: none; width: calc(var(--button-icon-size) - 2px); height: calc(var(--button-icon-size) - 2px); flex: none; border: 2px solid currentColor; border-radius: 50%; }
+.lars-button__spinner-static { display: none; width: calc(var(--button-icon-size) - 2px); height: calc(var(--button-icon-size) - 2px); flex: none; border: 2px solid currentColor; border-radius: var(--radius-circle); }
 .lars-button__announcement {
   position: absolute;
   width: 1px;
@@ -82,7 +83,7 @@
 
 .lars-button--loading { cursor: progress; }
 .lars-button--loading:active { transform: none; }
-.lars-button:focus-visible { outline: 2px solid var(--lars-focus-ring, #8da4ef); outline-offset: 3px; }
+.lars-button:focus-visible { outline: 2px solid var(--lars-focus-ring, var(--color-border-component-focus)); outline-offset: 3px; }
 
 .lars-button::before {
   position: absolute;
@@ -101,124 +102,77 @@
 
 .lars-button--full {
   min-width: 77px;
-  padding-inline: 24px;
-  border-radius: 999px;
+  padding-inline: var(--size-24);
+  border-radius: var(--radius-full);
 }
 
 .lars-button--neat {
   min-width: 53px;
-  padding-inline: 12px;
-  border-radius: 4px;
+  padding-inline: var(--size-12);
+  border-radius: var(--radius-sm);
 }
 
 .lars-button--icon-only {
-  width: 32px;
-  min-width: 32px;
-  padding-inline: 8px;
+  width: var(--size-32);
+  min-width: var(--size-32);
+  padding-inline: var(--size-8);
 }
 
 .lars-button--large {
-  --button-icon-size: 20px;
-  --button-gap: 8px;
+  --button-icon-size: var(--size-20);
+  --button-gap: var(--size-8);
   width: fit-content;
   min-width: 0;
-  height: 44px;
-  padding: 12px 24px;
-  font-size: 14px;
-  line-height: 18px;
-  letter-spacing: 0;
+  height: var(--size-44);
+  padding: var(--size-12) var(--size-24);
+  font-size: var(--text-body-md-semibold);
+  line-height: var(--leading-body-md-semibold);
+  letter-spacing: var(--tracking-body-md-semibold);
   text-align: center;
+  font-family: var(--font-body-md-semibold);
+  font-weight: var(--font-weight-body-md-semibold);
 }
 
 .lars-button--large.lars-button--icon-only {
-  width: 44px;
-  min-width: 44px;
-  padding: 12px;
+  width: var(--size-44);
+  min-width: var(--size-44);
+  padding: var(--size-12);
 }
 
 .lars-button--high-contrast {
-  --lars-focus-ring: #8da4ef;
-  --button-primary-bg: #202020;
-  --button-primary-text: #fcfcfc;
-  --button-primary-hover: #646464;
-  --button-secondary-bg: #d9d9d9;
-  --button-secondary-text: #646464;
-  --button-secondary-hover: #cecece;
-  --button-secondary-hover-text: #202020;
-  --button-tertiary-text: #202020;
-  --button-tertiary-hover: #e0e0e0;
-  --button-danger-bg: #f8bfc8;
-  --button-danger-text: #ca244d;
-  --button-danger-hover: #efacb8;
-  --button-danger-hover-text: #64172b;
-}
-
-html[data-theme='light'] .lars-button--high-contrast {
-  --lars-focus-ring: #3a5bc7;
-  --button-primary-bg: #f2f2f2;
-  --button-primary-text: #181818;
-  --button-primary-hover: #d8d8d8;
-  --button-secondary-bg: #383838;
-  --button-secondary-text: #fff;
-  --button-secondary-hover: #484848;
-  --button-secondary-hover-text: #fff;
-  --button-tertiary-text: #f2f2f2;
-  --button-tertiary-hover: #2b2b2b;
-  --button-danger-bg: #5a1c2c;
-  --button-danger-text: #fed2e1;
-  --button-danger-hover: #74223a;
-  --button-danger-hover-text: #fed2e1;
-}
-
-@media (prefers-color-scheme: light) {
-  html:not([data-theme]) .lars-button--high-contrast {
-    --lars-focus-ring: #3a5bc7;
-    --button-primary-bg: #f2f2f2;
-    --button-primary-text: #181818;
-    --button-primary-hover: #d8d8d8;
-    --button-secondary-bg: #383838;
-    --button-secondary-text: #fff;
-    --button-secondary-hover: #484848;
-    --button-secondary-hover-text: #fff;
-    --button-tertiary-text: #f2f2f2;
-    --button-tertiary-hover: #2b2b2b;
-    --button-danger-bg: #5a1c2c;
-    --button-danger-text: #fed2e1;
-    --button-danger-hover: #74223a;
-    --button-danger-hover-text: #fed2e1;
-  }
+  --lars-focus-ring: var(--color-border-button-focus);
 }
 
 .lars-button--primary {
-  background: var(--button-primary-bg, #202020);
-  color: var(--button-primary-text, #fcfcfc);
+  background: var(--button-primary-bg, var(--color-bg-button-primary));
+  color: var(--button-primary-text, var(--color-fg-button-primary));
 }
 
 .lars-button--secondary {
-  background: var(--button-secondary-bg, #d9d9d9);
-  color: var(--button-secondary-text, #646464);
+  background: var(--button-secondary-bg, var(--color-bg-button-secondary));
+  color: var(--button-secondary-text, var(--color-fg-button-secondary));
 }
 
 .lars-button--tertiary {
   background: transparent;
-  color: var(--button-tertiary-text, var(--lars-text-primary, #202020));
+  color: var(--button-tertiary-text, var(--color-fg-button-tertiary));
 }
 
 .lars-button--danger {
-  background: var(--button-danger-bg, #f8bfc8);
-  color: var(--button-danger-text, #ca244d);
+  background: var(--button-danger-bg, var(--color-bg-button-danger));
+  color: var(--button-danger-text, var(--color-fg-button-danger));
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .lars-button--primary:hover { background: var(--button-primary-hover, #646464); }
+  .lars-button--primary:hover { background: var(--button-primary-hover, var(--color-bg-button-primary-hover)); }
   .lars-button--secondary:hover {
-    background: var(--button-secondary-hover, #cecece);
-    color: var(--button-secondary-hover-text, #202020);
+    background: var(--button-secondary-hover, var(--color-bg-button-secondary-hover));
+    color: var(--button-secondary-hover-text, var(--color-fg-button-secondary-hover));
   }
-  .lars-button--tertiary:hover { background: var(--button-tertiary-hover, #e0e0e0); }
+  .lars-button--tertiary:hover { background: var(--button-tertiary-hover, var(--color-bg-button-tertiary-hover)); }
   .lars-button--danger:hover {
-    background: var(--button-danger-hover, #efacb8);
-    color: var(--button-danger-hover-text, #64172b);
+    background: var(--button-danger-hover, var(--color-bg-button-danger-hover));
+    color: var(--button-danger-hover-text, var(--color-fg-button-danger-hover));
   }
 }
 

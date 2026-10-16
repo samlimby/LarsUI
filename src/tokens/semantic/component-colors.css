@@ -1,0 +1,149 @@
+/* Supporting roles for component surfaces and imagery. Paper's shared roles
+ * remain in colors.css; components never select palette steps themselves.
+ */
+:root {
+  --color-bg-primary: var(--radix-gray-12);
+  --color-bg-primary-hover: var(--radix-gray-11);
+  --color-fg-on_primary: var(--radix-gray-1);
+  --color-bg-overlay: color-mix(in srgb, var(--radix-gray-12) 80%, transparent);
+  --color-bg-shadow: var(--radix-gray-12);
+  --color-bg-shadow-deep: var(--radix-black);
+  --color-fg-brand-claude: var(--brand-claude);
+  --color-fg-brand-kimi: var(--brand-kimi);
+
+  /* Chip surfaces and labels preserve the original Radix 4/10 pairs. */
+  --color-bg-chip-neutral: var(--radix-gray-4);
+  --color-fg-chip-neutral: var(--radix-gray-10);
+  --color-bg-chip-information: var(--radix-blue-4);
+  --color-fg-chip-information: var(--radix-blue-10);
+  --color-bg-chip-warning: var(--radix-orange-4);
+  --color-fg-chip-warning: var(--radix-orange-10);
+  --color-bg-chip-positive: var(--radix-green-4);
+  --color-fg-chip-positive: var(--radix-green-10);
+  --color-bg-chip-error: var(--radix-red-4);
+  --color-fg-chip-error: var(--radix-red-10);
+
+  /* Fixed dark surfaces, such as Table's floating toolbar, in either theme. */
+  --color-bg-high_contrast-base: var(--radix-gray-dark-1);
+  --color-bg-high_contrast-low_emphasis: var(--radix-gray-dark-3);
+  --color-bg-high_contrast-mid_emphasis: var(--radix-gray-dark-4);
+  --color-bg-high_contrast-high_emphasis: var(--radix-gray-dark-5);
+  --color-bg-high_contrast-secondary_active: var(--radix-gray-dark-6);
+  --color-border-high_contrast-mid_emphasis: var(--radix-gray-dark-7);
+  --color-border-high_contrast-high_emphasis: var(--radix-gray-dark-11);
+  --color-border-high_contrast-control: var(--radix-gray-dark-9);
+  --color-fg-high_contrast-accent: var(--radix-indigo-dark-11);
+  --color-border-high_contrast-focus: var(--radix-indigo-dark-8);
+  --color-fg-high_contrast-notification: var(--radix-orange-9);
+
+
+  /* Original shared surfaces and component-specific color roles. */
+  --color-bg-surface: var(--radix-gray-1);
+  --color-bg-surface-subtle: var(--radix-gray-2);
+  --color-bg-surface-mid: var(--radix-gray-3);
+  --color-bg-surface-high: var(--radix-gray-4);
+  --color-fg-text-primary: var(--radix-gray-12);
+  --color-fg-text-secondary: var(--radix-gray-11);
+  --color-fg-text-muted: var(--palette-fg-text-muted-light);
+  --color-border-surface: var(--radix-gray-5);
+  --color-border-surface-strong: var(--radix-gray-6);
+  --color-border-surface-divider: var(--radix-gray-4);
+  --color-bg-action-hover: var(--radix-gray-3);
+  --color-bg-action-active: var(--radix-gray-5);
+  --color-border-component-focus: var(--radix-indigo-8);
+  --color-bg-button-primary: var(--radix-gray-12);
+  --color-fg-button-primary: var(--radix-gray-1);
+  --color-bg-button-primary-hover: var(--radix-gray-11);
+  --color-bg-button-secondary: var(--radix-gray-6);
+  --color-fg-button-secondary: var(--radix-gray-11);
+  --color-bg-button-secondary-hover: var(--radix-gray-7);
+  --color-fg-button-secondary-hover: var(--radix-gray-12);
+  --color-fg-button-tertiary: var(--radix-gray-12);
+  --color-bg-button-tertiary-hover: var(--radix-gray-5);
+  --color-bg-button-danger: var(--radix-ruby-6);
+  --color-fg-button-danger: var(--radix-ruby-11);
+  --color-bg-button-danger-hover: var(--radix-ruby-7);
+  --color-fg-button-danger-hover: var(--radix-ruby-12);
+  --color-border-button-focus: var(--radix-indigo-8);
+  --color-bg-slider-track: var(--radix-gray-4);
+  --color-fg-slider: var(--palette-fg-slider-light);
+  --color-bg-slider-fill: color-mix(in srgb, var(--palette-fg-slider-light) 15%, transparent);
+  --color-bg-slider-tick: var(--palette-bg-slider-tick-light);
+  --color-bg-segment-track: var(--radix-gray-3);
+  --color-bg-segment-selected: var(--radix-gray-1);
+  --color-fg-segment: var(--radix-gray-11);
+  --color-fg-segment-selected: var(--radix-gray-12);
+  --color-border-segment: var(--radix-gray-5);
+  --color-border-segment-divider: var(--radix-gray-5);
+  --color-bg-input: var(--radix-white);
+  --color-bg-input-subtle: var(--radix-gray-2);
+  --color-border-input: var(--radix-gray-6);
+  --color-border-input-subtle: var(--radix-gray-5);
+  --color-fg-input: var(--radix-gray-12);
+  --color-fg-input-muted: var(--radix-gray-11);
+  --color-fg-input-placeholder: var(--radix-gray-10);
+  --color-border-input-selected: var(--radix-indigo-8);
+  --color-border-input-hover: var(--radix-gray-8);
+  --color-border-input-error: var(--radix-ruby-9);
+  --color-fg-input-error: var(--radix-ruby-11);
+  --color-border-input-checkbox: var(--palette-fg-text-muted-light);
+  --color-fg-input-checkbox-selected: var(--radix-indigo-11);
+  --color-bg-input-option-selected: color-mix(in srgb, var(--radix-indigo-3) 72%, transparent);
+  --color-border-composer-control: var(--radix-gray-11);
+  --color-fg-composer-accent: var(--palette-fg-composer-accent-light);
+  --color-border-composer-accent: var(--palette-fg-composer-accent-light);
+  --color-fg-composer-remove: var(--radix-white);
+  --color-fg-composer-warning: var(--radix-orange-9);
+  --color-fg-composer-error: var(--radix-ruby-11);
+  --color-border-composer-attachment: var(--radix-gray-4);
+  --color-bg-input-checkbox: var(--radix-white);
+  --color-bg-input-checkbox-hover: var(--radix-gray-2);
+  --color-border-input-checkbox-hover: color-mix(in srgb, var(--radix-gray-10) 64%, transparent);
+  --color-bg-table-control-hover: var(--radix-gray-4);
+  --color-bg-table-search: var(--radix-gray-2);
+  --color-bg-table-row-hover: var(--radix-gray-4);
+  --color-bg-table-checkbox: var(--radix-white);
+  --color-border-table-checkbox: var(--palette-fg-text-muted-light);
+  --color-bg-table-checkbox-hover: var(--radix-gray-2);
+  --color-border-table-checkbox-hover: color-mix(in srgb, var(--radix-gray-10) 64%, transparent);
+  --color-bg-tooltip: var(--radix-gray-dark-12);
+  --color-border-tooltip: var(--radix-gray-7);
+  --color-fg-tooltip: var(--radix-gray-12);
+  --color-fg-tooltip-muted: var(--radix-gray-11);
+  --color-fg-tooltip-shortcut: var(--radix-gray-11);
+  --color-bg-tooltip-keycap: var(--radix-gray-5);
+  --color-border-tooltip-keycap: var(--radix-gray-8);
+  --color-fg-tooltip-trigger: var(--radix-indigo-11);
+  --color-fg-tooltip-trigger-hover: var(--radix-indigo-12);
+  --color-fg-table-floating: var(--radix-gray-dark-12);
+  --color-fg-table-floating-divider: var(--radix-gray-11);
+  --color-fg-table-floating-search-icon: var(--radix-sage-10);
+  --color-fg-table-floating-placeholder: var(--radix-gray-9);
+  --color-border-table-floating-control: var(--palette-fg-text-muted-dark);
+  --color-bg-table-floating-control-hover: var(--palette-bg-action-hover-dark);
+
+  --color-bg-table-floating-search: var(--radix-gray-dark-3);
+
+  /* Opposite-theme palettes used by high-contrast variants. */
+  --color-bg-button-primary-inverse: var(--palette-fg-text-primary-dark);
+  --color-fg-button-primary-inverse: var(--palette-bg-surface-subtle-dark);
+  --color-bg-button-primary-hover-inverse: var(--palette-bg-button-primary-hover-dark);
+  --color-bg-button-secondary-inverse: var(--palette-bg-button-secondary-dark);
+  --color-fg-button-secondary-inverse: var(--radix-white);
+  --color-bg-button-secondary-hover-inverse: var(--radix-gray-dark-7);
+  --color-fg-button-secondary-hover-inverse: var(--radix-white);
+  --color-fg-button-tertiary-inverse: var(--palette-fg-text-primary-dark);
+  --color-bg-button-tertiary-hover-inverse: var(--palette-border-surface-divider-dark);
+  --color-bg-button-danger-inverse: var(--palette-bg-button-danger-dark);
+  --color-fg-button-danger-inverse: var(--radix-ruby-dark-12);
+  --color-bg-button-danger-hover-inverse: var(--palette-bg-button-danger-hover-dark);
+  --color-fg-button-danger-hover-inverse: var(--radix-ruby-dark-12);
+  --color-border-button-focus-inverse: var(--radix-indigo-11);
+  --color-bg-tooltip-inverse: var(--palette-bg-action-hover-dark);
+  --color-border-tooltip-inverse: var(--radix-gray-dark-7);
+  --color-fg-tooltip-inverse: var(--palette-fg-text-primary-dark);
+  --color-fg-tooltip-muted-inverse: var(--radix-gray-dark-11);
+  --color-fg-tooltip-shortcut-inverse: var(--palette-fg-text-secondary-dark);
+  --color-bg-tooltip-keycap-inverse: var(--palette-bg-button-secondary-dark);
+  --color-border-tooltip-keycap-inverse: var(--radix-gray-dark-7);
+}

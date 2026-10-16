@@ -1,0 +1,32 @@
+/* Shared typography foundations. Site-only sizes and weights live in ../site/. */
+:root {
+  --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Paper Mono', ui-monospace, monospace;
+  --font-system: system-ui;
+
+  --text-10: 10px;
+  --text-12: 12px;
+  --text-14: 14px;
+  --text-16: 16px;
+  --text-18: 18px;
+  --text-24: 24px;
+  --text-32: 32px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --leading-12: 12px;
+  --leading-16: 16px;
+  --leading-18: 18px;
+  --leading-20: 20px;
+  --leading-24: 24px;
+  --leading-32: 32px;
+  --leading-40: 40px;
+  --leading-tight: var(--leading-16);
+
+  --tracking-normal: 0em;
+  --tracking-tight: -0.02em;
+  --tracking-expanded: 0.05em;
+}

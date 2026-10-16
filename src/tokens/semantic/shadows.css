@@ -1,0 +1,9 @@
+:root {
+  --shadow-low_emphasis: 0 2px 5px color-mix(in srgb, var(--color-bg-shadow) 24%, transparent);
+  --shadow-mid_emphasis: 0 3px 4px color-mix(in srgb, var(--color-bg-shadow) 40%, transparent);
+  --shadow-high_emphasis: 0 4px 6px color-mix(in srgb, var(--color-bg-shadow) 56%, transparent);
+  --shadow-composer: 0 12px 32px color-mix(in srgb, var(--color-bg-shadow) 6%, transparent);
+  --shadow-popup: 0 12px 32px color-mix(in srgb, var(--color-bg-shadow-deep) 10%, transparent), 0 2px 8px color-mix(in srgb, var(--color-bg-shadow-deep) 5%, transparent);
+  --shadow-floating-toolbar: 0 8px 22px color-mix(in srgb, var(--color-bg-shadow-deep) 12%, transparent);
+  --shadow-input-popup: 0 2px 8px color-mix(in srgb, var(--color-bg-shadow-deep) 8%, transparent);
+}
