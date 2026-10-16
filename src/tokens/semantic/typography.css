@@ -1,0 +1,236 @@
+/* Shared LarsUI typography standardized in Paper. Decorations and font features stay on components. */
+:root {
+  --font-ui: var(--font-sans);
+
+  /* body/xs/regular — 10px / 12px, 400. */
+  --font-body-xs-regular: var(--font-sans);
+  --text-body-xs-regular: var(--text-10);
+  --font-weight-body-xs-regular: var(--font-weight-regular);
+  --leading-body-xs-regular: var(--leading-12);
+  --tracking-body-xs-regular: var(--tracking-normal);
+
+  /* body/xs/medium — 10px / 12px, 500. */
+  --font-body-xs-medium: var(--font-sans);
+  --text-body-xs-medium: var(--text-10);
+  --font-weight-body-xs-medium: var(--font-weight-medium);
+  --leading-body-xs-medium: var(--leading-12);
+  --tracking-body-xs-medium: var(--tracking-normal);
+
+  /* body/xs/semibold — 10px / 12px, 600. */
+  --font-body-xs-semibold: var(--font-sans);
+  --text-body-xs-semibold: var(--text-10);
+  --font-weight-body-xs-semibold: var(--font-weight-semibold);
+  --leading-body-xs-semibold: var(--leading-12);
+  --tracking-body-xs-semibold: var(--tracking-normal);
+
+  /* body/xs/bold — 10px / 12px, 700. */
+  --font-body-xs-bold: var(--font-sans);
+  --text-body-xs-bold: var(--text-10);
+  --font-weight-body-xs-bold: var(--font-weight-bold);
+  --leading-body-xs-bold: var(--leading-12);
+  --tracking-body-xs-bold: var(--tracking-normal);
+
+  /* body/sm/regular — 12px / 16px, 400. */
+  --font-body-sm-regular: var(--font-sans);
+  --text-body-sm-regular: var(--text-12);
+  --font-weight-body-sm-regular: var(--font-weight-regular);
+  --leading-body-sm-regular: var(--leading-16);
+  --tracking-body-sm-regular: var(--tracking-normal);
+
+  /* body/sm/medium — 12px / 16px, 500. */
+  --font-body-sm-medium: var(--font-sans);
+  --text-body-sm-medium: var(--text-12);
+  --font-weight-body-sm-medium: var(--font-weight-medium);
+  --leading-body-sm-medium: var(--leading-16);
+  --tracking-body-sm-medium: var(--tracking-normal);
+
+  /* body/sm/semibold — 12px / 16px, 600. */
+  --font-body-sm-semibold: var(--font-sans);
+  --text-body-sm-semibold: var(--text-12);
+  --font-weight-body-sm-semibold: var(--font-weight-semibold);
+  --leading-body-sm-semibold: var(--leading-16);
+  --tracking-body-sm-semibold: var(--tracking-normal);
+
+  /* body/sm/bold — 12px / 16px, 700. */
+  --font-body-sm-bold: var(--font-sans);
+  --text-body-sm-bold: var(--text-12);
+  --font-weight-body-sm-bold: var(--font-weight-bold);
+  --leading-body-sm-bold: var(--leading-16);
+  --tracking-body-sm-bold: var(--tracking-normal);
+
+  /* body/md/regular — 14px / 18px, 400. */
+  --font-body-md-regular: var(--font-sans);
+  --text-body-md-regular: var(--text-14);
+  --font-weight-body-md-regular: var(--font-weight-regular);
+  --leading-body-md-regular: var(--leading-18);
+  --tracking-body-md-regular: var(--tracking-normal);
+
+  /* body/md/medium — 14px / 18px, 500. */
+  --font-body-md-medium: var(--font-sans);
+  --text-body-md-medium: var(--text-14);
+  --font-weight-body-md-medium: var(--font-weight-medium);
+  --leading-body-md-medium: var(--leading-18);
+  --tracking-body-md-medium: var(--tracking-normal);
+
+  /* body/md/semibold — 14px / 18px, 600. */
+  --font-body-md-semibold: var(--font-sans);
+  --text-body-md-semibold: var(--text-14);
+  --font-weight-body-md-semibold: var(--font-weight-semibold);
+  --leading-body-md-semibold: var(--leading-18);
+  --tracking-body-md-semibold: var(--tracking-normal);
+
+  /* body/lg/regular — 16px / 20px, 400. */
+  --font-body-lg-regular: var(--font-sans);
+  --text-body-lg-regular: var(--text-16);
+  --font-weight-body-lg-regular: var(--font-weight-regular);
+  --leading-body-lg-regular: var(--leading-20);
+  --tracking-body-lg-regular: var(--tracking-normal);
+
+  /* body/lg/medium — 16px / 20px, 500. */
+  --font-body-lg-medium: var(--font-sans);
+  --text-body-lg-medium: var(--text-16);
+  --font-weight-body-lg-medium: var(--font-weight-medium);
+  --leading-body-lg-medium: var(--leading-20);
+  --tracking-body-lg-medium: var(--tracking-normal);
+
+  /* body/lg/semibold — 16px / 20px, 600. */
+  --font-body-lg-semibold: var(--font-sans);
+  --text-body-lg-semibold: var(--text-16);
+  --font-weight-body-lg-semibold: var(--font-weight-semibold);
+  --leading-body-lg-semibold: var(--leading-20);
+  --tracking-body-lg-semibold: var(--tracking-normal);
+
+  /* body/lg/bold — 16px / 20px, 700. */
+  --font-body-lg-bold: var(--font-sans);
+  --text-body-lg-bold: var(--text-16);
+  --font-weight-body-lg-bold: var(--font-weight-bold);
+  --leading-body-lg-bold: var(--leading-20);
+  --tracking-body-lg-bold: var(--tracking-normal);
+
+  /* Public heading styles; currently used by the website, available to library consumers. */
+  /* heading/sm/medium — 16px / 24px, 500. */
+  --font-heading-sm-medium: var(--font-sans);
+  --text-heading-sm-medium: var(--text-16);
+  --font-weight-heading-sm-medium: var(--font-weight-medium);
+  --leading-heading-sm-medium: var(--leading-24);
+  --tracking-heading-sm-medium: var(--tracking-normal);
+
+  /* heading/sm/semibold — 16px / 24px, 600. */
+  --font-heading-sm-semibold: var(--font-sans);
+  --text-heading-sm-semibold: var(--text-16);
+  --font-weight-heading-sm-semibold: var(--font-weight-semibold);
+  --leading-heading-sm-semibold: var(--leading-24);
+  --tracking-heading-sm-semibold: var(--tracking-normal);
+
+  /* heading/md/medium — 24px / 32px, 500. */
+  --font-heading-md-medium: var(--font-sans);
+  --text-heading-md-medium: var(--text-24);
+  --font-weight-heading-md-medium: var(--font-weight-medium);
+  --leading-heading-md-medium: var(--leading-32);
+  --tracking-heading-md-medium: var(--tracking-tight);
+
+  /* heading/md/semibold — 24px / 32px, 600. */
+  --font-heading-md-semibold: var(--font-sans);
+  --text-heading-md-semibold: var(--text-24);
+  --font-weight-heading-md-semibold: var(--font-weight-semibold);
+  --leading-heading-md-semibold: var(--leading-32);
+  --tracking-heading-md-semibold: var(--tracking-tight);
+
+  /* heading/lg/medium — 32px / 40px, 500. */
+  --font-heading-lg-medium: var(--font-sans);
+  --text-heading-lg-medium: var(--text-32);
+  --font-weight-heading-lg-medium: var(--font-weight-medium);
+  --leading-heading-lg-medium: var(--leading-40);
+  --tracking-heading-lg-medium: var(--tracking-normal);
+
+  /* heading/lg/semibold — 32px / 40px, 600. */
+  --font-heading-lg-semibold: var(--font-sans);
+  --text-heading-lg-semibold: var(--text-32);
+  --font-weight-heading-lg-semibold: var(--font-weight-semibold);
+  --leading-heading-lg-semibold: var(--leading-40);
+  --tracking-heading-lg-semibold: var(--tracking-normal);
+
+  /* shortcut/sm/medium — 12px / 12px, 500. */
+  --font-shortcut-sm-medium: var(--font-sans);
+  --text-shortcut-sm-medium: var(--text-12);
+  --font-weight-shortcut-sm-medium: var(--font-weight-medium);
+  --leading-shortcut-sm-medium: var(--leading-12);
+  --tracking-shortcut-sm-medium: var(--tracking-normal);
+
+  /* code/sm/semibold/tag — 12px / 16px, 600. */
+  --font-code-sm-semibold-tag: var(--font-mono);
+  --text-code-sm-semibold-tag: var(--text-12);
+  --font-weight-code-sm-semibold-tag: var(--font-weight-semibold);
+  --leading-code-sm-semibold-tag: var(--leading-16);
+  --tracking-code-sm-semibold-tag: var(--tracking-expanded);
+
+  /* code/md/semibold/tag — 14px / 18px, 600. */
+  --font-code-md-semibold-tag: var(--font-mono);
+  --text-code-md-semibold-tag: var(--text-14);
+  --font-weight-code-md-semibold-tag: var(--font-weight-semibold);
+  --leading-code-md-semibold-tag: var(--leading-18);
+  --tracking-code-md-semibold-tag: var(--tracking-expanded);
+
+  /* code/lg/semibold/tag — 16px / 16px, 600. */
+  --font-code-lg-semibold-tag: var(--font-mono);
+  --text-code-lg-semibold-tag: var(--text-16);
+  --font-weight-code-lg-semibold-tag: var(--font-weight-semibold);
+  --leading-code-lg-semibold-tag: var(--leading-16);
+  --tracking-code-lg-semibold-tag: var(--tracking-expanded);
+
+  /* Compatibility roles resolve to the consolidated styles above. */
+  --text-metadata: var(--text-body-xs-regular);
+  --text-caption: var(--text-body-xs-semibold);
+  --text-body-compact: var(--text-body-sm-regular);
+  --text-label: var(--text-body-sm-medium);
+  --text-action: var(--text-body-sm-semibold);
+  --text-numeric: var(--text-body-sm-semibold);
+  --text-shortcut: var(--text-shortcut-sm-medium);
+  --text-body: var(--text-body-sm-regular);
+  --text-tag-sm: var(--text-body-sm-semibold);
+  --text-link: var(--text-body-sm-medium);
+  --text-menu: var(--text-body-sm-regular);
+  --text-numeric-lg: var(--text-body-md-semibold);
+  --text-body-lg: var(--text-body-md-regular);
+  --text-prompt: var(--text-body-md-medium);
+  --text-action-lg: var(--text-body-md-semibold);
+  --text-label-lg: var(--text-body-md-medium);
+  --text-tag-md: var(--text-body-md-semibold);
+  --text-tag-lg: var(--text-body-lg-semibold);
+  --text-particle: var(--text-18);
+  --font-weight-metadata: var(--font-weight-body-xs-regular);
+  --font-weight-body: var(--font-weight-body-sm-regular);
+  --font-weight-menu: var(--font-weight-body-sm-regular);
+  --font-weight-particle: var(--font-weight-regular);
+  --font-weight-label: var(--font-weight-body-sm-medium);
+  --font-weight-shortcut: var(--font-weight-shortcut-sm-medium);
+  --font-weight-prompt: var(--font-weight-body-md-medium);
+  --font-weight-link: var(--font-weight-body-sm-medium);
+  --font-weight-caption: var(--font-weight-body-xs-semibold);
+  --font-weight-action: var(--font-weight-body-sm-semibold);
+  --font-weight-numeric: var(--font-weight-body-sm-semibold);
+  --font-weight-tag-mono: var(--font-weight-code-sm-semibold-tag);
+  --font-weight-tag: var(--font-weight-body-sm-semibold);
+  --tracking-numeric: var(--tracking-tight);
+  --tracking-ui: var(--tracking-normal);
+  --tracking-metadata: var(--tracking-body-xs-regular);
+  --tracking-tag-mono: var(--tracking-expanded);
+  --leading-body: var(--leading-body-sm-regular);
+  --leading-metadata: var(--leading-body-xs-regular);
+  --leading-shortcut: var(--leading-shortcut-sm-medium);
+  --leading-caption: var(--leading-body-xs-semibold);
+  --leading-body-compact: var(--leading-body-sm-regular);
+  --leading-label: var(--leading-body-sm-medium);
+  --leading-action: var(--leading-body-sm-semibold);
+  --leading-numeric: var(--leading-body-sm-semibold);
+  --leading-tag-sm: var(--leading-body-sm-semibold);
+  --leading-tag-lg: var(--leading-body-lg-semibold);
+  --leading-menu: var(--leading-body-sm-regular);
+  --leading-numeric-lg: var(--leading-body-md-semibold);
+  --leading-body-lg: var(--leading-body-md-regular);
+  --leading-prompt: var(--leading-body-md-medium);
+  --leading-action-lg: var(--leading-body-md-semibold);
+  --leading-tag-md: var(--leading-body-md-semibold);
+  --leading-label-lg: var(--leading-body-md-medium);
+  --leading-particle: var(--leading-20);
+}

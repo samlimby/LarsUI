@@ -1,0 +1,10 @@
+/* Compatibility names used by existing components and consumer themes. */
+:root {
+  --divider-mid_emphasis: var(--color-border-mid_emphasis);
+  --color-high_emphasis: var(--color-fg-high_emphasis);
+  --color-mid_emphasis: var(--color-fg-mid_emphasis);
+  --color-low_emphasis: var(--color-fg-low_emphasis);
+  --high_contrast-high_emphasis: var(--color-fg-high_contrast-high_emphasis);
+  --high_contrast-mid_emphasis: var(--color-fg-high_contrast-mid_emphasis);
+  --high_contrast-low_emphasis: var(--color-fg-high_contrast-low_emphasis);
+}

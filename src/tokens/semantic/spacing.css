@@ -1,0 +1,19 @@
+/* Existing spacing names remain aliases of the shared 4px size scale. */
+:root {
+  --spacing-1: var(--size-4);
+  --spacing-2: var(--size-8);
+  --spacing-3: var(--size-12);
+  --spacing-4: var(--size-16);
+  --spacing-5: var(--size-20);
+  --spacing-6: var(--size-24);
+
+  /* Rounded corners use size primitives; pills and circles are shape roles. */
+  --radius-xs: calc(var(--size-4) / 2);
+  --radius-sm: var(--size-4);
+  --radius-md: var(--size-8);
+  --radius-lg: var(--size-12);
+  --radius-xl: var(--size-16);
+  --radius-2xl: var(--size-20);
+  --radius-full: 999px;
+  --radius-circle: 50%;
+}

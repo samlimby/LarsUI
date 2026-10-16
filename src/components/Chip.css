@@ -1,15 +1,19 @@
 .lars-chip {
-  --chip-background: var(--chip-default-bg, #d5efff);
-  --chip-foreground: var(--chip-default-text, #0588f0);
+  --chip-background: var(--chip-default-bg, var(--color-bg-chip-information));
+  --chip-foreground: var(--chip-default-text, var(--color-fg-chip-information));
   position: relative;
   isolation: isolate;
   display: inline-flex;
   align-items: center;
   width: max-content;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--chip-foreground);
-  font-weight: 600;
+  font-weight: var(--font-weight-body-sm-semibold);
   white-space: nowrap;
+  font-family: var(--font-body-sm-semibold);
+  font-size: var(--text-body-sm-semibold);
+  line-height: var(--leading-body-sm-semibold);
+  letter-spacing: var(--tracking-body-sm-semibold);
 }
 
 .lars-chip[data-burst='true'] {
@@ -19,74 +23,100 @@
 
 .lars-chip[data-burst='true']::before {
   position: absolute;
-  inset: -10px -8px;
+  inset: -10px calc(var(--size-8) * -1);
   content: '';
 }
 
 .lars-chip[data-burst='true']:focus-visible {
-  outline: 2px solid var(--lars-focus-ring, #8da4ef);
+  outline: 2px solid var(--color-border-focus);
   outline-offset: 3px;
 }
 
 .lars-chip--neutral {
-  --chip-background: var(--chip-neutral-bg, #e8e8e8);
-  --chip-foreground: var(--chip-neutral-text, #838383);
+  --chip-background: var(--chip-neutral-bg, var(--color-bg-chip-neutral));
+  --chip-foreground: var(--chip-neutral-text, var(--color-fg-chip-neutral));
 }
 
 .lars-chip--default {
-  --chip-background: var(--chip-default-bg, #d5efff);
-  --chip-foreground: var(--chip-default-text, #0588f0);
+  --chip-background: var(--chip-default-bg, var(--color-bg-chip-information));
+  --chip-foreground: var(--chip-default-text, var(--color-fg-chip-information));
 }
 
 .lars-chip--warning {
-  --chip-background: var(--chip-warning-bg, #ffdfb5);
-  --chip-foreground: var(--chip-warning-text, #ef5f00);
+  --chip-background: var(--chip-warning-bg, var(--color-bg-chip-warning));
+  --chip-foreground: var(--chip-warning-text, var(--color-fg-chip-warning));
 }
 
 .lars-chip--positive {
-  --chip-background: var(--chip-positive-bg, #d6f1df);
-  --chip-foreground: var(--chip-positive-text, #2b9a66);
+  --chip-background: var(--chip-positive-bg, var(--color-bg-chip-positive));
+  --chip-foreground: var(--chip-positive-text, var(--color-fg-chip-positive));
 }
 
 .lars-chip--error {
-  --chip-background: var(--chip-error-bg, #ffdbdc);
-  --chip-foreground: var(--chip-error-text, #dc3e42);
+  --chip-background: var(--chip-error-bg, var(--color-bg-chip-error));
+  --chip-foreground: var(--chip-error-text, var(--color-fg-chip-error));
 }
 
 .lars-chip--small {
-  height: 24px;
-  gap: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  line-height: 16px;
+  height: var(--size-24);
+  gap: var(--size-4);
+  padding: var(--size-4) var(--size-8);
+  font-size: var(--text-body-sm-semibold);
+  line-height: var(--leading-body-sm-semibold);
+  font-family: var(--font-body-sm-semibold);
+  font-weight: var(--font-weight-body-sm-semibold);
+  letter-spacing: var(--tracking-body-sm-semibold);
 }
 
 .lars-chip--medium {
   height: 26px;
-  gap: 8px;
-  padding: 4px 8px;
-  font-size: 14px;
-  line-height: 18px;
+  gap: var(--size-8);
+  padding: var(--size-4) var(--size-8);
+  font-size: var(--text-body-md-semibold);
+  line-height: var(--leading-body-md-semibold);
+  font-family: var(--font-body-md-semibold);
+  font-weight: var(--font-weight-body-md-semibold);
+  letter-spacing: var(--tracking-body-md-semibold);
 }
 
 .lars-chip--large {
-  height: 36px;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 16px;
-  line-height: 16px;
+  height: var(--size-36);
+  gap: var(--size-8);
+  padding: var(--size-8) var(--size-12);
+  font-size: var(--text-body-lg-semibold);
+  line-height: var(--leading-body-lg-semibold);
+  font-family: var(--font-body-lg-semibold);
+  font-weight: var(--font-weight-body-lg-semibold);
+  letter-spacing: var(--tracking-body-lg-semibold);
 }
 
 .lars-chip--monospace {
-  font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
-  font-variation-settings: 'wght' 600;
-  letter-spacing: .05em;
+  font-family: var(--font-code-sm-semibold-tag);
+  font-variation-settings: normal;
+  letter-spacing: var(--tracking-code-sm-semibold-tag);
+  font-size: var(--text-code-sm-semibold-tag);
+  font-weight: var(--font-weight-code-sm-semibold-tag);
+  line-height: var(--leading-code-sm-semibold-tag);
+}
+
+.lars-chip--monospace.lars-chip--medium {
+  font-family: var(--font-code-md-semibold-tag);
+  font-size: var(--text-code-md-semibold-tag);
+  font-weight: var(--font-weight-code-md-semibold-tag);
+  line-height: var(--leading-code-md-semibold-tag);
+  letter-spacing: var(--tracking-code-md-semibold-tag);
+}
+
+.lars-chip--monospace.lars-chip--large {
+  font-family: var(--font-code-lg-semibold-tag);
+  font-size: var(--text-code-lg-semibold-tag);
+  font-weight: var(--font-weight-code-lg-semibold-tag);
+  line-height: var(--leading-code-lg-semibold-tag);
+  letter-spacing: var(--tracking-code-lg-semibold-tag);
 }
 
 .lars-chip--sans-serif {
-  font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
-  font-variation-settings: 'wght' 650;
-  font-weight: 650;
+  font-variation-settings: normal;
 }
 
 .lars-chip__icon {
@@ -97,20 +127,20 @@
 
 .lars-chip--small .lars-chip__icon,
 .lars-chip--small .lars-chip__icon svg {
-  width: 12px;
-  height: 12px;
+  width: var(--size-12);
+  height: var(--size-12);
 }
 
 .lars-chip--medium .lars-chip__icon,
 .lars-chip--medium .lars-chip__icon svg {
-  width: 16px;
-  height: 16px;
+  width: var(--size-16);
+  height: var(--size-16);
 }
 
 .lars-chip--large .lars-chip__icon,
 .lars-chip--large .lars-chip__icon svg {
-  width: 20px;
-  height: 20px;
+  width: var(--size-20);
+  height: var(--size-20);
 }
 
 .lars-chip__icon svg { display: block; }
@@ -120,6 +150,7 @@
   position: absolute;
   z-index: -1;
   inset: 0;
+  border-radius: inherit;
   background: var(--chip-background);
   pointer-events: none;
 }
@@ -169,13 +200,13 @@
   left: -10px;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
-  font-family: system-ui, sans-serif;
-  font-size: 18px;
-  font-weight: 400;
+  width: var(--size-20);
+  height: var(--size-20);
+  font-family: var(--font-system);
+  font-size: var(--text-18);
+  font-weight: var(--font-weight-regular);
   letter-spacing: 0;
-  line-height: 20px;
+  line-height: var(--leading-20);
   pointer-events: none;
   transform-origin: center;
 }

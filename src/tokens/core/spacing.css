@@ -1,0 +1,3 @@
+/* Compatibility entry point. New code should import the shared token index. */
+@import './sizes.css';
+@import '../semantic/spacing.css';

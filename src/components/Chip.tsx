@@ -8,6 +8,7 @@ import type {
   ReactNode,
 } from 'react'
 import './Chip.css'
+import { useRadiusToken } from './useRadiusToken'
 
 export type ChipVariant = 'neutral' | 'default' | 'warning' | 'positive' | 'error'
 export type ChipIconPosition = 'none' | 'start' | 'end'
@@ -244,6 +245,7 @@ export function Chip({
   ...props
 }: ChipProps) {
   const reduceMotion = Boolean(useReducedMotion())
+  const surfaceRadius = useRadiusToken('--radius-sm')
   const burstId = useRef(0)
   const [bursts, setBursts] = useState<BurstInstance[]>([])
   const hasCustomIcon = icon !== undefined && icon !== null
@@ -300,7 +302,8 @@ export function Chip({
         initial={false}
         layout={reduceMotion ? false : true}
         layoutDependency={typeface}
-        style={{ borderRadius: 4 }}
+        ref={surfaceRadius.ref}
+        style={{ borderRadius: surfaceRadius.radius }}
         transition={{ type: 'spring', duration: .32, bounce: 0 }}
       />
       {resolvedIconPosition === 'start' && <ChipIcon>{renderedIcon}</ChipIcon>}

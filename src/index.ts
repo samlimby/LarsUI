@@ -1,6 +1,4 @@
-import './components/Focus.css'
-import './components/ColorTokens.css'
-import './components/Shadows.css'
+import './tokens/index.css'
 
 export { IconProvider, type IconProviderProps } from './components/IconProvider.js'
 
@@ -13,8 +11,27 @@ export {
   type InputOption,
   type TextInputProps,
   type DropdownInputProps,
+  type DropdownSingleInputProps,
+  type DropdownMultiInputProps,
   type TextareaInputProps,
 } from './components/Input.js'
+
+export {
+  Dropdown,
+  type DropdownProps,
+  type DropdownSingleProps,
+  type DropdownMultiProps,
+  type DropdownOption,
+  type DropdownSize,
+  type DropdownAppearance,
+} from './components/Dropdown.js'
+
+export {
+  Textarea,
+  type TextareaProps,
+  type TextareaSize,
+  type TextareaAppearance,
+} from './components/Textarea.js'
 
 export {
   Button,

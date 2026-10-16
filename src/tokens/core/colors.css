@@ -1,0 +1,544 @@
+/* Radix color primitives from Paper's “core tokens” reference.
+ * Keep palette values here; give them UI roles in ../semantic/colors.css.
+ */
+:root {
+  --radix-white: #FFFFFF;
+  --radix-black: #000000;
+
+  /* gray */
+  --radix-gray-1: #FCFCFC;
+  --radix-gray-2: #F9F9F9;
+  --radix-gray-3: #F0F0F0;
+  --radix-gray-4: #E8E8E8;
+  --radix-gray-5: #E0E0E0;
+  --radix-gray-6: #D9D9D9;
+  --radix-gray-7: #CECECE;
+  --radix-gray-8: #BBBBBB;
+  --radix-gray-9: #8D8D8D;
+  --radix-gray-10: #838383;
+  --radix-gray-11: #646464;
+  --radix-gray-12: #202020;
+
+  /* gray-dark */
+  --radix-gray-dark-1: #111111;
+  --radix-gray-dark-2: #191919;
+  --radix-gray-dark-3: #222222;
+  --radix-gray-dark-4: #2A2A2A;
+  --radix-gray-dark-5: #313131;
+  --radix-gray-dark-6: #3A3A3A;
+  --radix-gray-dark-7: #484848;
+  --radix-gray-dark-8: #606060;
+  --radix-gray-dark-9: #6E6E6E;
+  --radix-gray-dark-10: #7B7B7B;
+  --radix-gray-dark-11: #B4B4B4;
+  --radix-gray-dark-12: #EEEEEE;
+
+  /* sage */
+  --radix-sage-1: #FBFDFC;
+  --radix-sage-2: #F7F9F8;
+  --radix-sage-3: #EEF1F0;
+  --radix-sage-4: #E6E9E8;
+  --radix-sage-5: #DFE2E0;
+  --radix-sage-6: #D7DAD9;
+  --radix-sage-7: #CBCFCD;
+  --radix-sage-8: #B8BCBA;
+  --radix-sage-9: #868E8B;
+  --radix-sage-10: #7C8481;
+  --radix-sage-11: #5F6563;
+  --radix-sage-12: #1A211E;
+
+  /* jade */
+  --radix-jade-1: #FBFEFD;
+  --radix-jade-2: #F4FBF7;
+  --radix-jade-3: #E6F7ED;
+  --radix-jade-4: #D6F1E3;
+  --radix-jade-5: #C3E9D7;
+  --radix-jade-6: #ACDEC8;
+  --radix-jade-7: #8BCEB6;
+  --radix-jade-8: #56BA9F;
+  --radix-jade-9: #29A383;
+  --radix-jade-10: #26997B;
+  --radix-jade-11: #208368;
+  --radix-jade-12: #1D3B31;
+
+  /* mauve */
+  --radix-mauve-1: #FDFCFD;
+  --radix-mauve-2: #FAF9FB;
+  --radix-mauve-3: #F2EFF3;
+  --radix-mauve-4: #EAE7EC;
+  --radix-mauve-5: #E3DFE6;
+  --radix-mauve-6: #DBD8E0;
+  --radix-mauve-7: #D0CDD7;
+  --radix-mauve-8: #BCBAC7;
+  --radix-mauve-9: #8E8C99;
+  --radix-mauve-10: #84828E;
+  --radix-mauve-11: #65636D;
+  --radix-mauve-12: #211F26;
+
+  /* slate */
+  --radix-slate-1: #FCFCFD;
+  --radix-slate-2: #F9F9FB;
+  --radix-slate-3: #F0F0F3;
+  --radix-slate-4: #E8E8EC;
+  --radix-slate-5: #E0E1E6;
+  --radix-slate-6: #D9D9E0;
+  --radix-slate-7: #CDCED6;
+  --radix-slate-8: #B9BBC6;
+  --radix-slate-9: #8B8D98;
+  --radix-slate-10: #80838D;
+  --radix-slate-11: #60646C;
+  --radix-slate-12: #1C2024;
+
+  /* olive */
+  --radix-olive-1: #FCFDFC;
+  --radix-olive-2: #F8FAF8;
+  --radix-olive-3: #EFF1EF;
+  --radix-olive-4: #E7E9E7;
+  --radix-olive-5: #DFE2DF;
+  --radix-olive-6: #D7DAD7;
+  --radix-olive-7: #CCCFCC;
+  --radix-olive-8: #B9BCB8;
+  --radix-olive-9: #898E87;
+  --radix-olive-10: #7F847D;
+  --radix-olive-11: #60655F;
+  --radix-olive-12: #1D211C;
+
+  /* sand */
+  --radix-sand-1: #FDFDFC;
+  --radix-sand-2: #F9F9F8;
+  --radix-sand-3: #F1F0EF;
+  --radix-sand-4: #E9E8E6;
+  --radix-sand-5: #E2E1DE;
+  --radix-sand-6: #DAD9D6;
+  --radix-sand-7: #CFCECA;
+  --radix-sand-8: #BCBBB5;
+  --radix-sand-9: #8D8D86;
+  --radix-sand-10: #82827C;
+  --radix-sand-11: #63635E;
+  --radix-sand-12: #21201C;
+
+  /* bronze */
+  --radix-bronze-1: #FDFCFC;
+  --radix-bronze-2: #FDF7F5;
+  --radix-bronze-3: #F6EDEA;
+  --radix-bronze-4: #EFE4DF;
+  --radix-bronze-5: #E7D9D3;
+  --radix-bronze-6: #DFCDC5;
+  --radix-bronze-7: #D3BCB3;
+  --radix-bronze-8: #C2A499;
+  --radix-bronze-9: #A18072;
+  --radix-bronze-10: #957468;
+  --radix-bronze-11: #7D5E54;
+  --radix-bronze-12: #43302B;
+
+  /* gold */
+  --radix-gold-1: #FDFDFC;
+  --radix-gold-2: #FAF9F2;
+  --radix-gold-3: #F2F0E7;
+  --radix-gold-4: #EAE6DB;
+  --radix-gold-5: #E1DCCF;
+  --radix-gold-6: #D8D0BF;
+  --radix-gold-7: #CBC0AA;
+  --radix-gold-8: #B9A88D;
+  --radix-gold-9: #978365;
+  --radix-gold-10: #8C7A5E;
+  --radix-gold-11: #71624B;
+  --radix-gold-12: #3B352B;
+
+  /* brown */
+  --radix-brown-1: #FEFDFC;
+  --radix-brown-2: #FCF9F6;
+  --radix-brown-3: #F6EEE7;
+  --radix-brown-4: #F0E4D9;
+  --radix-brown-5: #EBDACA;
+  --radix-brown-6: #E4CDB7;
+  --radix-brown-7: #DCBC9F;
+  --radix-brown-8: #CEA37E;
+  --radix-brown-9: #AD7F58;
+  --radix-brown-10: #A07553;
+  --radix-brown-11: #815E46;
+  --radix-brown-12: #3E332E;
+
+  /* orange */
+  --radix-orange-1: #FEFCFB;
+  --radix-orange-2: #FFF7ED;
+  --radix-orange-3: #FFEFD6;
+  --radix-orange-4: #FFDFB5;
+  --radix-orange-5: #FFD19A;
+  --radix-orange-6: #FFC182;
+  --radix-orange-7: #F5AE73;
+  --radix-orange-8: #EC9455;
+  --radix-orange-9: #F76B15;
+  --radix-orange-10: #EF5F00;
+  --radix-orange-11: #CC4E00;
+  --radix-orange-12: #582D1D;
+
+  /* amber */
+  --radix-amber-1: #FEFDFB;
+  --radix-amber-2: #FEFBE9;
+  --radix-amber-3: #FFF7C2;
+  --radix-amber-4: #FFEE9C;
+  --radix-amber-5: #FBE577;
+  --radix-amber-6: #F3D673;
+  --radix-amber-7: #E9C162;
+  --radix-amber-8: #E2A336;
+  --radix-amber-9: #FFC53D;
+  --radix-amber-10: #FFBA18;
+  --radix-amber-11: #AB6400;
+  --radix-amber-12: #4F3422;
+
+  /* yellow */
+  --radix-yellow-1: #FDFDF9;
+  --radix-yellow-2: #FEFCE9;
+  --radix-yellow-3: #FFFAB8;
+  --radix-yellow-4: #FFF394;
+  --radix-yellow-5: #FFE770;
+  --radix-yellow-6: #F3D768;
+  --radix-yellow-7: #E4C767;
+  --radix-yellow-8: #D5AE39;
+  --radix-yellow-9: #FFE629;
+  --radix-yellow-10: #FFDC00;
+  --radix-yellow-11: #9E6C00;
+  --radix-yellow-12: #473B1F;
+
+  /* yellow-p3 */
+  --radix-yellow-p3-1: color(display-p3 0.992 0.992 0.978);
+  --radix-yellow-p3-2: color(display-p3 0.995 0.990 0.922);
+  --radix-yellow-p3-3: color(display-p3 0.997 0.982 0.749);
+  --radix-yellow-p3-4: color(display-p3 0.992 0.953 0.627);
+  --radix-yellow-p3-5: color(display-p3 0.984 0.910 0.510);
+  --radix-yellow-p3-6: color(display-p3 0.934 0.847 0.474);
+  --radix-yellow-p3-7: color(display-p3 0.876 0.785 0.460);
+  --radix-yellow-p3-8: color(display-p3 0.811 0.689 0.313);
+  --radix-yellow-p3-9: color(display-p3 1 0.920 0.220);
+  --radix-yellow-p3-10: color(display-p3 0.977 0.868 0.291);
+  --radix-yellow-p3-11: color(display-p3 0.600 0.440 0);
+  --radix-yellow-p3-12: color(display-p3 0.271 0.233 0.137);
+
+  /* lime */
+  --radix-lime-1: #FCFDFA;
+  --radix-lime-2: #F8FAF3;
+  --radix-lime-3: #EEF6D6;
+  --radix-lime-4: #E2F0BD;
+  --radix-lime-5: #D3E7A6;
+  --radix-lime-6: #C2DA91;
+  --radix-lime-7: #ABC978;
+  --radix-lime-8: #8DB654;
+  --radix-lime-9: #BDEE63;
+  --radix-lime-10: #B0E64C;
+  --radix-lime-11: #5C7C2F;
+  --radix-lime-12: #37401C;
+
+  /* mint */
+  --radix-mint-1: #F9FEFD;
+  --radix-mint-2: #F2FBF9;
+  --radix-mint-3: #DDF9F2;
+  --radix-mint-4: #C8F4E9;
+  --radix-mint-5: #B3ECDE;
+  --radix-mint-6: #9CE0D0;
+  --radix-mint-7: #7ECFBD;
+  --radix-mint-8: #4CBBA5;
+  --radix-mint-9: #86EAD4;
+  --radix-mint-10: #7DE0CB;
+  --radix-mint-11: #027864;
+  --radix-mint-12: #16433C;
+
+  /* sky */
+  --radix-sky-1: #F9FEFF;
+  --radix-sky-2: #F1FAFD;
+  --radix-sky-3: #E1F6FD;
+  --radix-sky-4: #D1F0FA;
+  --radix-sky-5: #BEE7F5;
+  --radix-sky-6: #A9DAED;
+  --radix-sky-7: #8DCAE3;
+  --radix-sky-8: #60B3D7;
+  --radix-sky-9: #7CE2FE;
+  --radix-sky-10: #74DAF8;
+  --radix-sky-11: #00749E;
+  --radix-sky-12: #1D3E56;
+
+  /* tomato */
+  --radix-tomato-1: #FFFCFC;
+  --radix-tomato-2: #FFF8F7;
+  --radix-tomato-3: #FEEBE7;
+  --radix-tomato-4: #FFDCD3;
+  --radix-tomato-5: #FFCDC2;
+  --radix-tomato-6: #FDBDAF;
+  --radix-tomato-7: #F5A898;
+  --radix-tomato-8: #EC8E7B;
+  --radix-tomato-9: #E54D2E;
+  --radix-tomato-10: #DD4425;
+  --radix-tomato-11: #D13415;
+  --radix-tomato-12: #5C271F;
+
+  /* red */
+  --radix-red-1: #FFFCFC;
+  --radix-red-2: #FFF7F7;
+  --radix-red-3: #FEEBEC;
+  --radix-red-4: #FFDBDC;
+  --radix-red-5: #FFCDCE;
+  --radix-red-6: #FDBDBE;
+  --radix-red-7: #F4A9AA;
+  --radix-red-8: #EB8E90;
+  --radix-red-9: #E5484D;
+  --radix-red-10: #DC3E42;
+  --radix-red-11: #CE2C31;
+  --radix-red-12: #641723;
+
+  /* ruby */
+  --radix-ruby-1: #FFFCFD;
+  --radix-ruby-2: #FFF7F8;
+  --radix-ruby-3: #FEEAED;
+  --radix-ruby-4: #FFDCE1;
+  --radix-ruby-5: #FFCED6;
+  --radix-ruby-6: #F8BFC8;
+  --radix-ruby-7: #EFACB8;
+  --radix-ruby-8: #E592A3;
+  --radix-ruby-9: #E54666;
+  --radix-ruby-10: #DC3B5D;
+  --radix-ruby-11: #CA244D;
+  --radix-ruby-12: #64172B;
+
+  /* crimson */
+  --radix-crimson-1: #FFFCFD;
+  --radix-crimson-2: #FEF7F9;
+  --radix-crimson-3: #FFE9F0;
+  --radix-crimson-4: #FEDCE7;
+  --radix-crimson-5: #FACEDD;
+  --radix-crimson-6: #F3BED1;
+  --radix-crimson-7: #EAACC3;
+  --radix-crimson-8: #E093B2;
+  --radix-crimson-9: #E93D82;
+  --radix-crimson-10: #DF3478;
+  --radix-crimson-11: #CB1D63;
+  --radix-crimson-12: #621639;
+
+  /* pink */
+  --radix-pink-1: #FFFCFE;
+  --radix-pink-2: #FEF7FB;
+  --radix-pink-3: #FEE9F5;
+  --radix-pink-4: #FBDCEF;
+  --radix-pink-5: #F6CEE7;
+  --radix-pink-6: #EFBFDD;
+  --radix-pink-7: #E7ACD0;
+  --radix-pink-8: #DD93C2;
+  --radix-pink-9: #D6409F;
+  --radix-pink-10: #CF3897;
+  --radix-pink-11: #C2298A;
+  --radix-pink-12: #651249;
+
+  /* plum */
+  --radix-plum-1: #FEFCFF;
+  --radix-plum-2: #FDF7FD;
+  --radix-plum-3: #FBEBFB;
+  --radix-plum-4: #F7DEF8;
+  --radix-plum-5: #F2D1F3;
+  --radix-plum-6: #E9C2EC;
+  --radix-plum-7: #DEADE3;
+  --radix-plum-8: #CF91D8;
+  --radix-plum-9: #AB4ABA;
+  --radix-plum-10: #A144AF;
+  --radix-plum-11: #953EA3;
+  --radix-plum-12: #53195D;
+
+  /* purple */
+  --radix-purple-1: #FEFCFE;
+  --radix-purple-2: #FBF7FE;
+  --radix-purple-3: #F7EDFE;
+  --radix-purple-4: #F2E2FC;
+  --radix-purple-5: #EAD5F9;
+  --radix-purple-6: #E0C4F4;
+  --radix-purple-7: #D1AFEC;
+  --radix-purple-8: #BE93E4;
+  --radix-purple-9: #8E4EC6;
+  --radix-purple-10: #8347B9;
+  --radix-purple-11: #8145B5;
+  --radix-purple-12: #402060;
+
+  /* violet */
+  --radix-violet-1: #FDFCFE;
+  --radix-violet-2: #FAF8FF;
+  --radix-violet-3: #F4F0FE;
+  --radix-violet-4: #EBE4FF;
+  --radix-violet-5: #E1D9FF;
+  --radix-violet-6: #D4CAFE;
+  --radix-violet-7: #C2B5F5;
+  --radix-violet-8: #AA99EC;
+  --radix-violet-9: #6E56CF;
+  --radix-violet-10: #654DC4;
+  --radix-violet-11: #6550B9;
+  --radix-violet-12: #2F265F;
+
+  /* iris */
+  --radix-iris-1: #FDFDFF;
+  --radix-iris-2: #F8F8FF;
+  --radix-iris-3: #F0F1FE;
+  --radix-iris-4: #E6E7FF;
+  --radix-iris-5: #DADCFF;
+  --radix-iris-6: #CBCDFF;
+  --radix-iris-7: #B8BAF8;
+  --radix-iris-8: #9B9EF0;
+  --radix-iris-9: #5B5BD6;
+  --radix-iris-10: #5151CD;
+  --radix-iris-11: #5753C6;
+  --radix-iris-12: #272962;
+
+  /* indigo */
+  --radix-indigo-1: #FDFDFE;
+  --radix-indigo-2: #F7F9FF;
+  --radix-indigo-3: #EDF2FE;
+  --radix-indigo-4: #E1E9FF;
+  --radix-indigo-5: #D2DEFF;
+  --radix-indigo-6: #C1D0FF;
+  --radix-indigo-7: #ABBDF9;
+  --radix-indigo-8: #8DA4EF;
+  --radix-indigo-9: #3E63DD;
+  --radix-indigo-10: #3358D4;
+  --radix-indigo-11: #3A5BC7;
+  --radix-indigo-12: #1F2D5C;
+
+  /* blue */
+  --radix-blue-1: #FBFDFF;
+  --radix-blue-2: #F4FAFF;
+  --radix-blue-3: #E6F4FE;
+  --radix-blue-4: #D5EFFF;
+  --radix-blue-5: #C2E5FF;
+  --radix-blue-6: #ACD8FC;
+  --radix-blue-7: #8EC8F6;
+  --radix-blue-8: #5EB1EF;
+  --radix-blue-9: #0090FF;
+  --radix-blue-10: #0588F0;
+  --radix-blue-11: #0D74CE;
+  --radix-blue-12: #113264;
+
+  /* cyan */
+  --radix-cyan-1: #FAFDFE;
+  --radix-cyan-2: #F2FAFB;
+  --radix-cyan-3: #DEF7F9;
+  --radix-cyan-4: #CAF1F6;
+  --radix-cyan-5: #B5E9F0;
+  --radix-cyan-6: #9DDDE7;
+  --radix-cyan-7: #7DCEDC;
+  --radix-cyan-8: #3DB9CF;
+  --radix-cyan-9: #00A2C7;
+  --radix-cyan-10: #0797B9;
+  --radix-cyan-11: #107D98;
+  --radix-cyan-12: #0D3C48;
+
+  /* teal */
+  --radix-teal-1: #FAFEFD;
+  --radix-teal-2: #F3FBF9;
+  --radix-teal-3: #E0F8F3;
+  --radix-teal-4: #CCF3EA;
+  --radix-teal-5: #B8EAE0;
+  --radix-teal-6: #A1DED2;
+  --radix-teal-7: #83CDC1;
+  --radix-teal-8: #53B9AB;
+  --radix-teal-9: #12A594;
+  --radix-teal-10: #0D9B8A;
+  --radix-teal-11: #008573;
+  --radix-teal-12: #0D3D38;
+
+  /* green */
+  --radix-green-1: #FBFEFC;
+  --radix-green-2: #F4FBF6;
+  --radix-green-3: #E6F6EB;
+  --radix-green-4: #D6F1DF;
+  --radix-green-5: #C4E8D1;
+  --radix-green-6: #ADDDC0;
+  --radix-green-7: #8ECEAA;
+  --radix-green-8: #5BB98B;
+  --radix-green-9: #30A46C;
+  --radix-green-10: #2B9A66;
+  --radix-green-11: #218358;
+  --radix-green-12: #193B2D;
+
+  /* grass */
+  --radix-grass-1: #FBFEFB;
+  --radix-grass-2: #F5FBF5;
+  --radix-grass-3: #E9F6E9;
+  --radix-grass-4: #DAF1DB;
+  --radix-grass-5: #C9E8CA;
+  --radix-grass-6: #B2DDB5;
+  --radix-grass-7: #94CE9A;
+  --radix-grass-8: #65BA74;
+  --radix-grass-9: #46A758;
+  --radix-grass-10: #3E9B4F;
+  --radix-grass-11: #2A7E3B;
+  --radix-grass-12: #203C25;
+
+  /* ruby-dark */
+  --radix-ruby-dark-1: #191113;
+  --radix-ruby-dark-2: #1E1517;
+  --radix-ruby-dark-3: #3B121E;
+  --radix-ruby-dark-4: #4E1326;
+  --radix-ruby-dark-5: #5E192E;
+  --radix-ruby-dark-6: #6F2539;
+  --radix-ruby-dark-7: #883447;
+  --radix-ruby-dark-8: #B3445A;
+  --radix-ruby-dark-9: #E54666;
+  --radix-ruby-dark-10: #EC5A72;
+  --radix-ruby-dark-11: #FF949D;
+  --radix-ruby-dark-12: #FED2E1;
+
+  /* Additional dark indigo primitives already used by LarsUI. */
+  --radix-indigo-dark-8: #3E5CBB;
+  --radix-indigo-dark-11: #9EB1FF;
+
+  /* Dark ramps for shared component themes. Existing indigo 8 is retained.
+   * Source: https://github.com/radix-ui/colors/blob/main/src/dark.ts
+   */
+  --radix-indigo-dark-1: #11131F;
+  --radix-indigo-dark-2: #141726;
+  --radix-indigo-dark-3: #182449;
+  --radix-indigo-dark-4: #1D2E62;
+  --radix-indigo-dark-5: #253974;
+  --radix-indigo-dark-6: #304384;
+  --radix-indigo-dark-7: #3A4F97;
+  --radix-indigo-dark-9: #3E63DD;
+  --radix-indigo-dark-10: #5472E4;
+  --radix-indigo-dark-12: #D6E1FF;
+
+  --radix-blue-dark-1: #0D1520;
+  --radix-blue-dark-2: #111927;
+  --radix-blue-dark-3: #0D2847;
+  --radix-blue-dark-4: #003362;
+  --radix-blue-dark-5: #004074;
+  --radix-blue-dark-6: #104D87;
+  --radix-blue-dark-7: #205D9E;
+  --radix-blue-dark-8: #2870BD;
+  --radix-blue-dark-9: #0090FF;
+  --radix-blue-dark-10: #3B9EFF;
+  --radix-blue-dark-11: #70B8FF;
+  --radix-blue-dark-12: #C2E6FF;
+
+  --radix-green-dark-1: #0E1512;
+  --radix-green-dark-2: #121B17;
+  --radix-green-dark-3: #132D21;
+  --radix-green-dark-4: #113B29;
+  --radix-green-dark-5: #174933;
+  --radix-green-dark-6: #20573E;
+  --radix-green-dark-7: #28684A;
+  --radix-green-dark-8: #2F7C57;
+  --radix-green-dark-9: #30A46C;
+  --radix-green-dark-10: #33B074;
+  --radix-green-dark-11: #3DD68C;
+  --radix-green-dark-12: #B1F1CB;
+
+  --radix-amber-dark-1: #16120C;
+  --radix-amber-dark-2: #1D180F;
+  --radix-amber-dark-3: #302008;
+  --radix-amber-dark-4: #3F2700;
+  --radix-amber-dark-5: #4D3000;
+  --radix-amber-dark-6: #5C3D05;
+  --radix-amber-dark-7: #714F19;
+  --radix-amber-dark-8: #8F6424;
+  --radix-amber-dark-9: #FFC53D;
+  --radix-amber-dark-10: #FFD60A;
+  --radix-amber-dark-11: #FFCA16;
+  --radix-amber-dark-12: #FFE7B3;
+
+  /* Vendor identity colors are independent of the UI theme. */
+  --brand-claude: #D97757;
+  --brand-kimi: #007CFF;
+}

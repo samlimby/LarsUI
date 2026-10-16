@@ -1,12 +1,12 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Info } from 'lucide-react'
+import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AiComposer, type AiComposerMode, type AiComposerSize, type AiComposerSuggestion, type AiComposerVariant } from './components/AiComposer'
 import { Button, type ButtonShape, type ButtonSize, type ButtonSpinner, type ButtonVariant } from './components/Button'
-import './components/Focus.css'
-import './components/ColorTokens.css'
-import './components/Shadows.css'
+import './tokens/index.css'
+import './tokens/site/index.css'
 import {
   Chip,
   type ChipIconPosition,
@@ -15,7 +15,9 @@ import {
   type ChipVariant,
 } from './components/Chip'
 import { InlineSlider, type InlineSliderSize } from './components/InlineSlider'
-import { Input, type InputVariant, type InputSize, type InputAppearance } from './components/Input'
+import { Input, type InputSize, type InputAppearance } from './components/Input'
+import { Dropdown, type DropdownOption } from './components/Dropdown'
+import { Textarea } from './components/Textarea'
 import {
   SegmentedControl as LarsSegmentedControl,
   type SegmentedControlContent,
@@ -267,7 +269,7 @@ export function Example() {
   )
 }`
 type Theme = 'light' | 'dark'
-type ComponentRoute = 'inline-slider' | 'buttons' | 'input' | 'chip' | 'segmented-control' | 'table' | 'tooltip' | 'ai-composer'
+type ComponentRoute = 'inline-slider' | 'buttons' | 'input' | 'dropdown' | 'textarea' | 'chip' | 'segmented-control' | 'table' | 'tooltip' | 'ai-composer'
 type Route = 'home' | ComponentRoute
 type NavigationDirection = -1 | 0 | 1
 
@@ -276,6 +278,8 @@ function getRouteFromHash(): Route {
   if (window.location.hash === '#/components/inline-slider') return 'inline-slider'
   if (window.location.hash === '#/components/buttons') return 'buttons'
   if (window.location.hash === '#/components/input') return 'input'
+  if (window.location.hash === '#/components/dropdown') return 'dropdown'
+  if (window.location.hash === '#/components/textarea') return 'textarea'
   if (window.location.hash === '#/components/chip') return 'chip'
   if (window.location.hash === '#/components/segmented-control') return 'segmented-control'
   if (window.location.hash === '#/components/table') return 'table'
@@ -532,100 +536,219 @@ function ButtonStage() {
   )
 }
 
-const INPUT_VARIANTS: ReadonlyArray<{ label: string; value: InputVariant }> = [
-  { label: 'Text', value: 'text' },
-  { label: 'Dropdown', value: 'dropdown' },
-  { label: 'Textarea', value: 'textarea' },
-]
+type FieldPreviewType = 'text' | 'dropdown' | 'textarea'
+
+const FIELD_COMPONENT_NAMES = { text: 'Input', dropdown: 'Dropdown', textarea: 'Textarea' } as const
+
 const INPUT_APPEARANCES: ReadonlyArray<{ label: string; value: InputAppearance }> = [
   { label: 'White', value: 'outline' },
   { label: 'Subtle', value: 'subtle' },
   { label: 'Filled', value: 'filled' },
 ]
-const INPUT_OPTIONS = [
-  { label: 'Hello', value: 'hello' },
-  { label: 'Good morning', value: 'morning' },
-  { label: 'Welcome back', value: 'welcome' },
+const INPUT_OPTIONS_WITH_SUBTEXT = [
+  { label: 'New York', value: 'new-york', description: 'New York, United States' },
+  { label: 'Los Angeles', value: 'los-angeles', description: 'California, United States' },
+  { label: 'Chicago', value: 'chicago', description: 'Illinois, United States' },
+  { label: 'Houston', value: 'houston', description: 'Texas, United States' },
+  { label: 'San Francisco', value: 'san-francisco', description: 'California, United States' },
 ]
+const INPUT_OPTIONS = INPUT_OPTIONS_WITH_SUBTEXT.map(({ label, value }) => ({ label, value }))
 
-function InputExamples({ variant }: { variant: InputVariant }) {
+function inputOptionsCode(options: readonly DropdownOption[]) {
+  return `[\n${options.map(({ label, value, description }) => `    { label: ${JSON.stringify(label)}, value: ${JSON.stringify(value)}${description ? `, description: ${JSON.stringify(description)}` : ''} },`).join('\n')}\n  ]`
+}
+
+const INPUT_OPTIONS_CODE = inputOptionsCode(INPUT_OPTIONS)
+
+function InputLeadingIcon() {
+  return <span className="input-configurator__slot-icon input-configurator__leading-icon" aria-hidden="true" />
+}
+
+function InputCopyIcon() {
+  return <span className="input-configurator__slot-icon input-configurator__copy-icon" aria-hidden="true" />
+}
+
+function FieldPreview({ variant, appearance, animateSelection }: { variant: FieldPreviewType; appearance: InputAppearance; animateSelection: boolean }) {
+  const id = useId()
+  const [textareaHeight, setTextareaHeight] = useState(96)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const nativeResizeRef = useRef(false)
+  const label = variant === 'dropdown' ? 'City' : variant === 'textarea' ? 'Message' : 'Greeting'
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const observer = new ResizeObserver(() => {
+      if (nativeResizeRef.current) setTextareaHeight(textarea.offsetHeight)
+    })
+    const endResize = () => {
+      if (!nativeResizeRef.current) return
+      setTextareaHeight(textarea.offsetHeight)
+      nativeResizeRef.current = false
+    }
+    observer.observe(textarea)
+    window.addEventListener('pointerup', endResize)
+    window.addEventListener('pointercancel', endResize)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('pointerup', endResize)
+      window.removeEventListener('pointercancel', endResize)
+    }
+  }, [variant])
+
+  const props = {
+    id,
+    'aria-labelledby': `${id}-label`,
+    size: 'small' as const,
+    appearance,
+    placeholder: variant === 'dropdown' ? 'Select a city' : 'Type here',
+  }
+
   return (
-    <div className="input-preview" data-variant={variant} key={variant}>
-      {(['small', 'large'] as const).map((size) => (
-        <div className="input-preview__size" key={size}>
-          <span className="input-preview__size-label">{size === 'small' ? 'Small' : 'Large'}</span>
-          <div className="input-preview__states"><span>Default</span><span>Selected</span></div>
-          {INPUT_APPEARANCES.map(({ label, value: appearance }) => (
-            <div className="input-preview__row" key={appearance}>
-              {[false, true].map((selected) => {
-                const props = {
-                  size, appearance,
-                  'aria-label': `${size} ${label.toLowerCase()} ${variant}, ${selected ? 'selected' : 'default'}`,
-                  className: selected ? 'input-preview__selected' : '',
-                  placeholder: variant === 'dropdown' ? 'Select an option' : 'Type here',
-                }
-                return variant === 'dropdown'
-                  ? <Input {...props} key={String(selected)} variant="dropdown" options={INPUT_OPTIONS} defaultValue={selected ? 'hello' : null} />
-                  : variant === 'textarea'
-                    ? <Input {...props} key={String(selected)} variant="textarea" defaultValue={selected && appearance === 'outline' ? 'Hello' : undefined} />
-                    : <Input {...props} key={String(selected)} defaultValue={selected && appearance === 'outline' ? 'Hello' : undefined} />
-              })}
-            </div>
-          ))}
+    <div className="input-preview" data-variant={variant} data-surface-motion={animateSelection ? 'animated' : 'instant'} style={{ height: `calc(var(--leading-body-sm-regular) + 4px + ${variant === 'textarea' ? textareaHeight : 32}px)` }}>
+      <div className="input-preview__view">
+        <label id={`${id}-label`} htmlFor={id}>{label}</label>
+        <div className="input-preview__control" onPointerDownCapture={(event) => {
+          if (!(event.target instanceof HTMLTextAreaElement)) return
+          const bounds = event.target.getBoundingClientRect()
+          if (event.clientX >= bounds.right - 20 && event.clientY >= bounds.bottom - 20) nativeResizeRef.current = true
+        }}>
+          {variant === 'dropdown'
+            ? <Dropdown {...props} options={INPUT_OPTIONS} />
+            : variant === 'textarea'
+              ? <Textarea {...props} ref={textareaRef} />
+              : <Input {...props} />}
         </div>
-      ))}
+      </div>
     </div>
   )
 }
 
-function InputStage() {
-  const [variant, setVariant] = useState<InputVariant>('text')
+function FieldStage({ variant }: { variant: FieldPreviewType }) {
   const [copied, setCopied] = useState(false)
+  const [appearance, setAppearance] = useState<InputAppearance>('outline')
+  const [animateSelection, setAnimateSelection] = useState(true)
+  const componentName = FIELD_COMPONENT_NAMES[variant]
+  const label = variant === 'dropdown' ? 'City' : variant === 'textarea' ? 'Message' : 'Greeting'
   return (
-    <div className="lars-stage lars-stage--input">
-      <BaseButton className="lars-copy" type="button" aria-label="Copy Input code" onClick={async () => {
+    <div className={`lars-stage lars-stage--${variant === 'text' ? 'input' : variant}`}>
+      <BaseButton className="lars-copy" type="button" aria-label={`Copy ${componentName} code`} onClick={async () => {
         try {
-          await navigator.clipboard.writeText(`import { Input } from 'larsui'\nimport 'larsui/style.css'\n\n<Input variant="${variant}" aria-label="Greeting" placeholder="${variant === 'dropdown' ? 'Select an option' : 'Type here'}"${variant === 'dropdown' ? '\n  options={[{ label: "Hello", value: "hello" }, { label: "Good morning", value: "morning" }]}' : ''} />`)
+          await navigator.clipboard.writeText(`import { ${componentName} } from 'larsui'\nimport 'larsui/style.css'\n\n<${componentName} label="${label}" appearance="${appearance}" size="small" placeholder="${variant === 'dropdown' ? 'Select a city' : 'Type here'}"${variant === 'dropdown' ? `\n  options={${INPUT_OPTIONS_CODE}}` : ''} />`)
           setCopied(true)
           window.setTimeout(() => setCopied(false), 1600)
         } catch { setCopied(false) }
       }}>
         {copied ? <span className="lars-copy__status" role="status">Copied</span> : <CopyIcon />}
       </BaseButton>
-      <InputExamples variant={variant} />
-      <div className="input-preview__variants">
-        <LarsSegmentedControl label="Input variant" options={INPUT_VARIANTS} value={variant} onValueChange={(next) => setVariant(next as InputVariant)} />
+      <FieldPreview variant={variant} appearance={appearance} animateSelection={animateSelection} />
+      <div
+        aria-label={`${componentName} surface`}
+        className="lars-modes lars-modes--three-options field-preview__surfaces"
+        data-animate={animateSelection}
+        data-selected={appearance === 'outline' ? 'first' : appearance === 'subtle' ? 'second' : 'third'}
+        role="group"
+      >
+        <span className="lars-modes__indicator" aria-hidden="true" />
+        {INPUT_APPEARANCES.map(({ label, value }) => (
+          <BaseButton
+            aria-pressed={appearance === value}
+            className={appearance === value ? 'is-active' : ''}
+            key={value}
+            onClick={(event) => {
+              setAnimateSelection(event.detail !== 0)
+              setAppearance(value)
+            }}
+            type="button"
+          >
+            {label}
+          </BaseButton>
+        ))}
       </div>
     </div>
   )
 }
 
+function InputStage() {
+  return <FieldStage variant="text" />
+}
+
+function DropdownStage() {
+  return <FieldStage variant="dropdown" />
+}
+
+function TextareaStage() {
+  return <FieldStage variant="textarea" />
+}
+
 function InputConfigurator() {
+  return <FieldConfigurator variant="text" />
+}
+
+function DropdownConfigurator() {
+  return <FieldConfigurator variant="dropdown" />
+}
+
+function TextareaConfigurator() {
+  return <FieldConfigurator variant="textarea" />
+}
+
+function FieldConfigurator({ variant }: { variant: FieldPreviewType }) {
   const reduceMotion = useReducedMotion()
   const [pointerInteraction, setPointerInteraction] = useState(true)
-  const [variant, setVariant] = useState<InputVariant>('text')
+  const [multiple, setMultiple] = useState(false)
+  const [showSelectAll, setShowSelectAll] = useState(true)
+  const [showSubtext, setShowSubtext] = useState(false)
+  const [helperEnabled, setHelperEnabled] = useState(false)
+  const [helperType, setHelperType] = useState<InputHelperType>('text')
+  const [helperText, setHelperText] = useState('This is a hint to help you.')
+  const [error, setError] = useState(false)
+  const [errorText, setErrorText] = useState('Please enter a valid value.')
+  const [textareaHeight, setTextareaHeight] = useState(96)
+  const [textareaRows, setTextareaRows] = useState(3)
   const [appearance, setAppearance] = useState<InputAppearance>('outline')
   const [size, setSize] = useState<InputSize>('small')
   const [showLabel, setShowLabel] = useState(true)
-  const [placeholder, setPlaceholder] = useState('Type here')
-  const [disabled, setDisabled] = useState(false)
-  const [readOnly, setReadOnly] = useState(false)
+  const [required, setRequired] = useState(false)
+  const [showLeading, setShowLeading] = useState(false)
+  const [showTrailing, setShowTrailing] = useState(false)
+  const [slotCopied, setSlotCopied] = useState(false)
+  const [placeholder, setPlaceholder] = useState(variant === 'dropdown' ? 'Select a city' : 'Type here')
   const [text, setText] = useState('')
   const [selection, setSelection] = useState<string | null>(null)
+  const [selections, setSelections] = useState<string[]>([])
+  const dropdownOptions = showSubtext ? INPUT_OPTIONS_WITH_SUBTEXT : INPUT_OPTIONS
+  const fieldLabel = variant === 'dropdown' ? 'City' : variant === 'textarea' ? 'Message' : 'Greeting'
+  const componentName = FIELD_COMPONENT_NAMES[variant]
+  const componentId = componentName.toLowerCase()
+  const exampleId = `${componentId}-example`
+  const currentSelection = INPUT_OPTIONS.some((option) => option.value === selection) ? selection : null
   const controlFrameRef = useRef<HTMLDivElement>(null)
   const nativeResizeRef = useRef(false)
-  const controlHeight = variant === 'textarea' ? 96 : size === 'large' ? 44 : 32
+  const controlHeight = variant === 'textarea' ? textareaHeight : size === 'large' ? 44 : 32
+  const hasHelper = helperEnabled && helperText.trim().length > 0
+
+  useLayoutEffect(() => {
+    const textarea = controlFrameRef.current?.querySelector('textarea')
+    if (!textarea) return
+    textarea.style.height = 'auto'
+    const height = textarea.offsetHeight
+    textarea.style.height = `${height}px`
+    setTextareaHeight(height)
+  }, [variant, textareaRows, size])
 
   useLayoutEffect(() => {
     const frame = controlFrameRef.current
     const textarea = frame?.querySelector('textarea')
     if (!frame || !textarea) return
+    textarea.style.height = `${textareaHeight}px`
 
     // Keep the native textarea resize handle responsive while its frame follows it.
     const observer = new ResizeObserver(() => {
       if (nativeResizeRef.current) frame.style.height = `${textarea.offsetHeight}px`
     })
     const endResize = () => {
+      if (nativeResizeRef.current) setTextareaHeight(textarea.offsetHeight)
       nativeResizeRef.current = false
       delete frame.dataset.nativeResize
     }
@@ -638,7 +761,7 @@ function InputConfigurator() {
       window.removeEventListener('pointerup', endResize)
       window.removeEventListener('pointercancel', endResize)
     }
-  }, [variant])
+  }, [variant, textareaHeight])
   const previewMotion = {
     spatial: pointerInteraction && !reduceMotion,
     duration: !pointerInteraction ? 0 : reduceMotion ? 0.1 : 0.16,
@@ -653,44 +776,60 @@ function InputConfigurator() {
     }),
     visible: { opacity: 1, transform: 'translateY(0px)' },
   }
-  const props = { size, appearance, placeholder, disabled, readOnly, id: 'input-example', 'aria-label': showLabel ? undefined : 'Greeting', className: 'input-configurator__control' }
-  const inputCode = `<Input
-  variant="${variant}"
+  const props = {
+    size, appearance, placeholder, required, id: exampleId,
+    'aria-label': showLabel ? undefined : fieldLabel,
+    className: 'input-configurator__control',
+    helperText: hasHelper ? helperText : undefined,
+    helperIcon: hasHelper && helperType === 'icon' ? <Info size={12} /> : undefined,
+    error,
+    errorText: error ? errorText : undefined,
+  }
+  const leadingCode = variant === 'text' && showLeading
+    ? '\n  leading={<SlotIcon src={leadingIcon} />}'
+    : ''
+  const trailingCode = variant === 'text' && showTrailing
+    ? '\n  trailing={<button type="button" aria-label="Copy input text" onClick={() => void navigator.clipboard.writeText(value)}><SlotIcon src={copyIcon} /></button>}'
+    : ''
+  const iconImports = `${variant === 'text' && showLeading ? "import leadingIcon from './iconLibrary/IconInputLeadingDiamond.svg'\n" : ''}${variant === 'text' && showTrailing ? "import copyIcon from './iconLibrary/IconInputCopy.svg'\n" : ''}${hasHelper && helperType === 'icon' ? "import { Info } from 'lucide-react'\n" : ''}`
+  const slotIconCode = variant === 'text' && (showLeading || showTrailing)
+    ? `function SlotIcon({ src }: { src: string }) {
+  return <span aria-hidden="true" style={{ display: 'block', width: 16, height: 16, background: 'currentColor', mask: 'url(' + src + ') center / contain no-repeat' }} />
+}
+
+`
+    : ''
+  const inputCode = `<${componentName}
   appearance="${appearance}"
   size="${size}"
-  ${showLabel ? 'id="input-example"' : 'aria-label="Greeting"'}
+  ${showLabel ? `id="${exampleId}"\n  label="${fieldLabel}"` : `aria-label="${fieldLabel}"`}
   placeholder=${JSON.stringify(placeholder)}
   value={value}
-  onValueChange={setValue}${variant === 'dropdown' ? '\n  options={[\n    { label: "Hello", value: "hello" },\n    { label: "Good morning", value: "morning" },\n    { label: "Welcome back", value: "welcome" },\n  ]}' : ''}${disabled ? '\n  disabled' : ''}${readOnly ? '\n  readOnly' : ''}
+  onValueChange={setValue}${required ? '\n  required' : ''}${variant === 'textarea' ? `\n  rows={${textareaRows}}` : ''}${variant === 'dropdown' ? `\n  options={${inputOptionsCode(dropdownOptions)}}${multiple ? `\n  multiple${showSelectAll ? '' : '\n  showSelectAll={false}'}` : ''}` : ''}${leadingCode}${trailingCode}${hasHelper ? `\n  helperText=${JSON.stringify(helperText)}${helperType === 'icon' ? '\n  helperIcon={<Info size={12} />}' : ''}` : ''}${error ? `\n  error\n  errorText=${JSON.stringify(errorText.trim() || 'Please enter a valid value.')}` : ''}
 />`
-  const fieldCode = showLabel
-    ? `<div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-  <label htmlFor="input-example">Greeting</label>
-${inputCode.split('\n').map((line) => `  ${line}`).join('\n')}
-</div>`
-    : inputCode
   const code = `import { useState } from 'react'
-import { Input } from 'larsui'
+import { ${componentName} } from 'larsui'
 import 'larsui/style.css'
-
-export function Example() {
-  const [value, setValue] = useState${variant === 'dropdown' ? '<string | null>(null)' : "('')"}
+${iconImports}
+${slotIconCode}export function Example() {
+  const [value, setValue] = useState${variant === 'dropdown' ? multiple ? '<string[]>([])' : '<string | null>(null)' : "('')"}
 
   return (
-${fieldCode.split('\n').map((line) => `    ${line}`).join('\n')}
+${inputCode.split('\n').map((line) => `    ${line}`).join('\n')}
   )
 }`
   return (
     <>
-      <div className="lars-configurator" onPointerDownCapture={() => setPointerInteraction(true)} onKeyDownCapture={() => setPointerInteraction(false)}>
+      <div className="lars-configurator" role="group" aria-label={`${componentName} configuration`} onPointerDownCapture={() => setPointerInteraction(true)} onKeyDownCapture={() => setPointerInteraction(false)}>
         <div className="lars-stage lars-component-canvas">
           <LayoutGroup>
-            <motion.div className="input-configurator__field" data-variant={variant} data-preview-motion={previewMotion.spatial ? 'resize' : 'instant'} layout={previewLayout} transition={previewTransition}>
+            <motion.div className="input-configurator__field" data-variant={variant} data-invalid={error || undefined} data-preview-motion={previewMotion.spatial ? 'resize' : 'instant'} layout={previewLayout} transition={previewTransition}>
               <AnimatePresence initial={false} mode="popLayout" custom={previewMotion}>
                 {showLabel && (
-                  <motion.label key="label" htmlFor="input-example" layout={previewLayout} custom={previewMotion} variants={labelVariants}
+                  <motion.label key="label" htmlFor={exampleId} layout={previewLayout} custom={previewMotion} variants={labelVariants}
                     initial="hidden" animate="visible" exit="hidden" transition={{ duration: previewMotion.duration, ease: 'easeOut', layout: previewTransition }}>
-                    Greeting
+                    {fieldLabel}
+                    {required && <span aria-hidden="true"> *</span>}
                   </motion.label>
                 )}
               </AnimatePresence>
@@ -702,31 +841,73 @@ ${fieldCode.split('\n').map((line) => `    ${line}`).join('\n')}
                 event.currentTarget.dataset.nativeResize = 'true'
               }}>
                 {variant === 'dropdown'
-                  ? <Input {...props} variant="dropdown" options={INPUT_OPTIONS} value={selection} onValueChange={setSelection} />
+                  ? multiple
+                    ? <Dropdown {...props} multiple showSelectAll={showSelectAll} options={dropdownOptions} value={selections} onValueChange={setSelections} />
+                    : <Dropdown {...props} options={dropdownOptions} value={currentSelection} onValueChange={setSelection} />
                   : variant === 'textarea'
-                    ? <Input {...props} variant="textarea" value={text} onValueChange={setText} />
-                    : <Input {...props} value={text} onValueChange={setText} />}
+                    ? <Textarea {...props} rows={textareaRows} style={{ minHeight: 'var(--size-96)' }} value={text} onValueChange={setText} />
+                    : <Input {...props} value={text} onValueChange={(next) => { setText(next); setSlotCopied(false) }}
+                        leading={showLeading ? <InputLeadingIcon /> : undefined}
+                        trailing={showTrailing ? <button type="button" aria-label={slotCopied ? 'Copied input text' : 'Copy input text'} onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(text)
+                            setSlotCopied(true)
+                            window.setTimeout(() => setSlotCopied(false), 1600)
+                          } catch { setSlotCopied(false) }
+                        }}><InputCopyIcon /></button> : undefined} />}
               </motion.div>
             </motion.div>
           </LayoutGroup>
         </div>
-        <aside className="lars-properties" aria-labelledby="input-properties-title">
-          <header className="lars-properties__header"><h2 id="input-properties-title">Properties</h2></header>
+        <aside className="lars-properties" aria-labelledby={`${componentId}-properties-title`}>
+          <header className="lars-properties__header"><h2 id={`${componentId}-properties-title`}>Properties</h2></header>
           <div className="lars-properties__fields">
-            <PropertySelect label="Variant" options={INPUT_VARIANTS} value={variant} onChange={(next) => {
-              setVariant(next)
-              setPlaceholder(next === 'dropdown' ? 'Select an option' : 'Type here')
-            }} />
-            <PropertySelect label="Surface" options={INPUT_APPEARANCES} value={appearance} onChange={setAppearance} />
             <SegmentedControl label="Size" options={[{ label: 'Small', value: 'small' }, { label: 'Large', value: 'large' }]} value={size} onChange={setSize} />
-            <SegmentedControl label="Label" options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]} value={showLabel ? 'on' : 'off'} onChange={(next) => setShowLabel(next === 'on')} />
-            <label className="lars-property lars-property--stacked"><span>Placeholder</span><input value={placeholder} onChange={(event) => setPlaceholder(event.currentTarget.value)} /></label>
-            <SegmentedControl label="Disabled" options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]} value={disabled ? 'true' : 'false'} onChange={(next) => setDisabled(next === 'true')} />
-            <SegmentedControl label="Read only" options={[{ label: 'True', value: 'true' }, { label: 'False', value: 'false' }]} value={readOnly ? 'true' : 'false'} onChange={(next) => setReadOnly(next === 'true')} />
+            <InputLabelsTextProperties
+              showLabel={showLabel}
+              required={required}
+              placeholder={placeholder}
+              enabled={helperEnabled}
+              type={helperType}
+              text={helperText}
+              onLabelChange={setShowLabel}
+              onRequiredChange={setRequired}
+              onPlaceholderChange={setPlaceholder}
+              onEnabledChange={setHelperEnabled}
+              onTypeChange={setHelperType}
+              onTextChange={setHelperText}
+            />
+            <SegmentedControl
+              label="Error"
+              options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]}
+              value={error ? 'on' : 'off'}
+              onChange={(next) => setError(next === 'on')}
+            />
+            {error && (
+              <label className="lars-property lars-property--stacked">
+                <span>Error message</span>
+                <input value={errorText} onChange={(event) => setErrorText(event.currentTarget.value)} />
+              </label>
+            )}
+            {variant === 'text' && (
+              <InputSlotsProperties
+                showLeading={showLeading}
+                showTrailing={showTrailing}
+                onLeadingChange={setShowLeading}
+                onTrailingChange={setShowTrailing}
+              />
+            )}
+            {variant === 'textarea' && (
+              <PropertySelect label="Rows" options={[{ label: '3', value: '3' }, { label: '5', value: '5' }, { label: '8', value: '8' }]} value={String(textareaRows)} onChange={(next) => setTextareaRows(Number(next))} />
+            )}
+            <PropertySelect label="Surface" options={INPUT_APPEARANCES} value={appearance} onChange={setAppearance} />
+            {variant === 'dropdown' && (
+              <InputDropdownProperties multiple={multiple} showSelectAll={showSelectAll} showSubtext={showSubtext} onMultipleChange={setMultiple} onSelectAllChange={setShowSelectAll} onSubtextChange={setShowSubtext} />
+            )}
           </div>
         </aside>
       </div>
-      <CodeBlock code={code} fileName="Input.tsx" label="Configured input usage code" />
+      <CodeBlock code={code} fileName={`${componentName}.tsx`} label={`Configured ${componentName} usage code`} />
     </>
   )
 }
@@ -904,7 +1085,7 @@ function TableStage() {
       <div className="lars-table-stage__controls">
         <div
           aria-label="Table variant"
-          className="lars-modes lars-modes--table-variant"
+          className="lars-modes lars-modes--three-options"
           data-selected={variant === 'default' ? 'first' : variant === 'compact' ? 'second' : 'third'}
           role="group"
         >
@@ -1555,6 +1736,236 @@ function usePropertyMenuFill(open: boolean, bottomInset = 4) {
   return menuRef
 }
 
+function ExpandableProperty({
+  children,
+  className,
+  groupLabel,
+  label,
+}: {
+  children: ReactNode
+  className?: string
+  groupLabel: string
+  label: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [pointerFocus, setPointerFocus] = useState(false)
+  const reduceMotion = useReducedMotion()
+  const menuRef = usePropertyMenuFill(open)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popupId = useId()
+  const iconTransition = {
+    duration: reduceMotion ? 0 : open ? 0.35 : 0.2,
+    ease: [0.25, 0.1, 0.25, 1] as const,
+  }
+
+  useEffect(() => {
+    if (!open) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      triggerRef.current?.focus()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open])
+
+  return (
+    <div className={`${className ? `${className} ` : ''}lars-expandable-property`} data-open={open || undefined} ref={menuRef}>
+      <BaseButton
+        aria-controls={open ? popupId : undefined}
+        aria-expanded={open}
+        className="lars-expandable-property__trigger"
+        data-pointer-focus={pointerFocus || undefined}
+        onBlur={() => setPointerFocus(false)}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') setPointerFocus(false)
+        }}
+        onPointerDown={() => setPointerFocus(true)}
+        ref={triggerRef}
+        type="button"
+      >
+        <span>{label}</span>
+      </BaseButton>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            aria-label={groupLabel}
+            animate={{ opacity: 1 }}
+            className="lars-expandable-property__popup"
+            exit={{
+              opacity: 0,
+              transition: { duration: reduceMotion ? 0 : 0.2, ease: [0.25, 0.1, 0.25, 1] },
+            }}
+            id={popupId}
+            initial={{ opacity: reduceMotion ? 1 : 0 }}
+            key="property-options"
+            role="group"
+            transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <div className="lars-expandable-property__options">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <svg
+        aria-hidden="true"
+        className="lars-expandable-property__icon"
+        fill="none"
+        focusable="false"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+      >
+        <motion.path
+          animate={{ d: open ? 'M3.9 3.9L12.1 12.1' : 'M6.2 3.2L11 8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+        <motion.path
+          animate={{ d: open ? 'M12.1 3.9L3.9 12.1' : 'M11 8L6.2 12.8' }}
+          initial={false}
+          transition={iconTransition}
+        />
+      </svg>
+    </div>
+  )
+}
+
+type InputHelperType = 'text' | 'icon'
+
+function InputLabelsTextProperties({ showLabel, required, placeholder, enabled, type, text, onLabelChange, onRequiredChange, onPlaceholderChange, onEnabledChange, onTypeChange, onTextChange }: {
+  showLabel: boolean
+  required: boolean
+  placeholder: string
+  enabled: boolean
+  type: InputHelperType
+  text: string
+  onLabelChange: (showLabel: boolean) => void
+  onRequiredChange: (required: boolean) => void
+  onPlaceholderChange: (placeholder: string) => void
+  onEnabledChange: (enabled: boolean) => void
+  onTypeChange: (type: InputHelperType) => void
+  onTextChange: (text: string) => void
+}) {
+  return (
+    <ExpandableProperty className="lars-input-helper-property" groupLabel="Labels & Text properties" label="Labels & Text">
+      <SegmentedControl
+        label="Label"
+        options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]}
+        value={showLabel ? 'on' : 'off'}
+        onChange={(next) => onLabelChange(next === 'on')}
+      />
+      <SegmentedControl
+        label="Required"
+        options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]}
+        value={required ? 'on' : 'off'}
+        onChange={(next) => onRequiredChange(next === 'on')}
+      />
+      <label className="lars-property lars-property--stacked">
+        <span>Placeholder</span>
+        <input value={placeholder} onChange={(event) => onPlaceholderChange(event.currentTarget.value)} />
+      </label>
+      <SegmentedControl
+        label="Helper text"
+        options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]}
+        value={enabled ? 'on' : 'off'}
+        onChange={(next) => onEnabledChange(next === 'on')}
+      />
+      <SegmentedControl
+        label="Type"
+        options={[{ label: 'Text only', value: 'text' }, { label: 'Text & icon', value: 'icon' }]}
+        value={type}
+        onChange={onTypeChange}
+      />
+      {enabled && (
+        <label className="lars-property lars-input-helper-property__text">
+          <span>Text</span>
+          <input value={text} onChange={(event) => onTextChange(event.currentTarget.value)} />
+        </label>
+      )}
+    </ExpandableProperty>
+  )
+}
+
+function InputSlotsProperties({
+  showLeading,
+  showTrailing,
+  onLeadingChange,
+  onTrailingChange,
+}: {
+  showLeading: boolean
+  showTrailing: boolean
+  onLeadingChange: (value: boolean) => void
+  onTrailingChange: (value: boolean) => void
+}) {
+  const slotOptions = [{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]
+
+  return (
+    <ExpandableProperty className="lars-input-slots-property" groupLabel="Slot properties" label="Slots">
+      <SegmentedControl
+        label="Leading slot"
+        options={slotOptions}
+        value={showLeading ? 'on' : 'off'}
+        onChange={(next) => onLeadingChange(next === 'on')}
+      />
+      <SegmentedControl
+        label="Trailing slot"
+        options={slotOptions}
+        value={showTrailing ? 'on' : 'off'}
+        onChange={(next) => onTrailingChange(next === 'on')}
+      />
+    </ExpandableProperty>
+  )
+}
+
+function InputDropdownProperties({
+  multiple,
+  showSelectAll,
+  showSubtext,
+  onMultipleChange,
+  onSelectAllChange,
+  onSubtextChange,
+}: {
+  multiple: boolean
+  showSelectAll: boolean
+  showSubtext: boolean
+  onMultipleChange: (value: boolean) => void
+  onSelectAllChange: (value: boolean) => void
+  onSubtextChange: (value: boolean) => void
+}) {
+  return (
+    <ExpandableProperty className="lars-input-dropdown-property" groupLabel="Dropdown properties" label="Dropdown">
+      <SegmentedControl
+        label="Selection"
+        options={[{ label: 'Single', value: 'single' }, { label: 'Multiple', value: 'multiple' }]}
+        value={multiple ? 'multiple' : 'single'}
+        onChange={(next) => onMultipleChange(next === 'multiple')}
+      />
+      {multiple && (
+        <SegmentedControl
+          label="Select all"
+          options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]}
+          value={showSelectAll ? 'on' : 'off'}
+          onChange={(next) => onSelectAllChange(next === 'on')}
+        />
+      )}
+      <SegmentedControl
+        label="Subtext"
+        options={[{ label: 'On', value: 'on' }, { label: 'Off', value: 'off' }]}
+        value={showSubtext ? 'on' : 'off'}
+        onChange={(next) => onSubtextChange(next === 'on')}
+      />
+    </ExpandableProperty>
+  )
+}
+
 function ButtonLoadingProperties({
   generatingEffect,
   loadingEffect,
@@ -1600,11 +2011,11 @@ function ButtonLoadingProperties({
   }, [open])
 
   return (
-    <div className="lars-button-loading-property" data-open={open || undefined} ref={menuRef}>
+    <div className="lars-button-loading-property lars-expandable-property" data-open={open || undefined} ref={menuRef}>
       <BaseButton
         aria-controls={open ? popupId : undefined}
         aria-expanded={open}
-        className="lars-button-loading-property__trigger"
+        className="lars-expandable-property__trigger"
         data-pointer-focus={pointerFocus || undefined}
         onBlur={() => setPointerFocus(false)}
         onClick={() => setOpen((current) => !current)}
@@ -1622,7 +2033,7 @@ function ButtonLoadingProperties({
           <motion.div
             aria-label="Loading state properties"
             animate={{ opacity: 1 }}
-            className="lars-button-loading-property__popup"
+            className="lars-expandable-property__popup"
             exit={{
               opacity: 0,
               transition: { duration: reduceMotion ? 0 : 0.2, ease: [0.25, 0.1, 0.25, 1] },
@@ -1633,7 +2044,7 @@ function ButtonLoadingProperties({
             role="group"
             transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <div className="lars-button-loading-property__options">
+            <div className="lars-expandable-property__options">
               <SegmentedControl
                 label="Generating"
                 onChange={(next) => onModeChange(next === 'true' ? 'generating' : mode === 'generating' ? 'idle' : mode)}
@@ -1672,7 +2083,7 @@ function ButtonLoadingProperties({
       </AnimatePresence>
       <svg
         aria-hidden="true"
-        className="lars-button-loading-property__icon"
+        className="lars-expandable-property__icon"
         fill="none"
         focusable="false"
         stroke="currentColor"
@@ -3197,7 +3608,9 @@ export function Example() {
 const HOME_COMPONENTS = [
   { route: 'inline-slider', title: 'Inline Slider', description: 'Adjust values directly in context without interrupting the workflow.', keywords: 'range slider drag values input', Stage: SliderStage },
   { route: 'buttons', title: 'Buttons', description: 'A foundational element for interacting with any interface.', keywords: 'button click action', Stage: ButtonStage },
-  { route: 'input', title: 'Input', description: 'Text, dropdown and textarea, with a shared set of sizes and surfaces.', keywords: 'inputs text field dropdown select textarea form', Stage: InputStage },
+  { route: 'input', title: 'Input', description: 'A single-line text field with labels, guidance and flexible slots.', keywords: 'inputs text field email password form prefix suffix', Stage: InputStage },
+  { route: 'dropdown', title: 'Dropdown', description: 'Choose one or several options from a compact selection menu.', keywords: 'dropdown select options multiple selection form', Stage: DropdownStage },
+  { route: 'textarea', title: 'Textarea', description: 'A resizable multiline field for longer messages and notes.', keywords: 'textarea multiline text area message notes form', Stage: TextareaStage },
   { route: 'chip', title: 'Chip', description: 'A compact label for statuses, categories, and concise metadata.', keywords: 'chips tag status badge', Stage: ChipStage },
   { route: 'segmented-control', title: 'Segmented Control', description: 'Choose one view from a compact set of related options.', keywords: 'segments tabs toggle options', Stage: SegmentedControlStage },
   { route: 'tooltip', title: 'Tooltip', description: 'A quiet hint that appears from an inline action.', keywords: 'tooltips hover hint shortcut', Stage: TooltipStage },
@@ -3392,8 +3805,16 @@ function ComponentPage({
       title: 'Buttons',
     },
     input: {
-      description: 'Text, dropdown and textarea, with a shared set of sizes and surfaces.',
+      description: 'A single-line text field with labels, guidance and flexible slots.',
       title: 'Input',
+    },
+    dropdown: {
+      description: 'Choose one or several options from a compact selection menu.',
+      title: 'Dropdown',
+    },
+    textarea: {
+      description: 'A resizable multiline field for longer messages and notes.',
+      title: 'Textarea',
     },
     chip: {
       description: 'A compact label for statuses, categories, and concise metadata.',
@@ -3479,6 +3900,8 @@ function ComponentPage({
         {component === 'inline-slider' && <SliderConfigurator />}
         {component === 'buttons' && <ButtonConfigurator />}
         {component === 'input' && <InputConfigurator />}
+        {component === 'dropdown' && <DropdownConfigurator />}
+        {component === 'textarea' && <TextareaConfigurator />}
         {component === 'chip' && <ChipConfigurator />}
         {component === 'segmented-control' && <SegmentedControlConfigurator />}
         {component === 'table' && <TableConfigurator />}

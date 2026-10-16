@@ -1,123 +1,103 @@
-import { Select } from '@base-ui/react/select'
-import { useEffect, useRef, useState, type ComponentPropsWithRef } from 'react'
-import './Input.css'
+import { useEffect, useImperativeHandle, useRef, useState, type ComponentPropsWithRef, type MouseEventHandler, type ReactNode } from 'react'
+import { Dropdown, type DropdownProps, type DropdownSingleProps, type DropdownMultiProps, type DropdownOption } from './Dropdown'
+import { Textarea, type TextareaProps } from './Textarea'
+import { Field, inputClassName, inputWrapperClassName, type FieldSize, type FieldAppearance, type SharedFieldProps } from './field/Field'
+import { useInputFormReset } from './useInputFormReset'
 
 export type InputVariant = 'text' | 'dropdown' | 'textarea'
-export type InputSize = 'small' | 'large'
-export type InputAppearance = 'outline' | 'subtle' | 'filled'
-export type InputOption = { label: string; value: string; disabled?: boolean }
+export type InputSize = FieldSize
+export type InputAppearance = FieldAppearance
+/** @deprecated Use DropdownOption for Dropdown options. */
+export type InputOption = DropdownOption
 
-type SharedProps = {
-  size?: InputSize
-  appearance?: InputAppearance
-}
-
-export type TextInputProps = SharedProps & Omit<ComponentPropsWithRef<'input'>, 'size'> & {
+export type TextInputProps = SharedFieldProps & Omit<ComponentPropsWithRef<'input'>, 'size'> & {
   variant?: 'text'
   onValueChange?: (value: string) => void
+  /** Content in a separate compartment before the editable field, such as a prefix or icon. */
+  leading?: ReactNode
+  /** Content in a separate compartment after the editable field, such as a copy or send button. */
+  trailing?: ReactNode
 }
 
-export type TextareaInputProps = SharedProps & ComponentPropsWithRef<'textarea'> & {
-  variant: 'textarea'
-  onValueChange?: (value: string) => void
-}
-
-export type DropdownInputProps = SharedProps &
-  Omit<ComponentPropsWithRef<'button'>, 'value' | 'defaultValue' | 'onChange' | 'children'> &
-  Pick<Select.Root.Props<string>, 'value' | 'defaultValue' | 'onValueChange' | 'name' | 'form' | 'required' | 'readOnly' | 'autoComplete' | 'open' | 'defaultOpen' | 'onOpenChange'> & {
-    variant: 'dropdown'
-    options: readonly InputOption[]
-    placeholder?: string
-  }
+/** @deprecated Use TextareaProps and the Textarea component. */
+export type TextareaInputProps = TextareaProps & { variant: 'textarea' }
+/** @deprecated Use DropdownSingleProps and the Dropdown component. */
+export type DropdownSingleInputProps = DropdownSingleProps & { variant: 'dropdown' }
+/** @deprecated Use DropdownMultiProps and the Dropdown component. */
+export type DropdownMultiInputProps = DropdownMultiProps & { variant: 'dropdown' }
+/** @deprecated Use DropdownProps and the Dropdown component. */
+export type DropdownInputProps = DropdownProps & { variant: 'dropdown' }
 
 export type InputProps = TextInputProps | DropdownInputProps | TextareaInputProps
 
-function inputClassName(size: InputSize, appearance: InputAppearance, className = '') {
-  return `lars-input lars-input--${size} lars-input--${appearance}${className ? ` ${className}` : ''}`
+function ClearInputButton({ label, onClick }: { label: string; onClick: MouseEventHandler<HTMLButtonElement> }) {
+  return <button type="button" className="lars-input__clear" aria-label={label} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>
+    <span className="lars-input__close-icon" aria-hidden="true" />
+  </button>
 }
 
-function inputMotionForEvent(event: Event): 'pointer' | 'instant' {
-  if (event.type.startsWith('pointer') || event.type.startsWith('mouse') || event.type.startsWith('touch')) return 'pointer'
-  if (event.type === 'click' && 'detail' in event && Number(event.detail) > 0) return 'pointer'
-  return 'instant'
-}
-
-function DropdownInput({
-  variant: _variant, size = 'small', appearance = 'outline', className,
-  options, placeholder = 'Select an option', value, defaultValue, onValueChange,
-  name, form, required, readOnly, disabled, autoComplete, id,
-  open, defaultOpen, onOpenChange, ...triggerProps
-}: DropdownInputProps) {
-  const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? null)
-  const [motion, setMotion] = useState<'pointer' | 'instant'>('instant')
+function TextInputControl({ variant: _variant, size = 'small', appearance = 'outline', className, style, ref, value, defaultValue, onChange, onValueChange, disabled, readOnly, leading, trailing, ...nativeProps }: TextInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const hasLeading = leading !== undefined && leading !== null && leading !== false
+  const hasTrailing = trailing !== undefined && trailing !== null && trailing !== false
+  const [uncontrolledValue, setUncontrolledValue] = useState(String(defaultValue ?? ''))
   const controlled = value !== undefined
+  const populated = String(controlled ? value ?? '' : uncontrolledValue).length > 0
+  const clearable = populated && !disabled && !readOnly && ['text', 'search', 'email', 'url', 'tel', 'password', 'number'].includes(nativeProps.type ?? 'text')
+  useImperativeHandle(ref, () => inputRef.current!, [])
 
   useEffect(() => {
-    const ownerForm = inputRef.current?.form
-    if (!ownerForm || controlled) return
-    const reset = (event: Event) => {
-      queueMicrotask(() => {
-        if (!event.defaultPrevented) setUncontrolledValue(defaultValue ?? null)
-      })
-    }
-    ownerForm.addEventListener('reset', reset)
-    return () => ownerForm.removeEventListener('reset', reset)
-  }, [controlled, defaultValue, form])
+    const input = inputRef.current
+    if (!input || controlled) return
+    setUncontrolledValue(input.value)
+  }, [controlled, defaultValue, nativeProps.type])
+  useInputFormReset(inputRef, () => {
+    if (!controlled && inputRef.current) setUncontrolledValue(inputRef.current.value)
+  })
 
-  return (
-    <Select.Root<string>
-      items={options} value={controlled ? value : uncontrolledValue} inputRef={inputRef}
-      onValueChange={(next, details) => {
-        onValueChange?.(next, details)
-        if (details.isCanceled) return
-        setMotion(inputMotionForEvent(details.event))
-        if (!controlled) setUncontrolledValue(next)
-      }}
-      name={name} form={form} required={required} readOnly={readOnly} disabled={disabled}
-      autoComplete={autoComplete} id={id} open={open} defaultOpen={defaultOpen}
-      onOpenChange={(next, details) => {
-        onOpenChange?.(next, details)
-        if (!details.isCanceled) setMotion(inputMotionForEvent(details.event))
-      }} modal={false}
-    >
-      <Select.Trigger {...triggerProps} data-input-motion={motion} className={`${inputClassName(size, appearance, className)} lars-input--dropdown`}>
-        <Select.Value className="lars-input__value" placeholder={placeholder} />
-        <Select.Icon className="lars-input__chevron" aria-hidden="true">{''}</Select.Icon>
-      </Select.Trigger>
-      <Select.Portal>
-        <Select.Positioner align="start" alignItemWithTrigger={false} sideOffset={4} className="lars-input__positioner">
-          <Select.Popup data-input-motion={motion} className={`lars-input__popup lars-input__popup--${size}`}>
-            <Select.List className="lars-input__list">
-              {options.map((option) => (
-                <Select.Item key={option.value} value={option.value} disabled={option.disabled} className="lars-input__option">
-                  <Select.ItemText>{option.label}</Select.ItemText>
-                  <span className="lars-input__indicator-slot" aria-hidden="true">
-                    <Select.ItemIndicator keepMounted className="lars-input__check">{''}</Select.ItemIndicator>
-                  </span>
-                </Select.Item>
-              ))}
-            </Select.List>
-          </Select.Popup>
-        </Select.Positioner>
-      </Select.Portal>
-    </Select.Root>
-  )
-}
-
-/** A single family of text fields, dropdowns and multiline fields. */
-export function Input(props: InputProps) {
-  if (props.variant === 'dropdown') return <DropdownInput {...props} />
-  if (props.variant === 'textarea') {
-    const { variant: _variant, size = 'small', appearance = 'outline', className, onChange, onValueChange, rows = 3, ...nativeProps } = props
-    return <textarea {...nativeProps} rows={rows} className={`${inputClassName(size, appearance, className)} lars-input--textarea`} onChange={(event) => {
+  return <div className={inputWrapperClassName(size, appearance, className)} style={style} data-clearable={clearable || undefined} data-leading-slot={hasLeading || undefined} data-trailing-slot={hasTrailing || undefined} data-disabled={disabled || undefined}>
+    {hasLeading && <span className="lars-input__slot lars-input__slot--leading" inert={disabled || undefined}>{leading}</span>}
+    <input {...nativeProps} ref={inputRef} value={value} defaultValue={defaultValue} disabled={disabled} readOnly={readOnly} className={inputClassName(size, appearance)} onChange={(event) => {
+      if (!controlled) setUncontrolledValue(event.currentTarget.value)
       onChange?.(event)
       onValueChange?.(event.currentTarget.value)
     }} />
+    {clearable && <ClearInputButton label="Clear input" onClick={() => {
+      const input = inputRef.current
+      const view = input?.ownerDocument.defaultView
+      if (!input || !view || disabled || readOnly) return
+      input.focus()
+      // Dispatch a native edit so both React onChange and onValueChange receive it.
+      Object.getOwnPropertyDescriptor(view.HTMLInputElement.prototype, 'value')?.set?.call(input, '')
+      input.dispatchEvent(new view.Event('input', { bubbles: true }))
+    }} />}
+    {hasTrailing && <span className="lars-input__slot lars-input__slot--trailing" inert={disabled || undefined}>{trailing}</span>}
+  </div>
+}
+
+/** A single-line input. Legacy dropdown and textarea variants remain supported. */
+export function Input(props: InputProps) {
+  if (props.variant === 'dropdown') {
+    const { variant: _variant, ...dropdownProps } = props
+    return <Dropdown {...dropdownProps} />
   }
-  const { variant: _variant, size = 'small', appearance = 'outline', className, onChange, onValueChange, ...nativeProps } = props
-  return <input {...nativeProps} className={inputClassName(size, appearance, className)} onChange={(event) => {
-    onChange?.(event)
-    onValueChange?.(event.currentTarget.value)
-  }} />
+  if (props.variant === 'textarea') {
+    const { variant: _variant, ...textareaProps } = props
+    return <Textarea {...textareaProps} />
+  }
+  const { helperText, helperIcon, label, error, errorText, ...controlProps } = props
+  const hasLeading = controlProps.leading !== undefined && controlProps.leading !== null && controlProps.leading !== false
+  const hasTrailing = controlProps.trailing !== undefined && controlProps.trailing !== null && controlProps.trailing !== false
+  return <Field
+    variant="text"
+    controlProps={controlProps}
+    label={label}
+    error={error}
+    errorText={errorText}
+    helperText={helperText}
+    helperIcon={helperIcon}
+    hasLeading={hasLeading}
+    hasTrailing={hasTrailing}
+    renderControl={(fieldProps) => <TextInputControl {...controlProps} {...fieldProps} />}
+  />
 }

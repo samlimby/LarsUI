@@ -1,0 +1,25 @@
+/* Original component shades that supplement the Radix palettes.
+ * Keep these separate so custom values are never presented as Radix steps.
+ */
+:root {
+  --palette-fg-text-muted-light: #8F8F8F;
+  --palette-fg-slider-light: #171717;
+  --palette-bg-slider-tick-light: #AEAEAE;
+  --palette-fg-composer-accent-light: #1687D9;
+  --palette-bg-surface-dark: #242424;
+  --palette-bg-surface-subtle-dark: #181818;
+  --palette-fg-text-primary-dark: #F2F2F2;
+  --palette-fg-text-secondary-dark: #A0A0A0;
+  --palette-fg-text-muted-dark: #858585;
+  --palette-border-surface-dark: #323232;
+  --palette-border-surface-strong-dark: #343434;
+  --palette-border-surface-divider-dark: #2B2B2B;
+  --palette-bg-action-hover-dark: #303030;
+  --palette-bg-button-primary-hover-dark: #D8D8D8;
+  --palette-bg-button-secondary-dark: #383838;
+  --palette-fg-button-secondary-dark: #C8C8C8;
+  --palette-bg-button-danger-dark: #5A1C2C;
+  --palette-bg-button-danger-hover-dark: #74223A;
+  --palette-bg-slider-tick-dark: #707070;
+  --palette-fg-composer-accent-dark: #73D0FF;
+}

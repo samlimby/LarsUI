@@ -1,0 +1,35 @@
+/* Website-only typography. Never import this file from the library entry point. */
+:root {
+  --text-9: 9px;
+  --text-13: 13px;
+  --font-weight-450: 450;
+
+  /* code/sm/regular — 12px / 18px, 400. */
+  --font-code-sm-regular: var(--font-mono);
+  --text-code-sm-regular: var(--text-12);
+  --font-weight-code-sm-regular: var(--font-weight-regular);
+  --leading-code-sm-regular: var(--leading-18);
+  --tracking-code-sm-regular: var(--tracking-normal);
+
+  /* command/sm/450 — 12px / 16px, 450. */
+  --font-command-sm-450: var(--font-mono);
+  --text-command-sm-450: var(--text-12);
+  --font-weight-command-sm-450: var(--font-weight-450);
+  --leading-command-sm-450: var(--leading-16);
+  --tracking-command-sm-450: var(--tracking-normal);
+
+  /* command/md/450 — 13px / 20px, 450. */
+  --font-command-md-450: var(--font-mono);
+  --text-command-md-450: var(--text-13);
+  --font-weight-command-md-450: var(--font-weight-450);
+  --leading-command-md-450: var(--leading-20);
+  --tracking-command-md-450: var(--tracking-normal);
+
+  /* Existing website footnote superscript; retained to cover the current source. */
+  /* metadata/xs/450 — 9px / 16px, 450. */
+  --font-metadata-xs-450: var(--font-sans);
+  --text-metadata-xs-450: var(--text-9);
+  --font-weight-metadata-xs-450: var(--font-weight-450);
+  --leading-metadata-xs-450: var(--leading-16);
+  --tracking-metadata-xs-450: var(--tracking-normal);
+}
