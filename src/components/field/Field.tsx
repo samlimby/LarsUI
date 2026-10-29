@@ -89,7 +89,7 @@ export function Field({
     onInvalidCapture={onInvalidCapture}
     onInvalid={onInvalid}
   >
-    {hasLabel && <label className="lars-input__label" htmlFor={controlId}>{label}{props.required && <span aria-hidden="true"> *</span>}</label>}
+    {hasLabel && <label className="lars-input__label" htmlFor={controlId}>{label}{props.required && <span aria-hidden="true" className="lars-input__required"> *</span>}</label>}
     {renderControl({
       id: controlId,
       className: withFieldLayout ? undefined : props.className,

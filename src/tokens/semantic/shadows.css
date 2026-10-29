@@ -1,9 +1,94 @@
+/* Muted elevation follows Fluid Functionalism surface levels 1, 2, 4, and 6.
+ * Colors come exclusively from semantic roles backed by core black/white.
+ * Each recipe includes its own edge; floating panels should not add an opaque border.
+ * Re-declare recipes and aliases at theme boundaries so nested scopes resolve locally.
+ */
 :root {
-  --shadow-low_emphasis: 0 2px 5px color-mix(in srgb, var(--color-bg-shadow) 24%, transparent);
-  --shadow-mid_emphasis: 0 3px 4px color-mix(in srgb, var(--color-bg-shadow) 40%, transparent);
-  --shadow-high_emphasis: 0 4px 6px color-mix(in srgb, var(--color-bg-shadow) 56%, transparent);
-  --shadow-composer: 0 12px 32px color-mix(in srgb, var(--color-bg-shadow) 6%, transparent);
-  --shadow-popup: 0 12px 32px color-mix(in srgb, var(--color-bg-shadow-deep) 10%, transparent), 0 2px 8px color-mix(in srgb, var(--color-bg-shadow-deep) 5%, transparent);
-  --shadow-floating-toolbar: 0 8px 22px color-mix(in srgb, var(--color-bg-shadow-deep) 12%, transparent);
-  --shadow-input-popup: 0 2px 8px color-mix(in srgb, var(--color-bg-shadow-deep) 8%, transparent);
+  --shadow-min_emphasis: 0 0 0 1px var(--color-bg-shadow-soft);
+  --shadow-low_emphasis: 0 0 0 1px var(--color-bg-shadow-soft),
+    0 1px 1px -0.5px var(--color-bg-shadow-soft);
+  --shadow-mid_emphasis: 0 0 0 1px var(--color-bg-shadow-soft),
+    0 1px 1px -0.5px var(--color-bg-shadow-soft),
+    0 3px 3px -1.5px var(--color-bg-shadow-soft),
+    0 6px 6px -3px var(--color-bg-shadow-soft);
+  --shadow-high_emphasis: 0 0 0 1px var(--color-bg-shadow-soft),
+    0 1px 1px -0.5px var(--color-bg-shadow-soft),
+    0 3px 3px -1.5px var(--color-bg-shadow-soft),
+    0 6px 6px -3px var(--color-bg-shadow-soft),
+    0 12px 12px -6px var(--color-bg-shadow-soft),
+    0 24px 24px -12px var(--color-bg-shadow-soft);
+  /* Component names remain overrideable aliases to the shared four-level scale. */
+  --shadow-composer: var(--shadow-high_emphasis);
+  --shadow-popup: var(--shadow-mid_emphasis);
+  --shadow-floating-toolbar: var(--shadow-mid_emphasis);
+  --shadow-input-popup: var(--shadow-low_emphasis);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    --shadow-min_emphasis: inset 0 0 0 1px var(--color-border-shadow-ring-subtle);
+    --shadow-low_emphasis: inset 0 1px 0 var(--color-border-shadow-highlight-subtle),
+      inset 0 0 0 1px var(--color-border-shadow-ring-subtle),
+      0 1px 1px -0.5px var(--color-bg-shadow-drop);
+    --shadow-mid_emphasis: inset 0 1px 0 var(--color-border-shadow-highlight-soft),
+      inset 0 0 0 1px var(--color-border-shadow-ring-soft),
+      0 0 0 1px var(--color-border-shadow),
+      0 1px 1px -0.5px var(--color-bg-shadow-drop),
+      0 3px 3px -1.5px var(--color-bg-shadow-drop),
+      0 6px 6px -3px var(--color-bg-shadow-drop);
+    --shadow-high_emphasis: inset 0 1px 0 var(--color-border-shadow-highlight),
+      inset 0 0 0 1px var(--color-border-shadow-ring),
+      0 0 0 1px var(--color-border-shadow-strong),
+      0 1px 1px -0.5px var(--color-bg-shadow-drop),
+      0 3px 3px -1.5px var(--color-bg-shadow-drop),
+      0 6px 6px -3px var(--color-bg-shadow-drop),
+      0 12px 12px -6px var(--color-bg-shadow-drop),
+      0 24px 24px -12px var(--color-bg-shadow-drop);
+  }
+}
+
+[data-theme='dark'] {
+  --shadow-min_emphasis: inset 0 0 0 1px var(--color-border-shadow-ring-subtle);
+  --shadow-low_emphasis: inset 0 1px 0 var(--color-border-shadow-highlight-subtle),
+    inset 0 0 0 1px var(--color-border-shadow-ring-subtle),
+    0 1px 1px -0.5px var(--color-bg-shadow-drop);
+  --shadow-mid_emphasis: inset 0 1px 0 var(--color-border-shadow-highlight-soft),
+    inset 0 0 0 1px var(--color-border-shadow-ring-soft),
+    0 0 0 1px var(--color-border-shadow),
+    0 1px 1px -0.5px var(--color-bg-shadow-drop),
+    0 3px 3px -1.5px var(--color-bg-shadow-drop),
+    0 6px 6px -3px var(--color-bg-shadow-drop);
+  --shadow-high_emphasis: inset 0 1px 0 var(--color-border-shadow-highlight),
+    inset 0 0 0 1px var(--color-border-shadow-ring),
+    0 0 0 1px var(--color-border-shadow-strong),
+    0 1px 1px -0.5px var(--color-bg-shadow-drop),
+    0 3px 3px -1.5px var(--color-bg-shadow-drop),
+    0 6px 6px -3px var(--color-bg-shadow-drop),
+    0 12px 12px -6px var(--color-bg-shadow-drop),
+    0 24px 24px -12px var(--color-bg-shadow-drop);
+}
+
+[data-theme='light'] {
+  --shadow-min_emphasis: 0 0 0 1px var(--color-bg-shadow-soft);
+  --shadow-low_emphasis: 0 0 0 1px var(--color-bg-shadow-soft),
+    0 1px 1px -0.5px var(--color-bg-shadow-soft);
+  --shadow-mid_emphasis: 0 0 0 1px var(--color-bg-shadow-soft),
+    0 1px 1px -0.5px var(--color-bg-shadow-soft),
+    0 3px 3px -1.5px var(--color-bg-shadow-soft),
+    0 6px 6px -3px var(--color-bg-shadow-soft);
+  --shadow-high_emphasis: 0 0 0 1px var(--color-bg-shadow-soft),
+    0 1px 1px -0.5px var(--color-bg-shadow-soft),
+    0 3px 3px -1.5px var(--color-bg-shadow-soft),
+    0 6px 6px -3px var(--color-bg-shadow-soft),
+    0 12px 12px -6px var(--color-bg-shadow-soft),
+    0 24px 24px -12px var(--color-bg-shadow-soft);
+}
+
+[data-theme='light'],
+[data-theme='dark'] {
+  /* Component names remain overrideable aliases to the shared four-level scale. */
+  --shadow-composer: var(--shadow-high_emphasis);
+  --shadow-popup: var(--shadow-mid_emphasis);
+  --shadow-floating-toolbar: var(--shadow-mid_emphasis);
+  --shadow-input-popup: var(--shadow-low_emphasis);
 }

@@ -100,7 +100,7 @@
   box-shadow: none;
 }
 .lars-ai-composer--unstructured.lars-ai-composer--has-attachments {
-  box-shadow: 0 2px 3px var(--color-border-surface);
+  box-shadow: var(--shadow-min_emphasis);
 }
 .lars-ai-composer--unstructured.lars-ai-composer--attachment-exiting {
   box-shadow: none;
@@ -525,7 +525,7 @@
 .lars-ai-composer__attach-menu {
   width: 168px;
   padding: calc(var(--size-12) / 2);
-  border: 1px solid var(--lars-ai-menu-border, var(--color-border-surface));
+  border: 1px solid var(--lars-ai-menu-border, transparent);
   border-radius: calc(var(--radius-lg) - var(--size-4) / 2);
   background: var(--lars-ai-menu-surface, var(--color-bg-surface));
   box-shadow: var(--shadow-popup);
@@ -626,7 +626,7 @@
 .lars-ai-composer__model-menu {
   min-width: 180px;
   padding: calc(var(--size-12) / 2);
-  border: 1px solid var(--lars-ai-menu-border, var(--color-border-surface));
+  border: 1px solid var(--lars-ai-menu-border, transparent);
   border-radius: calc(var(--radius-lg) - var(--size-4) / 2);
   background: var(--lars-ai-menu-surface, var(--color-bg-surface));
   box-shadow: var(--shadow-popup);

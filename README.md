@@ -257,13 +257,18 @@ SegmentedControl supports `content="icon-only"` alongside `text-only` and `text-
 
 The light square SegmentedControl border uses `--color-border-mid_emphasis`, based on `--radix-gray-5` (`#e0e0e0`).
 
-Shared emphasis shadow tokens are available in `larsui/style.css`. Composer and floating-toolbar elevation recipes are also centralized in `semantic/shadows.css`:
+Four emphasis shadow tokens are available in `larsui/style.css`, using the muted recipes from levels 1, 2, 4, and 6 of [Fluid Functionalism’s surface scale](https://www.fluidfunctionalism.com/docs/surfaces). Light shadows combine a fine outline with stacked drops using the core black token at 6% opacity. Dark shadows progress from a 2% white inset ring to a 4% white top highlight, 6% white ring, 18% black hairline, and 18% black drops. All colors resolve through semantic roles in `semantic/component-colors.css` to the existing core black/white palette.
 
-| Token | Value |
+| Token | Elevation |
 | --- | --- |
-| `--shadow-low_emphasis` | `0 2px 5px`, gray 12 at 24% |
-| `--shadow-mid_emphasis` | `0 3px 4px`, gray 12 at 40% |
-| `--shadow-high_emphasis` | `0 4px 6px`, gray 12 at 56% |
+| `--shadow-min_emphasis` | Fine outline; no drop layers |
+| `--shadow-low_emphasis` | Small controls and menus; one drop with 1px blur |
+| `--shadow-mid_emphasis` | Floating menus and toolbars; three drops up to 6px blur |
+| `--shadow-high_emphasis` | Large floating surfaces; five drops up to 24px blur |
+
+The scale follows explicit `[data-theme="light|dark"]` scopes and the system preference when no theme is set. Existing names remain aliases: `--shadow-input-popup` uses low emphasis, `--shadow-popup` and `--shadow-floating-toolbar` use mid emphasis, and `--shadow-composer` uses high emphasis. Insets that draw a component border or focus indicator continue to use their own semantic border colors.
+
+Elevation recipes include their own fine outline. Floating popups reserve a transparent 1px border for layout instead of adding a second visible outline; tooltip arrows use the matching semantic edge color.
 
 ## Tooltip
 

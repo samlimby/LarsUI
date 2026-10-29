@@ -1,7 +1,8 @@
 import { Select } from '@base-ui/react/select'
 import { useId, useRef, useState, type ComponentPropsWithRef, type ReactElement, type SyntheticEvent } from 'react'
 import { Field, inputClassName, type FieldSize, type FieldAppearance, type SharedFieldProps } from './field/Field'
-import { useDropdownGlide } from './useDropdownGlide'
+import { dropdownMotionForEvent } from './useDropdownGlide'
+import { DropdownMenuList } from './DropdownMenuList'
 import { useInputFormReset } from './useInputFormReset'
 
 export type DropdownSize = FieldSize
@@ -29,12 +30,6 @@ export type DropdownMultiProps = DropdownBaseProps & DropdownRootProps<true> & {
   showSelectAll?: boolean
 }
 export type DropdownProps = DropdownSingleProps | DropdownMultiProps
-
-function inputMotionForEvent(event: Event): 'pointer' | 'instant' {
-  if (event.type.startsWith('pointer') || event.type.startsWith('mouse') || event.type.startsWith('touch')) return 'pointer'
-  if (event.type === 'click' && 'detail' in event && Number(event.detail) > 0) return 'pointer'
-  return 'instant'
-}
 
 type DropdownDisplayProps = {
   size: DropdownSize
@@ -91,14 +86,14 @@ function SingleDropdownInput({
     onValueChange={(next, details) => {
       onValueChange?.(next, details)
       if (details.isCanceled) return
-      setMotion(inputMotionForEvent(details.event))
+      setMotion(dropdownMotionForEvent(details.event))
       if (!controlled) setUncontrolledValue(next)
     }}
     name={name} form={form} required={required} readOnly={readOnly} disabled={disabled}
     autoComplete={autoComplete} id={id} open={open} defaultOpen={defaultOpen}
     onOpenChange={(next, details) => {
       onOpenChange?.(next, details)
-      if (!details.isCanceled) setMotion(inputMotionForEvent(details.event))
+      if (!details.isCanceled) setMotion(dropdownMotionForEvent(details.event))
     }} modal={false}
   >
     <DropdownDisplay size={size} appearance={appearance} className={className} options={options} placeholder={placeholder} motion={motion} multiple={false} triggerProps={triggerProps} />
@@ -145,14 +140,14 @@ function MultiDropdownInput({
         : next.filter((optionValue): optionValue is string => typeof optionValue === 'string')
       onValueChange?.(nextValues, details)
       if (details.isCanceled) return
-      setMotion(inputMotionForEvent(details.event))
+      setMotion(dropdownMotionForEvent(details.event))
       if (!controlled) setUncontrolledValue(nextValues)
     }}
     name={name} form={form} required={required} readOnly={readOnly} disabled={disabled}
     autoComplete={autoComplete} id={id} open={open} defaultOpen={defaultOpen}
     onOpenChange={(next, details) => {
       onOpenChange?.(next, details)
-      if (!details.isCanceled) setMotion(inputMotionForEvent(details.event))
+      if (!details.isCanceled) setMotion(dropdownMotionForEvent(details.event))
     }} modal={false}
   >
     <DropdownDisplay size={size} appearance={appearance} className={className} options={options} placeholder={placeholder} motion={motion} multiple selectAll={showSelectAll ? selectAll : undefined} triggerProps={triggerProps} />
@@ -190,9 +185,7 @@ function DropdownOptionItem({ option, multiple }: { option: DropdownOption; mult
 }
 
 function DropdownOptions({ options, multiple, selectAll }: { options: readonly DropdownOption[]; multiple: boolean; selectAll?: DropdownSelectAll }) {
-  const { listRef, highlightRef } = useDropdownGlide(options)
-  return <Select.List ref={listRef} className="lars-input__list">
-    <div ref={highlightRef} className="lars-input__option-glide" aria-hidden="true" />
+  return <DropdownMenuList items={options} renderList={(props) => <Select.List {...props} />}>
     {selectAll && (
       <Select.Item
         value={selectAll.value}
@@ -210,7 +203,7 @@ function DropdownOptions({ options, multiple, selectAll }: { options: readonly D
       </Select.Item>
     )}
     {options.map((option) => <DropdownOptionItem key={option.value} option={option} multiple={multiple} />)}
-  </Select.List>
+  </DropdownMenuList>
 }
 
 function forwardDropdownInvalid(event: SyntheticEvent<HTMLDivElement>, handler: DropdownBaseProps['onInvalid']) {

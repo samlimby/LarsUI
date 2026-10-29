@@ -237,8 +237,10 @@ test('component semantic palettes retain the original surfaces, labels and inter
     ['fg-composer-warning', '#F76B15', '#F76B15'],
     ['fg-composer-error', '#CA244D', '#FED2E1'],
     ['bg-tooltip', '#EEEEEE', '#303030'],
+    ['border-tooltip', 'COLOR-MIX(IN SRGB, #000000 6%, TRANSPARENT)', 'COLOR-MIX(IN SRGB, #FFFFFF 2%, TRANSPARENT)'],
     ['fg-tooltip', '#202020', '#F2F2F2'],
     ['bg-tooltip-inverse', '#303030', '#EEEEEE'],
+    ['border-tooltip-inverse', 'COLOR-MIX(IN SRGB, #FFFFFF 2%, TRANSPARENT)', 'COLOR-MIX(IN SRGB, #000000 6%, TRANSPARENT)'],
     ['bg-table-search', '#F9F9F9', '#191919'],
     ['bg-table-floating-search', '#222222', '#191919'],
     ['border-table-checkbox', '#8F8F8F', '#858585'],
@@ -254,7 +256,83 @@ test('component semantic palettes retain the original surfaces, labels and inter
       ? 'COLOR-MIX(IN SRGB, #FFFFFF 14%, TRANSPARENT)'
       : 'COLOR-MIX(IN SRGB, #171717 15%, TRANSPARENT)')
     assert.match(resolveToken('--color-bg-input-option-selected', [], values), /72%, transparent\)$/)
-    assert.equal(resolveToken('--shadow-input-popup', [], values), '0 2px 8px color-mix(in srgb, #000000 8%, transparent)')
+    assert.equal(resolveToken('--shadow-input-popup', [], values), resolveToken('--shadow-low_emphasis', [], values))
+  }
+})
+
+test('the four shadow levels resolve through core black/white with increasing elevation', async () => {
+  assert.equal(resolveToken('--color-bg-shadow'), '#000000')
+  assert.equal(resolveToken('--color-bg-shadow-deep'), '#000000')
+  assert.equal(resolveToken('--color-bg-shadow-soft'), 'color-mix(in srgb, #000000 6%, transparent)')
+  assert.equal(resolveToken('--color-bg-shadow-drop'), 'color-mix(in srgb, #000000 18%, transparent)')
+  for (const [role, percent, color] of [
+    ['highlight-subtle', 1, '#FFFFFF'], ['highlight-soft', 2, '#FFFFFF'], ['highlight', 4, '#FFFFFF'],
+    ['ring-subtle', 2, '#FFFFFF'], ['ring-soft', 4, '#FFFFFF'], ['ring', 6, '#FFFFFF'],
+    ['', 14, '#000000'], ['strong', 18, '#000000'],
+  ]) {
+    assert.equal(resolveToken(`--color-border-shadow${role ? `-${role}` : ''}`),
+      `color-mix(in srgb, ${color} ${percent}%, transparent)`)
+  }
+
+  const names = [...defaults.keys()].filter(name => /^--shadow-.*_emphasis$/.test(name))
+  assert.deepEqual(names, ['--shadow-min_emphasis', '--shadow-low_emphasis', '--shadow-mid_emphasis', '--shadow-high_emphasis'])
+  const css = postcss.parse(await readFile(new URL('../src/tokens/semantic/shadows.css', import.meta.url), 'utf8'))
+  css.walkDecls(declaration => {
+    assert.doesNotMatch(declaration.value, /#[\da-f]{3,8}\b|\b(?:rgba?|hsla?)\(|var\(--radix-/i,
+      `${declaration.prop} must use semantic color roles`)
+  })
+  for (const [index, name] of names.entries()) {
+    const layers = postcss.list.comma(resolveToken(name))
+    assert.equal(layers.length, [1, 2, 4, 6][index], name)
+    assert.ok(layers.every(layer => layer.includes('#000000 6%')), name)
+    if (index > 0) {
+      assert.deepEqual(layers.slice(0, [1, 2, 4][index - 1]), postcss.list.comma(resolveToken(names[index - 1])))
+    }
+  }
+  assert.match(resolveToken('--shadow-low_emphasis'), /1px 1px -0.5px/)
+  assert.match(resolveToken('--shadow-mid_emphasis'), /6px 6px -3px/)
+  assert.match(resolveToken('--shadow-high_emphasis'), /24px 24px -12px/)
+})
+
+test('system, explicit and nested theme scopes select matching shadow recipes and component aliases', async () => {
+  const css = postcss.parse(await readFile(new URL('../src/tokens/semantic/shadows.css', import.meta.url), 'utf8'))
+  const rules = []
+  css.walkRules(rule => {
+    const values = new Map()
+    rule.walkDecls(declaration => values.set(declaration.prop, declaration.value))
+    rules.push({ selector: rule.selector, values, media: rule.parent.type === 'atrule' })
+  })
+  const system = rules.find(rule => rule.media)
+  const dark = rules.find(rule => rule.selector === "[data-theme='dark']")
+  const light = rules.find(rule => rule.selector === "[data-theme='light']")
+  const normalized = values => new Map([...values].map(([name, value]) => [name, value.replace(/\s+/g, ' ')]))
+  assert.deepEqual(normalized(system.values), normalized(dark.values))
+  for (const [name, value] of light.values) assert.equal(value, defaults.get(name))
+  const aliases = rules.find(rule => rule.selector.includes("[data-theme='light'],")).values
+  const contracts = [
+    ['--shadow-composer', '--shadow-high_emphasis'],
+    ['--shadow-popup', '--shadow-mid_emphasis'],
+    ['--shadow-floating-toolbar', '--shadow-mid_emphasis'],
+    ['--shadow-input-popup', '--shadow-low_emphasis'],
+  ]
+  const night = new Map([...defaults, ...dark.values, ...aliases])
+  const nestedLight = new Map([...night, ...light.values, ...aliases])
+  for (const palette of [defaults, night, nestedLight]) {
+    for (const [alias, level] of contracts) {
+      assert.equal(resolveToken(alias, [], palette), resolveToken(level, [], palette))
+    }
+  }
+  for (const [index, name] of [...light.values.keys()].entries()) {
+    const layers = postcss.list.comma(resolveToken(name, [], night))
+    assert.equal(layers.length, [1, 3, 6, 8][index])
+    assert.equal(layers.filter(layer => layer.startsWith('inset')).length, index === 0 ? 1 : 2)
+    assert.ok(layers[0].includes(`#FFFFFF ${[2, 1, 2, 4][index]}%`))
+    if (index > 0) {
+      assert.ok(layers[1].includes(`#FFFFFF ${[0, 2, 4, 6][index]}%`))
+      assert.ok(layers.at(-1).includes('#000000 18%'))
+    }
+    if (index > 1) assert.ok(layers[2].includes(`#000000 ${index === 2 ? 14 : 18}%`))
+    assert.equal(resolveToken(name, [], nestedLight), resolveToken(name))
   }
 })
 
