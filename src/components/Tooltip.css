@@ -18,7 +18,8 @@
   max-width: min(280px, calc(100vw - var(--size-24)));
   min-height: 34px;
   padding: var(--size-8) var(--size-12);
-  border: 1px solid var(--lars-tooltip-border);
+  /* The elevation token already draws the popup edge. Keep only layout space here. */
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: var(--lars-tooltip-surface);
   color: var(--lars-tooltip-foreground);

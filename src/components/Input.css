@@ -44,6 +44,7 @@
 .lars-input-field > .lars-input-wrapper:is([data-leading-slot], [data-trailing-slot]),
 .lars-input-field > .lars-input-wrapper[data-leading-slot][data-trailing-slot] { width: 100%; }
 .lars-input__label { color: var(--color-fg-input); font-family: var(--font-body-sm-regular); font-size: var(--text-body-sm-regular); font-weight: var(--font-weight-body-sm-regular); line-height: var(--leading-body-sm-regular); letter-spacing: var(--tracking-body-sm-regular); }
+.lars-input__required { color: var(--color-fg-error-icon); }
 .lars-input-field[data-invalid] > .lars-input__label { color: var(--color-fg-input-error); }
 .lars-input__helper { display: flex; align-items: flex-start; gap: var(--size-4); color: var(--color-fg-input-muted); font-family: var(--font-body-sm-regular); font-size: var(--text-body-sm-regular); font-weight: var(--font-weight-body-sm-regular); line-height: var(--leading-body-sm-regular); letter-spacing: var(--tracking-body-sm-regular); }
 .lars-input__helper.lars-input__helper--error { color: var(--color-fg-input-error); }
@@ -170,7 +171,7 @@
   max-height: var(--available-height);
   overflow: auto;
   padding: var(--size-4);
-  border: 1px solid var(--input-border);
+  border: 1px solid transparent;
   border-radius: calc(var(--radius-md) - var(--size-4) / 2);
   background: var(--input-white);
   color: var(--input-text);

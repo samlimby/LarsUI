@@ -1,7 +1,13 @@
 import { useLayoutEffect, useRef } from 'react'
 
+export function dropdownMotionForEvent(event: Event): 'pointer' | 'instant' {
+  if (event.type.startsWith('pointer') || event.type.startsWith('mouse') || event.type.startsWith('touch')) return 'pointer'
+  if (event.type === 'click' && 'detail' in event && Number(event.detail) > 0) return 'pointer'
+  return 'instant'
+}
+
 /** One pointer highlight; Base UI continues to own keyboard focus and selection. */
-export function useDropdownGlide(items: readonly unknown[]) {
+export function useDropdownGlide(items: readonly unknown[], itemRole: 'option' | 'menuitem' = 'option') {
   const listRef = useRef<HTMLDivElement>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
 
@@ -96,7 +102,7 @@ export function useDropdownGlide(items: readonly unknown[]) {
 
     const observer = typeof view.ResizeObserver === 'function' ? new view.ResizeObserver(measure) : null
     function refreshRows() {
-      const nextRows = Array.from(list.querySelectorAll<HTMLElement>('[role="option"]'))
+      const nextRows = Array.from(list.querySelectorAll<HTMLElement>(`[role="${itemRole}"]`))
       const previous = new Set(rows)
       const next = new Set(nextRows)
       rows.forEach(row => { if (!next.has(row)) observer?.unobserve(row) })
@@ -132,7 +138,7 @@ export function useDropdownGlide(items: readonly unknown[]) {
       popup?.removeEventListener('scroll', scroll)
       view.removeEventListener('resize', measure)
     }
-  }, [items])
+  }, [items, itemRole])
 
   return { listRef, highlightRef }
 }

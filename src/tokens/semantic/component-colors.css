@@ -6,8 +6,18 @@
   --color-bg-primary-hover: var(--radix-gray-11);
   --color-fg-on_primary: var(--radix-gray-1);
   --color-bg-overlay: color-mix(in srgb, var(--radix-gray-12) 80%, transparent);
-  --color-bg-shadow: var(--radix-gray-12);
+  --color-bg-shadow: var(--radix-black);
   --color-bg-shadow-deep: var(--radix-black);
+  --color-bg-shadow-soft: color-mix(in srgb, var(--color-bg-shadow) 6%, transparent);
+  --color-bg-shadow-drop: color-mix(in srgb, var(--color-bg-shadow) 18%, transparent);
+  --color-border-shadow: color-mix(in srgb, var(--color-bg-shadow) 14%, transparent);
+  --color-border-shadow-strong: color-mix(in srgb, var(--color-bg-shadow) 18%, transparent);
+  --color-border-shadow-highlight: color-mix(in srgb, var(--radix-white) 4%, transparent);
+  --color-border-shadow-highlight-soft: color-mix(in srgb, var(--radix-white) 2%, transparent);
+  --color-border-shadow-highlight-subtle: color-mix(in srgb, var(--radix-white) 1%, transparent);
+  --color-border-shadow-ring: color-mix(in srgb, var(--radix-white) 6%, transparent);
+  --color-border-shadow-ring-soft: color-mix(in srgb, var(--radix-white) 4%, transparent);
+  --color-border-shadow-ring-subtle: color-mix(in srgb, var(--radix-white) 2%, transparent);
   --color-fg-brand-claude: var(--brand-claude);
   --color-fg-brand-kimi: var(--brand-kimi);
 
@@ -107,7 +117,7 @@
   --color-bg-table-checkbox-hover: var(--radix-gray-2);
   --color-border-table-checkbox-hover: color-mix(in srgb, var(--radix-gray-10) 64%, transparent);
   --color-bg-tooltip: var(--radix-gray-dark-12);
-  --color-border-tooltip: var(--radix-gray-7);
+  --color-border-tooltip: var(--color-bg-shadow-soft);
   --color-fg-tooltip: var(--radix-gray-12);
   --color-fg-tooltip-muted: var(--radix-gray-11);
   --color-fg-tooltip-shortcut: var(--radix-gray-11);
@@ -140,7 +150,7 @@
   --color-fg-button-danger-hover-inverse: var(--radix-ruby-dark-12);
   --color-border-button-focus-inverse: var(--radix-indigo-11);
   --color-bg-tooltip-inverse: var(--palette-bg-action-hover-dark);
-  --color-border-tooltip-inverse: var(--radix-gray-dark-7);
+  --color-border-tooltip-inverse: var(--color-border-shadow-ring-subtle);
   --color-fg-tooltip-inverse: var(--palette-fg-text-primary-dark);
   --color-fg-tooltip-muted-inverse: var(--radix-gray-dark-11);
   --color-fg-tooltip-shortcut-inverse: var(--palette-fg-text-secondary-dark);

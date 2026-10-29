@@ -19,16 +19,22 @@ globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.win
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window)
 globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
 window.ResizeObserver = globalThis.ResizeObserver
+// ScrollArea inspects running browser animations; JSDOM has no Web Animations API.
+window.HTMLElement.prototype.getAnimations ??= () => []
+window.scrollTo = () => {}
 window.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const { createElement: h, createRef, useState, act } = await import('react')
 const { createRoot } = await import('react-dom/client')
-const { Input, Dropdown, Textarea } = await import('../dist/index.js')
+const { Input, Dropdown, Textarea, Table } = await import('../dist/index.js')
 const fieldComponents = { text: Input, dropdown: Dropdown, textarea: Textarea, multiple: Dropdown }
 let host, root
 beforeEach(() => { host = document.createElement('div'); document.body.append(host); root = createRoot(host) })
 afterEach(async () => { await act(() => root.unmount()); host.remove() })
 const options = [{ label: 'Design', value: 'design' }, { label: 'Engineering', value: 'engineering' }, { label: 'Unavailable', value: 'unavailable', disabled: true }]
+const tableRows = [{ id: 'ada', name: 'Ada Lin' }]
+const tableColumns = [{ key: 'name', header: 'Name' }]
+const tableFixture = props => h(Table, { columns: tableColumns, rows: tableRows, getRowId: row => row.id, ...props })
 const render = (element) => act(() => root.render(element))
 const formValues = () => new dom.window.FormData(host.querySelector('form'))
 async function waitForMotion(predicate, message) {
@@ -1144,4 +1150,90 @@ test('leading and trailing slots keep the text field native, allow an action, an
   await render(h(Input, { disabled: true, leading: '$', trailing: h('button', { type: 'button' }, 'Copy') }))
   assert.equal(host.querySelector('.lars-input__slot--leading').hasAttribute('inert'), true)
   assert.equal(host.querySelector('.lars-input__slot--trailing').hasAttribute('inert'), true)
+})
+
+for (const variant of ['default', 'compact', 'relaxed']) {
+  test(`${variant} table row menu keeps action semantics and selection with the shared dropdown list`, async () => {
+    const actions = []
+    const selections = []
+    await render(tableFixture({ variant, onRowAction: row => actions.push(row.id), onSelectedRowIdsChange: ids => selections.push(ids) }))
+    const trigger = host.querySelector('[aria-label="Open row actions"]')
+    await act(() => trigger.click())
+    const popup = document.querySelector('.lars-table__action-menu')
+    assert.equal(popup.getAttribute('role'), 'menu')
+    assert.equal(document.querySelector('[role="listbox"]'), null)
+    const items = [...popup.querySelectorAll('[role="menuitem"]')]
+    assert.deepEqual(items.map(item => item.textContent), ['View details', 'Select row'])
+    await act(() => items[1].click())
+    assert.deepEqual(selections, [['ada']])
+    assert.deepEqual(actions, [])
+    await act(() => trigger.click())
+    assert.equal(document.querySelectorAll('[role="menuitem"]')[1].textContent, 'Deselect row')
+    await act(() => document.querySelector('[role="menuitem"]').click())
+    assert.deepEqual(actions, ['ada'])
+    assert.deepEqual(selections, [['ada']])
+  })
+}
+
+test('table action hover uses the shared glide without firing actions, then yields immediately to keyboard navigation', async () => {
+  const previousMedia = window.matchMedia
+  window.matchMedia = query => ({ matches: query === '(hover: hover) and (pointer: fine)', addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })
+  let actions = 0
+  try {
+    await render(tableFixture({ onRowAction: () => { actions++ } }))
+    await act(() => host.querySelector('[aria-label="Open row actions"]').click())
+    const list = document.querySelector('.lars-table__action-menu .lars-input__list')
+    const items = [...list.querySelectorAll('[role="menuitem"]')]
+    items.forEach((item, index) => {
+      for (const [key, value] of Object.entries({ offsetLeft: 0, offsetTop: index * 30, offsetWidth: 150, offsetHeight: 30 })) {
+        Object.defineProperty(item, key, { configurable: true, value })
+      }
+    })
+    Object.defineProperty(list, 'offsetHeight', { configurable: true, value: 60 })
+    list.getBoundingClientRect = () => ({ top: 100, left: 0, width: 150, height: 60, bottom: 160, right: 150 })
+    await act(() => window.dispatchEvent(new window.Event('resize')))
+    const pointer = y => {
+      const event = new window.MouseEvent('pointermove', { bubbles: true, clientY: y })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      list.dispatchEvent(event)
+    }
+    await act(() => pointer(115))
+    const highlight = list.querySelector('.lars-input__option-glide')
+    assert.equal(highlight.style.transform, 'translate3d(0px, 0px, 0)')
+    await act(() => pointer(145))
+    assert.equal(highlight.style.transform, 'translate3d(0px, 30px, 0)')
+    assert.equal(actions, 0)
+    await act(() => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })))
+    assert.equal(highlight.hasAttribute('data-visible'), false)
+    assert.equal(list.hasAttribute('data-glide-pointer'), false)
+  } finally {
+    window.matchMedia = previousMedia
+  }
+})
+
+test('non-selectable table row menus only offer View details', async () => {
+  await render(tableFixture({ selectable: false, onRowAction: () => {} }))
+  await act(() => host.querySelector('[aria-label="Open row actions"]').click())
+  assert.deepEqual([...document.querySelectorAll('[role="menuitem"]')].map(item => item.textContent), ['View details'])
+})
+
+test('table action keyboard navigation remains immediate and Escape restores the kebab trigger', async () => {
+  let actions = 0
+  await render(tableFixture({ onRowAction: () => { actions++ } }))
+  const trigger = host.querySelector('[aria-label="Open row actions"]')
+  const key = (target, value) => act(() => target.dispatchEvent(new window.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true })))
+  await act(() => trigger.focus())
+  await key(trigger, 'ArrowDown')
+  await act(() => new Promise(resolve => setTimeout(resolve, 20)))
+  const popup = document.querySelector('.lars-table__action-menu')
+  assert.equal(popup.dataset.inputMotion, 'instant')
+  const items = [...popup.querySelectorAll('[role="menuitem"]')]
+  assert.equal(document.activeElement, items[0])
+  await key(items[0], 'ArrowDown')
+  assert.equal(document.activeElement, items[1])
+  await key(items[1], 'Escape')
+  await act(() => new Promise(resolve => setTimeout(resolve, 20)))
+  assert.equal(trigger.getAttribute('aria-expanded'), 'false')
+  assert.equal(document.activeElement, trigger)
+  assert.equal(actions, 0)
 })

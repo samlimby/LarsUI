@@ -2,9 +2,12 @@ import { Menu } from '@base-ui/react/menu'
 import { ScrollArea } from '@base-ui/react/scroll-area'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import type { CSSProperties, ReactNode } from 'react'
 import { Chip } from './Chip'
 import { SegmentedControl } from './SegmentedControl'
+import { DropdownMenuList } from './DropdownMenuList'
+import { dropdownMotionForEvent } from './useDropdownGlide'
 import './Table.css'
 
 export type TableColumn<RowData> = {
@@ -24,6 +27,7 @@ const TABLE_VARIANT_TRANSITION = {
   ease: [0.22, 1, 0.36, 1] as const,
 }
 const EMPTY_FILTERABLE_COLUMNS: readonly string[] = []
+const ROW_ACTIONS = ['details', 'selection'] as const
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 function isAtScrollBottom(viewport: HTMLElement) {
@@ -143,6 +147,33 @@ function KebabIcon() {
       <path d="M6 3.9A1.05 1.05 0 1 0 6 1.8a1.05 1.05 0 0 0 0 2.1Zm0 4.2a1.05 1.05 0 1 1 0 2.1 1.05 1.05 0 0 1 0-2.1ZM7.05 6A1.05 1.05 0 1 1 4.95 6a1.05 1.05 0 0 1 2.1 0Z" />
     </svg>
   )
+}
+
+function RowActionMenu({ label, selectable, selected, onDetails, onToggleSelection }: {
+  label: string
+  selectable: boolean
+  selected: boolean
+  onDetails: () => void
+  onToggleSelection: () => void
+}) {
+  const [inputMotion, setInputMotion] = useState<'pointer' | 'instant'>('instant')
+  return <Menu.Root modal={false} onOpenChange={(_open, details) => setInputMotion(dropdownMotionForEvent(details.event))}>
+    <Menu.Trigger aria-label={label} className="lars-table__action">
+      <KebabIcon />
+    </Menu.Trigger>
+    <Menu.Portal>
+      <Menu.Positioner align="end" className="lars-table__action-positioner" side="bottom" sideOffset={4}>
+        <Menu.Popup className="lars-input__popup lars-table__action-menu" data-input-motion={inputMotion}>
+          <DropdownMenuList items={ROW_ACTIONS} itemRole="menuitem">
+            <Menu.Item className="lars-input__option" onClick={onDetails}>View details</Menu.Item>
+            {selectable && <Menu.Item className="lars-input__option" onClick={onToggleSelection}>
+              {selected ? 'Deselect row' : 'Select row'}
+            </Menu.Item>}
+          </DropdownMenuList>
+        </Menu.Popup>
+      </Menu.Positioner>
+    </Menu.Portal>
+  </Menu.Root>
 }
 
 function FilterIcon() {
@@ -296,7 +327,7 @@ export function Table<RowData>({
 
     const closeOnOutsidePointerDown = (event: PointerEvent) => {
       if (searchRef.current?.contains(event.target as Node) || searchQuery.trim()) return
-      setAnimateSearch(true)
+      flushSync(() => setAnimateSearch(true))
       setSearchOpen(false)
       setSearchQueryClipped(false)
     }
@@ -490,8 +521,8 @@ export function Table<RowData>({
             >
               <FilterIcon />
             </Menu.Trigger>
-            <Menu.Portal container={frameRef}>
-              <Menu.Positioner align="start" className="lars-table__filter-positioner" side={isFloating ? 'top' : 'bottom'} sideOffset={8}>
+            <Menu.Portal>
+              <Menu.Positioner align="start" className="lars-table__filter-positioner" collisionAvoidance={{ side: 'flip', align: 'shift', fallbackAxisSide: 'none' }} side={isFloating ? 'top' : 'bottom'} sideOffset={8}>
                 <Menu.Popup className="lars-table__filter-menu">
                   <Menu.Group className="lars-table__filter-group">
                     <Menu.GroupLabel className="lars-table__filter-group-label">Selection</Menu.GroupLabel>
@@ -758,28 +789,13 @@ export function Table<RowData>({
                     })}
                     {onRowAction && (
                       <td className="lars-table__action-cell">
-                        <Menu.Root modal={false}>
-                          <Menu.Trigger
-                            aria-label={rowActionLabel(row)}
-                            className="lars-table__action"
-                          >
-                            <KebabIcon />
-                          </Menu.Trigger>
-                          <Menu.Portal>
-                            <Menu.Positioner align="end" className="lars-table__action-positioner" side="bottom" sideOffset={4}>
-                              <Menu.Popup className="lars-table__filter-menu lars-table__action-menu">
-                                <Menu.Item className="lars-table__filter-item" onClick={() => onRowAction(row)}>
-                                  View details
-                                </Menu.Item>
-                                {selectable && (
-                                  <Menu.Item className="lars-table__filter-item" onClick={() => toggleRow(rowId)}>
-                                    {selected.has(rowId) ? 'Deselect row' : 'Select row'}
-                                  </Menu.Item>
-                                )}
-                              </Menu.Popup>
-                            </Menu.Positioner>
-                          </Menu.Portal>
-                        </Menu.Root>
+                        <RowActionMenu
+                          label={rowActionLabel(row)}
+                          selectable={selectable}
+                          selected={selected.has(rowId)}
+                          onDetails={() => onRowAction(row)}
+                          onToggleSelection={() => toggleRow(rowId)}
+                        />
                       </td>
                     )}
                   </tr>

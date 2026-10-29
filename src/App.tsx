@@ -2,7 +2,8 @@ import { Button as BaseButton } from '@base-ui/react/button'
 import { Select } from '@base-ui/react/select'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { Info } from 'lucide-react'
-import { memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { siteUpdatedAt } from 'virtual:larsui-site-metadata'
+import { memo, startTransition, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AiComposer, type AiComposerMode, type AiComposerSize, type AiComposerSuggestion, type AiComposerVariant } from './components/AiComposer'
 import { Button, type ButtonShape, type ButtonSize, type ButtonSpinner, type ButtonVariant } from './components/Button'
 import './tokens/index.css'
@@ -32,6 +33,7 @@ import {
 } from './components/Table'
 import { Tooltip as LarsTooltip } from './components/Tooltip'
 import { transcribeAudio } from './lib/transcribeAudio'
+import { LiveExample, LivePreview, useLiveExample } from './showcase/LiveExample'
 import './App.css'
 
 const SIZE_STOPS = [200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400, 420, 440] as const
@@ -723,22 +725,22 @@ function FieldConfigurator({ variant }: { variant: FieldPreviewType }) {
   const componentId = componentName.toLowerCase()
   const exampleId = `${componentId}-example`
   const currentSelection = INPUT_OPTIONS.some((option) => option.value === selection) ? selection : null
-  const controlFrameRef = useRef<HTMLDivElement>(null)
+  const [controlFrame, setControlFrame] = useState<HTMLDivElement | null>(null)
   const nativeResizeRef = useRef(false)
   const controlHeight = variant === 'textarea' ? textareaHeight : size === 'large' ? 44 : 32
   const hasHelper = helperEnabled && helperText.trim().length > 0
 
   useLayoutEffect(() => {
-    const textarea = controlFrameRef.current?.querySelector('textarea')
+    const textarea = controlFrame?.querySelector('textarea')
     if (!textarea) return
     textarea.style.height = 'auto'
     const height = textarea.offsetHeight
     textarea.style.height = `${height}px`
     setTextareaHeight(height)
-  }, [variant, textareaRows, size])
+  }, [controlFrame, variant, textareaRows, size])
 
   useLayoutEffect(() => {
-    const frame = controlFrameRef.current
+    const frame = controlFrame
     const textarea = frame?.querySelector('textarea')
     if (!frame || !textarea) return
     textarea.style.height = `${textareaHeight}px`
@@ -761,7 +763,7 @@ function FieldConfigurator({ variant }: { variant: FieldPreviewType }) {
       window.removeEventListener('pointerup', endResize)
       window.removeEventListener('pointercancel', endResize)
     }
-  }, [variant, textareaHeight])
+  }, [controlFrame, variant, textareaHeight])
   const previewMotion = {
     spatial: pointerInteraction && !reduceMotion,
     duration: !pointerInteraction ? 0 : reduceMotion ? 0.1 : 0.16,
@@ -819,45 +821,47 @@ ${inputCode.split('\n').map((line) => `    ${line}`).join('\n')}
   )
 }`
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator" role="group" aria-label={`${componentName} configuration`} onPointerDownCapture={() => setPointerInteraction(true)} onKeyDownCapture={() => setPointerInteraction(false)}>
         <div className="lars-stage lars-component-canvas">
-          <LayoutGroup>
-            <motion.div className="input-configurator__field" data-variant={variant} data-invalid={error || undefined} data-preview-motion={previewMotion.spatial ? 'resize' : 'instant'} layout={previewLayout} transition={previewTransition}>
-              <AnimatePresence initial={false} mode="popLayout" custom={previewMotion}>
-                {showLabel && (
-                  <motion.label key="label" htmlFor={exampleId} layout={previewLayout} custom={previewMotion} variants={labelVariants}
-                    initial="hidden" animate="visible" exit="hidden" transition={{ duration: previewMotion.duration, ease: 'easeOut', layout: previewTransition }}>
-                    {fieldLabel}
-                    {required && <span aria-hidden="true"> *</span>}
-                  </motion.label>
-                )}
-              </AnimatePresence>
-              <motion.div className="input-configurator__control-frame" layout={previewLayout} transition={previewTransition} ref={controlFrameRef} style={{ height: controlHeight }} onPointerDownCapture={(event) => {
-                if (!(event.target instanceof HTMLTextAreaElement)) return
-                const bounds = event.target.getBoundingClientRect()
-                if (event.clientX < bounds.right - 20 || event.clientY < bounds.bottom - 20) return
-                nativeResizeRef.current = true
-                event.currentTarget.dataset.nativeResize = 'true'
-              }}>
-                {variant === 'dropdown'
-                  ? multiple
-                    ? <Dropdown {...props} multiple showSelectAll={showSelectAll} options={dropdownOptions} value={selections} onValueChange={setSelections} />
-                    : <Dropdown {...props} options={dropdownOptions} value={currentSelection} onValueChange={setSelection} />
-                  : variant === 'textarea'
-                    ? <Textarea {...props} rows={textareaRows} style={{ minHeight: 'var(--size-96)' }} value={text} onValueChange={setText} />
-                    : <Input {...props} value={text} onValueChange={(next) => { setText(next); setSlotCopied(false) }}
-                        leading={showLeading ? <InputLeadingIcon /> : undefined}
-                        trailing={showTrailing ? <button type="button" aria-label={slotCopied ? 'Copied input text' : 'Copy input text'} onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(text)
-                            setSlotCopied(true)
-                            window.setTimeout(() => setSlotCopied(false), 1600)
-                          } catch { setSlotCopied(false) }
-                        }}><InputCopyIcon /></button> : undefined} />}
+          <LivePreview className={`lars-live-field lars-live-field--${variant}`}>
+            <LayoutGroup>
+              <motion.div className="input-configurator__field" data-variant={variant} data-invalid={error || undefined} data-preview-motion={previewMotion.spatial ? 'resize' : 'instant'} layout={previewLayout} transition={previewTransition}>
+                <AnimatePresence initial={false} mode="popLayout" custom={previewMotion}>
+                  {showLabel && (
+                    <motion.label key="label" htmlFor={exampleId} layout={previewLayout} custom={previewMotion} variants={labelVariants}
+                      initial="hidden" animate="visible" exit="hidden" transition={{ duration: previewMotion.duration, ease: 'easeOut', layout: previewTransition }}>
+                      {fieldLabel}
+                      {required && <span aria-hidden="true" className="lars-input__required"> *</span>}
+                    </motion.label>
+                  )}
+                </AnimatePresence>
+                <motion.div className="input-configurator__control-frame" layout={previewLayout} transition={previewTransition} ref={setControlFrame} style={{ height: controlHeight }} onPointerDownCapture={(event) => {
+                  if (!(event.target instanceof HTMLTextAreaElement)) return
+                  const bounds = event.target.getBoundingClientRect()
+                  if (event.clientX < bounds.right - 20 || event.clientY < bounds.bottom - 20) return
+                  nativeResizeRef.current = true
+                  event.currentTarget.dataset.nativeResize = 'true'
+                }}>
+                  {variant === 'dropdown'
+                    ? multiple
+                      ? <Dropdown {...props} multiple showSelectAll={showSelectAll} options={dropdownOptions} value={selections} onValueChange={setSelections} />
+                      : <Dropdown {...props} options={dropdownOptions} value={currentSelection} onValueChange={setSelection} />
+                    : variant === 'textarea'
+                      ? <Textarea {...props} rows={textareaRows} style={{ minHeight: 'var(--size-96)' }} value={text} onValueChange={setText} />
+                      : <Input {...props} value={text} onValueChange={(next) => { setText(next); setSlotCopied(false) }}
+                          leading={showLeading ? <InputLeadingIcon /> : undefined}
+                          trailing={showTrailing ? <button type="button" aria-label={slotCopied ? 'Copied input text' : 'Copy input text'} onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(text)
+                              setSlotCopied(true)
+                              window.setTimeout(() => setSlotCopied(false), 1600)
+                            } catch { setSlotCopied(false) }
+                          }}><InputCopyIcon /></button> : undefined} />}
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </LayoutGroup>
+            </LayoutGroup>
+          </LivePreview>
         </div>
         <aside className="lars-properties" aria-labelledby={`${componentId}-properties-title`}>
           <header className="lars-properties__header"><h2 id={`${componentId}-properties-title`}>Properties</h2></header>
@@ -908,7 +912,7 @@ ${inputCode.split('\n').map((line) => `    ${line}`).join('\n')}
         </aside>
       </div>
       <CodeBlock code={code} fileName={`${componentName}.tsx`} label={`Configured ${componentName} usage code`} />
-    </>
+    </LiveExample>
   )
 }
 
@@ -1172,55 +1176,47 @@ function CodeBlock({
   code,
   fileName,
   label,
-  onChange,
 }: {
   code: string
   fileName: string
   label: string
-  onChange?: (code: string) => void
 }) {
-  const [draft, setDraft] = useState(code)
-  const editing = useRef(false)
+  const live = useLiveExample()
+  const descriptionId = useId()
   const previewRef = useRef<HTMLPreElement>(null)
-  const previousCode = useRef(code)
-  const displayedCode = onChange ? draft : code
+  const displayedCode = live?.code ?? code
   const highlightedCode = useMemo(() => highlightTsx(displayedCode), [displayedCode])
-
-  useEffect(() => {
-    if (code === previousCode.current) return
-    previousCode.current = code
-    if (!editing.current) setDraft(code)
-  }, [code])
-
-  const updateDraft = (nextCode: string) => {
-    setDraft(nextCode)
-    onChange?.(nextCode)
-  }
 
   return (
     <section className="lars-code-block" aria-label={label}>
-      <header className="lars-code-block__header">{fileName}</header>
-      {onChange ? (
+      <header className="lars-code-block__header">
+        <span>{fileName}</span>
+        {live?.edited && <div className="lars-code-block__actions">
+          <button type="button" onClick={live.onReset} title="Restore the example from Properties">Reset</button>
+        </div>}
+      </header>
+      {live ? (
         <div className="lars-code-editor">
           <pre ref={previewRef} aria-hidden="true" className="lars-code lars-code--preview" data-language="tsx">
-            <code>{highlightedCode}</code>
+            <code>{highlightedCode}{displayedCode.endsWith('\n') ? ' ' : null}</code>
           </pre>
           <textarea
             aria-label={`Edit ${fileName}`}
+            aria-describedby={`${descriptionId}${live.error ? ` ${descriptionId}-error` : ''}`}
+            aria-invalid={live.error ? true : undefined}
             autoCapitalize="none"
             autoCorrect="off"
             className="lars-code-input"
-            onBlur={() => { editing.current = false }}
-            onChange={(event) => updateDraft(event.currentTarget.value)}
-            onFocus={() => { editing.current = true }}
+            onChange={(event) => live.onChange(event.currentTarget.value)}
             onKeyDown={(event) => {
-              if (event.key !== 'Tab') return
+              if (event.key === 'Escape') { event.currentTarget.blur(); return }
+              if (event.key !== 'Tab' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return
               event.preventDefault()
               const input = event.currentTarget
               const start = input.selectionStart
               const end = input.selectionEnd
-              const nextCode = `${draft.slice(0, start)}  ${draft.slice(end)}`
-              updateDraft(nextCode)
+              const nextCode = `${displayedCode.slice(0, start)}  ${displayedCode.slice(end)}`
+              live.onChange(nextCode)
               window.requestAnimationFrame(() => input.setSelectionRange(start + 2, start + 2))
             }}
             onScroll={(event) => {
@@ -1229,7 +1225,7 @@ function CodeBlock({
               previewRef.current.scrollTop = event.currentTarget.scrollTop
             }}
             spellCheck={false}
-            value={draft}
+            value={displayedCode}
             wrap="off"
           />
         </div>
@@ -1238,6 +1234,12 @@ function CodeBlock({
           <code>{highlightedCode}</code>
         </pre>
       )}
+      {live && <>
+        <span id={descriptionId} className="visually-hidden">Edit the code to update the preview. Esc leaves the editor. Changing Properties resets the code.</span>
+        <div id={`${descriptionId}-error`} className={live.error ? 'lars-code-block__feedback' : 'visually-hidden'} role="status" aria-live="polite" aria-atomic="true">
+          {live.error ? `Preview paused: ${live.error} The last working preview is still shown.` : ''}
+        </div>
+      </>}
     </section>
   )
 }
@@ -1510,165 +1512,8 @@ function highlightTsx(code: string) {
   ))
 }
 
-const JSX_NUMBER = '[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:e[+-]?\\d+)?'
-
-function readOpeningTag(code: string, component: string) {
-  return code.match(new RegExp(`<${component}\\b([\\s\\S]*?)>`))?.[1] ?? null
-}
-
-function readStringProp(attributes: string, name: string) {
-  const match = attributes.match(new RegExp(`\\b${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`))
-  if (!match) return null
-  const [, quote, contents] = match
-  if (quote === '"') {
-    try {
-      return JSON.parse(`"${contents}"`) as string
-    } catch {
-      return null
-    }
-  }
-  return contents.replace(/\\'/g, "'").replace(/\\\\/g, '\\')
-}
-
-function readNumberProp(attributes: string, name: string) {
-  const match = attributes.match(new RegExp(`\\b${name}\\s*=\\s*\\{\\s*(${JSX_NUMBER})\\s*\\}`, 'i'))
-  if (!match) return null
-  const value = Number(match[1])
-  return Number.isFinite(value) ? value : null
-}
-
-function readBooleanProp(attributes: string, name: string) {
-  const explicit = attributes.match(new RegExp(`\\b${name}\\s*=\\s*\\{\\s*(true|false)\\s*\\}`))
-  if (explicit) return explicit[1] === 'true'
-  return new RegExp(`\\b${name}\\b`).test(attributes)
-}
-
-function parseButtonCode(code: string) {
-  const attributes = readOpeningTag(code, 'Button')
-  const body = code.match(/<Button\b[\s\S]*?>([\s\S]*?)<\/Button>/)?.[1]
-  if (attributes === null || body === undefined) return null
-
-  const variant = readStringProp(attributes, 'variant')
-  const shape = readStringProp(attributes, 'shape')
-  const size = readStringProp(attributes, 'size')
-  const iconOnly = readBooleanProp(attributes, 'iconOnly')
-  const text = body.replace(/<span\b[\s\S]*?<\/span>/g, '').replace(/<ArrowIcon\s*\/>/g, '').trim()
-
-  return {
-    disabled: readBooleanProp(attributes, 'disabled'),
-    highContrast: readBooleanProp(attributes, 'highContrast'),
-    icon: /<span\b[^>]*aria-hidden=["']true["'][^>]*>\s*→\s*<\/span>/.test(body) || /<ArrowIcon\s*\/>/.test(body),
-    iconOnly,
-    label: iconOnly
-      ? readStringProp(attributes, 'aria-label')
-      : text && !/[<>]/.test(text) ? text : null,
-    shape: shape === 'full' || shape === 'neat' ? shape as ButtonShape : null,
-    size: size === null ? 'medium' : size === 'medium' || size === 'large' ? size as ButtonSize : null,
-    variant: BUTTON_VARIANTS.includes(variant as ButtonVariant) ? variant as ButtonVariant : null,
-  }
-}
-
-function parseSliderCode(code: string) {
-  const attributes = readOpeningTag(code, 'InlineSlider')
-  if (attributes === null) return null
-
-  const stateValueMatch = code.match(new RegExp(`useState\\(\\s*(${JSX_NUMBER})\\s*\\)`, 'i'))
-  const stateValue = stateValueMatch ? Number(stateValueMatch[1]) : null
-  const size = readStringProp(attributes, 'size')
-
-  return {
-    continuous: readBooleanProp(attributes, 'continuous'),
-    label: readStringProp(attributes, 'label'),
-    max: readNumberProp(attributes, 'max'),
-    min: readNumberProp(attributes, 'min'),
-    showTicks: readBooleanProp(attributes, 'showTicks'),
-    size: size === 'large' || size === 'default' ? size as InlineSliderSize : null,
-    value: stateValue !== null && Number.isFinite(stateValue) ? stateValue : null,
-  }
-}
-
-function parseChipCode(code: string) {
-  const attributes = readOpeningTag(code, 'Chip')
-  const body = code.match(/<Chip\b[\s\S]*?>([\s\S]*?)<\/Chip>/)?.[1]
-  if (attributes === null || body === undefined) return null
-
-  const variant = readStringProp(attributes, 'variant')
-  const iconPosition = readStringProp(attributes, 'iconPosition')
-  const size = readStringProp(attributes, 'size')
-  const typeface = readStringProp(attributes, 'typeface')
-  const label = body.trim()
-
-  return {
-    burst: readBooleanProp(attributes, 'burst'),
-    iconPosition: CHIP_ICON_POSITION_OPTIONS.some((option) => option.value === iconPosition)
-      ? iconPosition as ChipIconPosition
-      : null,
-    label: label && !/[<>]/.test(label) ? label : null,
-    size: CHIP_SIZE_OPTIONS.some((option) => option.value === size) ? size as ChipSize : null,
-    typeface: typeface === 'monospace' || typeface === 'sans-serif' ? typeface as ChipTypeface : null,
-    variant: CHIP_VARIANTS.includes(variant as ChipVariant) ? variant as ChipVariant : null,
-  }
-}
-
 function quoteTableString(value: string) {
   return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`
-}
-
-function parseTableString(raw: string, quote: string) {
-  if (quote === '"') {
-    try {
-      return JSON.parse(`"${raw}"`) as string
-    } catch {
-      return null
-    }
-  }
-
-  return raw.replace(/\\(\\|'|n|r|t)/g, (_, escaped: string) => {
-    if (escaped === 'n') return '\n'
-    if (escaped === 'r') return '\r'
-    if (escaped === 't') return '\t'
-    return escaped
-  })
-}
-
-function parseTableColumnHeaders(code: string) {
-  const columnBody = code.match(/\bconst\s+columns\b[\s\S]*?=\s*\[([\s\S]*?)\]/)?.[1]
-  if (!columnBody) return null
-
-  const knownKeys = new Set(TABLE_COLUMNS.map((column) => String(column.key)))
-  const headers: Record<string, string> = {}
-  const entries = columnBody.matchAll(/\{\s*key\s*:\s*(['"])([^'"\r\n]+)\1\s*,\s*header\s*:\s*(['"])((?:\\.|[^\\\r\n])*?)\3\s*,?\s*\}/g)
-
-  for (const match of entries) {
-    const [, , key, quote, rawHeader] = match
-    if (!knownKeys.has(key)) continue
-    const header = parseTableString(rawHeader, quote)
-    if (header !== null) headers[key] = header
-  }
-
-  return headers
-}
-
-function parseTableMembers(code: string) {
-  const memberBody = code.match(/\bconst\s+members\b[\s\S]*?=\s*\[([\s\S]*?)\n\]/)?.[1]
-  if (!memberBody) return null
-
-  const knownIds = new Set(TABLE_CONFIG_ROWS.map((row) => row.id))
-  const memberKeys = ['id', 'name', 'role', 'team', 'status', 'location', 'updated'] as const
-  const members: Record<string, TeamMember> = {}
-
-  for (const line of memberBody.split('\n')) {
-    const fields: Record<string, string> = {}
-    const entries = line.matchAll(/\b(id|name|role|team|status|location|updated):\s*(['"])((?:\\.|[^\\\r\n])*?)\2/g)
-    for (const [, key, quote, rawValue] of entries) {
-      const value = parseTableString(rawValue, quote)
-      if (value !== null) fields[key] = value
-    }
-    if (!knownIds.has(fields.id) || !memberKeys.every((key) => key in fields)) continue
-    members[fields.id] = fields as TeamMember
-  }
-
-  return members
 }
 
 type ButtonLoadingMode = 'idle' | 'generating' | 'loading'
@@ -1878,17 +1723,19 @@ function InputLabelsTextProperties({ showLabel, required, placeholder, enabled, 
         value={enabled ? 'on' : 'off'}
         onChange={(next) => onEnabledChange(next === 'on')}
       />
-      <SegmentedControl
-        label="Type"
-        options={[{ label: 'Text only', value: 'text' }, { label: 'Text & icon', value: 'icon' }]}
-        value={type}
-        onChange={onTypeChange}
-      />
       {enabled && (
-        <label className="lars-property lars-input-helper-property__text">
-          <span>Text</span>
-          <input value={text} onChange={(event) => onTextChange(event.currentTarget.value)} />
-        </label>
+        <>
+          <SegmentedControl
+            label="Type"
+            options={[{ label: 'Text only', value: 'text' }, { label: 'Text & icon', value: 'icon' }]}
+            value={type}
+            onChange={onTypeChange}
+          />
+          <label className="lars-property lars-input-helper-property__text">
+            <span>Text</span>
+            <input value={text} onChange={(event) => onTextChange(event.currentTarget.value)} />
+          </label>
+        </>
       )}
     </ExpandableProperty>
   )
@@ -2114,7 +1961,6 @@ function ButtonConfigurator() {
   const [type, setType] = useState<'text' | 'text-icon' | 'icon'>('text')
   const [shape, setShape] = useState<ButtonShape>('full')
   const [size, setSize] = useState<ButtonSize>('medium')
-  const [disabled, setDisabled] = useState(false)
   const [highContrast, setHighContrast] = useState(false)
   const [loadingMode, setLoadingMode] = useState<ButtonLoadingMode>('idle')
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -2143,7 +1989,7 @@ function ButtonConfigurator() {
     ? '<ArrowIcon />'
     : `${buttonLabel}${showIcon ? '\n      <ArrowIcon />' : ''}`
   const iconCode = showIcon ? BUTTON_ARROW_ICON_CODE : ''
-  const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"\n      size="${size}"${highContrast ? '\n      highContrast' : ''}${iconOnly ? '\n      iconOnly' : ''}${disabled ? '\n      disabled' : ''}`
+  const buttonProps = `${iconOnly ? `\n      aria-label=${JSON.stringify(buttonLabel)}` : ''}\n      variant="${variant}"\n      shape="${shape}"\n      size="${size}"${highContrast ? '\n      highContrast' : ''}${iconOnly ? '\n      iconOnly' : ''}`
   const code = loadingMode === 'idle'
     ? `import { Button } from 'larsui'
 import 'larsui/style.css'
@@ -2182,29 +2028,30 @@ export function Example() {
 }`
 
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator lars-configurator--buttons">
         <div className="lars-stage lars-component-canvas">
-          <Button
-            aria-label={iconOnly ? buttonLabel : undefined}
-            className="lars-button-preview"
-            disabled={disabled}
-            highContrast={highContrast}
-            iconOnly={iconOnly}
-            loading={previewLoading}
-            loadingText={statusLabel}
-            onClick={() => {
-              if (loadingMode !== 'idle') setPreviewLoading(true)
-            }}
-            shape={shape}
-            size={size}
-            spinner={activeEffect}
-            type="button"
-            variant={variant}
-          >
-            <span aria-hidden={iconOnly || undefined} className="lars-button__label" key="label">{buttonLabel}</span>
-            <span aria-hidden="true" className="lars-button__icon" data-hidden={!showIcon ? 'true' : undefined} key="icon"><ArrowIcon /></span>
-          </Button>
+          <LivePreview className="lars-live-preview">
+            <Button
+              aria-label={iconOnly ? buttonLabel : undefined}
+              className="lars-button-preview"
+              highContrast={highContrast}
+              iconOnly={iconOnly}
+              loading={previewLoading}
+              loadingText={statusLabel}
+              onClick={() => {
+                if (loadingMode !== 'idle') setPreviewLoading(true)
+              }}
+              shape={shape}
+              size={size}
+              spinner={activeEffect}
+              type="button"
+              variant={variant}
+            >
+              <span aria-hidden={iconOnly || undefined} className="lars-button__label" key="label">{buttonLabel}</span>
+              <span aria-hidden="true" className="lars-button__icon" data-hidden={!showIcon ? 'true' : undefined} key="icon"><ArrowIcon /></span>
+            </Button>
+          </LivePreview>
         </div>
 
         <aside className="lars-properties" aria-labelledby="button-properties-title">
@@ -2304,17 +2151,6 @@ export function Example() {
           code={code}
           fileName="Button.tsx"
           label="Configured button usage code"
-          onChange={(nextCode) => {
-            const next = parseButtonCode(nextCode)
-            if (!next) return
-            if (next.variant) setVariant(next.variant)
-            if (next.shape) setShape(next.shape)
-            if (next.size) setSize(next.size)
-            if (next.label !== null) setLabel(next.label)
-            setType(next.iconOnly ? 'icon' : next.icon ? 'text-icon' : 'text')
-            setDisabled(next.disabled)
-            setHighContrast(next.highContrast)
-          }}
         />
 
         <aside className="lars-footnotes" aria-label="Notes">
@@ -2329,7 +2165,7 @@ export function Example() {
           </p>
         </aside>
       </div>
-    </>
+    </LiveExample>
   )
 }
 
@@ -2365,22 +2201,24 @@ export function Example() {
 }`
 
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas">
-          <div className="lars-slider-card">
-            <InlineSlider
-              continuous={mode === 'freeform'}
-              label={label || 'Value'}
-              max={max}
-              min={min}
-              onValueChange={setValue}
-              showTicks={showTicks}
-              size={size}
-              step={step}
-              value={value}
-            />
-          </div>
+          <LivePreview className="lars-slider-card">
+            <div className="lars-slider-card">
+              <InlineSlider
+                continuous={mode === 'freeform'}
+                label={label || 'Value'}
+                max={max}
+                min={min}
+                onValueChange={setValue}
+                showTicks={showTicks}
+                size={size}
+                step={step}
+                value={value}
+              />
+            </div>
+          </LivePreview>
         </div>
 
         <aside className="lars-properties" aria-labelledby="slider-properties-title">
@@ -2465,22 +2303,8 @@ export function Example() {
         code={code}
         fileName="InlineSlider.tsx"
         label="Configured inline slider usage code"
-        onChange={(nextCode) => {
-          const next = parseSliderCode(nextCode)
-          if (!next) return
-          if (next.label !== null) setLabel(next.label)
-          setMode(next.continuous ? 'freeform' : 'dotted')
-          setShowTicks(next.showTicks)
-          if (next.size) setSize(next.size)
-
-          if (next.min !== null && next.max !== null && next.min < next.max) {
-            setMin(next.min)
-            setMax(next.max)
-            setValue((current) => Math.min(next.max as number, Math.max(next.min as number, next.value ?? current)))
-          }
-        }}
       />
-    </>
+    </LiveExample>
   )
 }
 
@@ -2496,29 +2320,35 @@ function ChipConfigurator() {
   const code = `import { Chip } from 'larsui'
 import 'larsui/style.css'
 
-<Chip
-  variant="${variant}"
-  iconPosition="${iconPosition}"
-  size="${size}"
-  typeface="${typeface}"
-  burst={${burst}}
->
-  ${chipLabel}
-</Chip>`
+export function Example() {
+  return (
+    <Chip
+      variant="${variant}"
+      iconPosition="${iconPosition}"
+      size="${size}"
+      typeface="${typeface}"
+      burst={${burst}}
+    >
+      ${chipLabel}
+    </Chip>
+  )
+}`
 
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas">
-          <Chip
-            burst={burst}
-            iconPosition={iconPosition}
-            size={size}
-            typeface={typeface}
-            variant={variant}
-          >
-            {chipLabel}
-          </Chip>
+          <LivePreview className="lars-live-preview">
+            <Chip
+              burst={burst}
+              iconPosition={iconPosition}
+              size={size}
+              typeface={typeface}
+              variant={variant}
+            >
+              {chipLabel}
+            </Chip>
+          </LivePreview>
         </div>
 
         <aside className="lars-properties" aria-labelledby="chip-properties-title">
@@ -2581,16 +2411,6 @@ import 'larsui/style.css'
           code={code}
           fileName="Chip.tsx"
           label="Configured chip usage code"
-          onChange={(nextCode) => {
-            const next = parseChipCode(nextCode)
-            if (!next) return
-            setBurst(next.burst)
-            if (next.variant) setVariant(next.variant)
-            if (next.iconPosition) setIconPosition(next.iconPosition)
-            if (next.size) setSize(next.size)
-            if (next.typeface) setTypeface(next.typeface)
-            if (next.label !== null) setLabel(next.label)
-          }}
         />
 
         <aside className="lars-footnotes" aria-label="Notes">
@@ -2605,7 +2425,7 @@ import 'larsui/style.css'
           </p>
         </aside>
       </div>
-    </>
+    </LiveExample>
   )
 }
 
@@ -2654,19 +2474,21 @@ ${codeOptions}
 }`
 
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-segmented-canvas">
-          <LarsSegmentedControl
-            content={content}
-            label="View"
-            onValueChange={setValue}
-            options={options}
-            size={size}
-            type={type}
-            value={value}
-            disabled={disabled}
-          />
+          <LivePreview className="lars-live-preview">
+            <LarsSegmentedControl
+              content={content}
+              label="View"
+              onValueChange={setValue}
+              options={options}
+              size={size}
+              type={type}
+              value={value}
+              disabled={disabled}
+            />
+          </LivePreview>
         </div>
 
         <aside className="lars-properties" aria-labelledby="segmented-control-properties-title">
@@ -2714,7 +2536,7 @@ ${codeOptions}
         </aside>
       </div>
       <CodeBlock code={code} fileName="SegmentedControl.tsx" label="Configured segmented control usage code" />
-    </>
+    </LiveExample>
   )
 }
 
@@ -2858,21 +2680,14 @@ function TableConfigurator() {
   const [showActions, setShowActions] = useState(true)
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [activeView, setActiveView] = useState('all')
-  const [columnHeaders, setColumnHeaders] = useState<Record<string, string>>({})
-  const [memberValues, setMemberValues] = useState<Record<string, TeamMember>>({})
   const renderedRowCount = useDeferredValue(rowCount)
-  const configuredColumns = useMemo(() => TABLE_COLUMNS.slice(0, columnCount).map((column) => ({
-    ...column,
-    header: columnHeaders[String(column.key)] ?? column.header,
-  })), [columnCount, columnHeaders])
-  const configuredRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, renderedRowCount)
-    .map((row) => memberValues[row.id] ?? row), [renderedRowCount, memberValues])
+  const configuredColumns = useMemo(() => TABLE_COLUMNS.slice(0, columnCount), [columnCount])
+  const configuredRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, renderedRowCount), [renderedRowCount])
   const viewEnabled = toolbarVisible && variant !== 'relaxed' && toolbarToggle
   const viewRows = useMemo(() => viewEnabled && activeView === 'active'
     ? configuredRows.filter((row) => row.status === 'Active')
     : configuredRows, [activeView, configuredRows, viewEnabled])
-  const codeRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, codeRowCount)
-    .map((row) => memberValues[row.id] ?? row), [codeRowCount, memberValues])
+  const codeRows = useMemo(() => TABLE_CONFIG_ROWS.slice(0, codeRowCount), [codeRowCount])
   const codeColumns = useMemo(() => configuredColumns
     .map((column) => `  { key: '${String(column.key)}', header: ${quoteTableString(String(column.header))} },`)
     .join('\n'), [configuredColumns])
@@ -2945,55 +2760,38 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
   )
 }`
 
-  const handleTableCodeChange = useCallback((nextCode: string) => {
-    const nextHeaders = parseTableColumnHeaders(nextCode)
-    if (nextHeaders && Object.keys(nextHeaders).length > 0) {
-      setColumnHeaders((current) => {
-        if (Object.entries(nextHeaders).every(([key, value]) => current[key] === value)) return current
-        return { ...current, ...nextHeaders }
-      })
-    }
-
-    const nextMembers = parseTableMembers(nextCode)
-    if (nextMembers && Object.keys(nextMembers).length > 0) {
-      setMemberValues((current) => {
-        if (Object.entries(nextMembers).every(([id, member]) =>
-          Object.entries(member).every(([key, value]) => current[id]?.[key as keyof TeamMember] === value)
-        )) return current
-        return { ...current, ...nextMembers }
-      })
-    }
-  }, [])
 
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-table-canvas">
-          <MemoizedTeamTable
-            ariaLabel="Team members preview"
-            className="lars-table-preview"
-            columns={configuredColumns}
-            filterableColumns={TABLE_FILTERABLE_COLUMNS}
-            getRowId={getTeamMemberId}
-            getRowLabel={(row) => row.name}
-            onRowAction={showActions ? noopRowAction : undefined}
-            onSelectedRowIdsChange={setSelectedRows}
-            rowActionLabel={getTeamMemberActionLabel}
-            rows={viewRows}
-            selectable={selectable}
-            selectedRowIds={selectedRows}
-            stickyHeader
-            striped={striped}
-            toolbar={toolbarVisible}
-            toolbarActions={toolbarActions}
-            toolbarCounter={toolbarCounter}
-            toolbarFloating={toolbarFloating}
-            toolbarToggle={toolbarToggle}
-            variant={variant}
-            view={activeView}
-            viewOptions={TABLE_VIEW_OPTIONS}
-            onViewChange={setActiveView}
-          />
+          <LivePreview className="lars-live-table">
+            <MemoizedTeamTable
+              ariaLabel="Team members preview"
+              className="lars-table-preview"
+              columns={configuredColumns}
+              filterableColumns={TABLE_FILTERABLE_COLUMNS}
+              getRowId={getTeamMemberId}
+              getRowLabel={(row) => row.name}
+              onRowAction={showActions ? noopRowAction : undefined}
+              onSelectedRowIdsChange={setSelectedRows}
+              rowActionLabel={getTeamMemberActionLabel}
+              rows={viewRows}
+              selectable={selectable}
+              selectedRowIds={selectedRows}
+              stickyHeader
+              striped={striped}
+              toolbar={toolbarVisible}
+              toolbarActions={toolbarActions}
+              toolbarCounter={toolbarCounter}
+              toolbarFloating={toolbarFloating}
+              toolbarToggle={toolbarToggle}
+              variant={variant}
+              view={activeView}
+              viewOptions={TABLE_VIEW_OPTIONS}
+              onViewChange={setActiveView}
+            />
+          </LivePreview>
         </div>
 
         <aside className="lars-properties" aria-labelledby="table-properties-title">
@@ -3078,7 +2876,6 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
           code={code}
           fileName="Table.tsx"
           label="Editable table usage code"
-          onChange={handleTableCodeChange}
         />
         <aside className="lars-footnotes" aria-label="Notes">
           <p id="table-footnote-1" tabIndex={-1}>
@@ -3092,7 +2889,7 @@ ${toolbarCode}` : ''}${variant === 'default' ? '' : `
           </p>
         </aside>
       </div>
-    </>
+    </LiveExample>
   )
 }
 
@@ -3247,18 +3044,20 @@ export function Example() {
 }`
 
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-stage--tooltip">
-          <TooltipExample
-            anchor={anchor === 'triangle'}
-            description={content === 'description' ? description : undefined}
-            highContrast={highContrast}
-            label={label || 'Tooltip label'}
-            shortcut={content === 'compact' && showShortcut ? shortcut : undefined}
-            shortcutStyle={shortcutStyle}
-            side={side}
-          />
+          <LivePreview className="lars-live-preview">
+            <TooltipExample
+              anchor={anchor === 'triangle'}
+              description={content === 'description' ? description : undefined}
+              highContrast={highContrast}
+              label={label || 'Tooltip label'}
+              shortcut={content === 'compact' && showShortcut ? shortcut : undefined}
+              shortcutStyle={shortcutStyle}
+              side={side}
+            />
+          </LivePreview>
         </div>
 
         <aside className="lars-properties" aria-labelledby="tooltip-properties-title">
@@ -3331,7 +3130,7 @@ export function Example() {
           </p>
         </aside>
       </div>
-    </>
+    </LiveExample>
   )
 }
 
@@ -3497,10 +3296,12 @@ export function Example() {
 }`
 
   return (
-    <>
+    <LiveExample code={code}>
       <div className="lars-configurator">
         <div className="lars-stage lars-component-canvas lars-component-canvas--ai-composer">
-          <AiComposerExample key={variant} generating={generating} onGeneratingChange={setGenerating} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showAddButton={showAddButton} showDictation={showDictation} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
+          <LivePreview className="lars-live-composer">
+            <AiComposerExample key={variant} generating={generating} onGeneratingChange={setGenerating} mode={composerMode} onModeChange={setComposerMode} rotatePlaceholder={rotatePlaceholder} showAddButton={showAddButton} showDictation={showDictation} showModelDropdown={showModelSelection} showModelSelector={showMode} showSuggestions={showSuggestions} size={size} variant={variant} />
+          </LivePreview>
         </div>
         <aside className="lars-properties" aria-labelledby="ai-composer-properties-title">
           <header className="lars-properties__header">
@@ -3601,7 +3402,7 @@ export function Example() {
           </p>
         </aside>
       </div>
-    </>
+    </LiveExample>
   )
 }
 
@@ -3779,7 +3580,9 @@ function HomePage({
         <div className="lars-footer__links">
           <a href="mailto:samlimby2@gmail.com">Feedback</a>
           <span aria-hidden="true">•</span>
-          <span>Updated Sep 2026</span>
+          <time dateTime={siteUpdatedAt} title={`Last updated ${new Date(siteUpdatedAt).toUTCString()}`}>
+            Updated {new Date(siteUpdatedAt).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' })}
+          </time>
         </div>
       </footer>
     </div>

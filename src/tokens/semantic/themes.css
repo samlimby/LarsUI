@@ -1,5 +1,5 @@
 /* Shared component themes. Components consume the same semantic roles
- * in light, dark and inverse surfaces. Brand colors, white, shadows and
+ * in light, dark and inverse surfaces. Brand colors, white and
  * fixed high-contrast roles keep their values in either theme.
  * Keep the system-preference and explicit dark palettes in sync.
  */
